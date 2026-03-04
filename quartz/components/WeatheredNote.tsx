@@ -228,6 +228,19 @@ WeatheredNote.css = `
       animation: note-sway-mobile-dark 10s ease-in-out infinite;
     }
   }
+
+  @media (max-width: 640px) and (prefers-reduced-motion: reduce) {
+    .weathered-note {
+      animation: none;
+      transform: rotate(-0.4deg);
+      box-shadow: 1px 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
+    }
+    [saved-theme="dark"] .weathered-note {
+      animation: none;
+      transform: rotate(-0.4deg);
+      box-shadow: 1px 2px 8px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(255,255,255,0.04);
+    }
+  }
 `
 
 export default (() => WeatheredNote) satisfies QuartzComponentConstructor
