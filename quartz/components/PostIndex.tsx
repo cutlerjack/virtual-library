@@ -27,67 +27,66 @@ const PostIndex: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponent
       return 0
     })
 
-  const posts = allPosts.slice(0, 3)
-  const hasMore = allPosts.length > 3
+  // Prefer featured posts; fall back to latest 8
+  const featuredPosts = allPosts.filter((f) => f.frontmatter?.featured)
+  const posts = featuredPosts.length > 0 ? featuredPosts.slice(0, 8) : allPosts.slice(0, 8)
 
   if (posts.length === 0) return null
 
-  // Format date as "Mar 2026" style
-  const formatDate = (d: Date) => {
-    const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
-    ]
-    return `${months[d.getMonth()]} ${d.getFullYear()}`
-  }
-
   return (
-    <div class="post-index">
-      <h3 class="post-index-header">Writing</h3>
-      <ul class="post-index-list">
+    <div class="post-shelf">
+      <h3 class="post-shelf-header">Writing</h3>
+      <div class="post-shelf-grid">
         {posts.map((post) => {
           const title = post.frontmatter?.title ?? ""
-          const date = post.dates ? getDate(cfg, post)! : null
-          const href = resolveRelative(fileData.slug!, post.slug!)
+          const cover = post.frontmatter?.cover as string | undefined
+          const description = post.frontmatter?.description as string | undefined
           const status = post.frontmatter?.status as string | undefined
+          const href = resolveRelative(fileData.slug!, post.slug!)
 
           return (
-            <li class="post-index-item">
-              <a href={href} class="internal post-index-title">
-                {title}
-              </a>
-              {status && (
-                <span
-                  class="post-index-dot"
-                  style={{
-                    backgroundColor:
-                      status === "in-progress" ? "#c47a45" : "#5a8a5a",
-                  }}
-                />
-              )}
-              <span class="post-index-leader" />
-              {date && (
-                <span class="post-index-date">{formatDate(date)}</span>
-              )}
-            </li>
+            <a href={href} class="internal post-shelf-item">
+              <div class="post-shelf-cover">
+                {cover ? (
+                  <img src={cover} alt={title} loading="lazy" />
+                ) : (
+                  <div class="post-shelf-cover-placeholder" />
+                )}
+              </div>
+              <div class="post-shelf-meta">
+                <span class="post-shelf-title">
+                  {title}
+                  {status && (
+                    <span
+                      class="post-shelf-dot"
+                      style={{
+                        backgroundColor:
+                          status === "in-progress" ? "#c47a45" : "#5a8a5a",
+                      }}
+                    />
+                  )}
+                </span>
+                {description && (
+                  <span class="post-shelf-desc">{description}</span>
+                )}
+              </div>
+            </a>
           )
         })}
-      </ul>
-      {hasMore && (
-        <a href={resolveRelative(fileData.slug!, "archive" as any)} class="internal post-index-see-all">
-          See all →
-        </a>
-      )}
+      </div>
+      <a href={resolveRelative(fileData.slug!, "archive" as any)} class="internal post-shelf-see-all">
+        See all writing →
+      </a>
     </div>
   )
 }
 
 PostIndex.css = `
-.post-index {
+.post-shelf {
   margin-top: 1rem;
 }
 
-.post-index-header {
+.post-shelf-header {
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.72rem;
   font-weight: 600;
@@ -100,107 +99,101 @@ PostIndex.css = `
   margin-top: 0;
 }
 
-.post-index-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.post-shelf-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
 }
 
-.post-index-item {
+@media (max-width: 640px) {
+  .post-shelf-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+  }
+}
+
+.post-shelf-item {
+  display: block;
+  text-decoration: none;
+  background-image: none !important;
+  color: var(--dark);
+  border-bottom: none !important;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 4px;
+}
+
+.post-shelf-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+[saved-theme="dark"] .post-shelf-item:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+}
+
+.post-shelf-cover {
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border: 1px solid var(--lightgray);
+  border-radius: 3px;
+  background-color: var(--highlight);
+}
+
+.post-shelf-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+[saved-theme="dark"] .post-shelf-cover img {
+  opacity: 0.9;
+}
+
+.post-shelf-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--highlight) 0%, var(--lightgray) 100%);
+}
+
+.post-shelf-meta {
+  padding-top: 0.45rem;
+}
+
+.post-shelf-title {
   display: flex;
   align-items: baseline;
-  padding: 0.3rem 0.4rem;
-  margin: 0 -0.4rem;
-  line-height: 1.45;
-  border-radius: 3px;
-  transition: background-color 0.2s ease, transform 0.2s ease;
-}
-
-.post-index-item:hover {
-  background-color: rgba(0, 0, 0, 0.018);
-  transform: translateX(2px);
-}
-
-[saved-theme="dark"] .post-index-item:hover {
-  background-color: rgba(255, 255, 255, 0.025);
-}
-
-a.internal.post-index-title {
+  gap: 0.35rem;
   font-family: "EB Garamond", Georgia, serif;
-  font-size: 1.05rem;
+  font-size: 0.95rem;
+  line-height: 1.3;
   color: var(--dark);
-  text-decoration: none;
-  border-bottom: none;
-  flex-shrink: 0;
-  transition: color 0.15s, letter-spacing 0.3s ease;
 }
 
-.post-index-item:hover a.internal.post-index-title {
-  color: var(--secondary);
-}
-
-.post-index-dot {
+.post-shelf-dot {
   display: inline-block;
   width: 5px;
   height: 5px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-left: 0.4rem;
   position: relative;
-  top: -0.08em;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  top: -0.05em;
 }
 
-.post-index-item:hover .post-index-dot {
-  transform: scale(1.4);
-  box-shadow: 0 0 4px rgba(196, 122, 69, 0.4);
+.post-shelf-desc {
+  display: block;
+  font-family: "EB Garamond", Georgia, serif;
+  font-style: italic;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: var(--darkgray);
+  margin-top: 0.15rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.post-index-leader {
-  flex: 1;
-  border-bottom: 1px dotted var(--lightgray);
-  margin: 0 0.5rem;
-  position: relative;
-  bottom: 0.2em;
-  min-width: 1.5rem;
-  transition: border-color 0.3s ease;
-}
-
-.post-index-item:hover .post-index-leader {
-  border-bottom-color: var(--secondary);
-  border-bottom-style: dotted;
-}
-
-.post-index-date {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.7rem;
-  font-weight: 500;
-  color: var(--gray);
-  flex-shrink: 0;
-  letter-spacing: 0.02em;
-  transition: color 0.2s ease;
-}
-
-.post-index-item:hover .post-index-date {
-  color: var(--dark);
-}
-
-@media (max-width: 640px) {
-  .post-index-item {
-    flex-wrap: wrap;
-    gap: 0.15rem;
-  }
-
-  .post-index-leader {
-    display: none;
-  }
-
-  .post-index-date {
-    width: 100%;
-  }
-}
-
-.post-index-see-all {
+.post-shelf-see-all {
   display: block;
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.72rem;
@@ -216,7 +209,7 @@ a.internal.post-index-title {
   transition: color 0.15s;
 }
 
-.post-index-see-all:hover {
+.post-shelf-see-all:hover {
   color: var(--secondary);
 }
 `
