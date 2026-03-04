@@ -34,6 +34,7 @@ import PageTransitions from "./PageTransitions"
 import CursorTrail from "./CursorTrail"
 import FootnoteLink from "./FootnoteLink"
 import InProgressAnimation from "./InProgressAnimation"
+import TagGarden from "./TagGarden"
 
 export {
   ArticleTitle,
@@ -72,4 +73,5 @@ export {
   CursorTrail,
   FootnoteLink,
   InProgressAnimation,
+  TagGarden,
 }

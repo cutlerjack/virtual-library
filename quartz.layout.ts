@@ -46,6 +46,7 @@ export const defaultListPageLayout: PageLayout = {
     Component.CursorTrail(),
     Component.FootnoteLink(),
     Component.InProgressAnimation(),
+    Component.TagGarden(),
     Component.ArticleTitle(),
     Component.ContentMeta(),
   ],
