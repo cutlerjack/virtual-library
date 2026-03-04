@@ -7,13 +7,14 @@ const PostIndex: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponent
   if (fileData.slug !== "index") return null
 
   // Filter out non-content pages
-  const posts = allFiles
+  const allPosts = allFiles
     .filter((f) => {
       const slug = f.slug ?? ""
       return (
         slug !== "index" &&
         slug !== "about" &&
         slug !== "random" &&
+        slug !== "archive" &&
         slug !== "tags" &&
         !slug.startsWith("tags/") &&
         f.frontmatter?.title
@@ -25,6 +26,9 @@ const PostIndex: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponent
       }
       return 0
     })
+
+  const posts = allPosts.slice(0, 3)
+  const hasMore = allPosts.length > 3
 
   if (posts.length === 0) return null
 
@@ -69,6 +73,11 @@ const PostIndex: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponent
           )
         })}
       </ul>
+      {hasMore && (
+        <a href={resolveRelative(fileData.slug!, "archive" as any)} class="internal post-index-see-all">
+          See all →
+        </a>
+      )}
     </div>
   )
 }
@@ -189,6 +198,26 @@ a.internal.post-index-title {
   .post-index-date {
     width: 100%;
   }
+}
+
+.post-index-see-all {
+  display: block;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--gray);
+  text-decoration: none;
+  border-bottom: none !important;
+  background-image: none !important;
+  margin-top: 0.8rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--lightgray);
+  transition: color 0.15s;
+}
+
+.post-index-see-all:hover {
+  color: var(--secondary);
 }
 `
 
