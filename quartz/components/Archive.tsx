@@ -50,9 +50,14 @@ const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentPr
 
   const getExcerpt = (post: (typeof posts)[0]) => {
     const desc = post.frontmatter?.description as string | undefined
-    if (desc) return desc.length > 140 ? desc.slice(0, 137) + "…" : desc
-    const text = post.description ?? ""
-    if (text.length > 140) return text.slice(0, 137) + "…"
+    if (desc) return desc.length > 140 ? desc.slice(0, 137) + "..." : desc
+    let text = post.description ?? ""
+    // Strip footnote reference markers (e.g. "[^1]")
+    text = text.replace(/\[\^[\w-]+\]/g, "")
+    // Strip leaked footnote patterns (e.g. ".1 ")
+    text = text.replace(/\.(\d+)\s/g, ". ")
+    text = text.replace(/\s+/g, " ").trim()
+    if (text.length > 140) return text.slice(0, 137) + "..."
     return text
   }
 
@@ -64,7 +69,7 @@ const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentPr
         return (
           <section class="archive-year-section">
             <h4 class="archive-year">{year === 0 ? "Undated" : year}</h4>
-            <div class="archive-grid">
+            <div class="archive-entries">
               {yearPosts.map((post) => {
                 const title = post.frontmatter?.title ?? ""
                 const date = post.dates ? getDate(cfg, post)! : null
@@ -75,18 +80,18 @@ const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentPr
                 const excerpt = getExcerpt(post)
 
                 return (
-                  <a href={href} class="internal archive-card" data-has-cover={cover ? "true" : "false"}>
+                  <a href={href} class="internal archive-entry">
                     {cover && (
-                      <div class="archive-card-cover">
+                      <div class="archive-entry-thumb">
                         <img src={cover} alt="" loading="lazy" />
                       </div>
                     )}
-                    <div class="archive-card-body">
-                      <div class="archive-card-title-row">
-                        <span class="archive-card-title">{title}</span>
+                    <div class="archive-entry-body">
+                      <div class="archive-entry-title">
+                        <span>{title}</span>
                         {status && (
                           <span
-                            class="archive-card-dot"
+                            class="archive-entry-dot"
                             style={{
                               backgroundColor:
                                 status === "in-progress" ? "#c47a45" : "#5a8a5a",
@@ -95,16 +100,16 @@ const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentPr
                         )}
                       </div>
                       {excerpt && (
-                        <p class="archive-card-excerpt">{excerpt}</p>
+                        <p class="archive-entry-desc">{excerpt}</p>
                       )}
-                      <div class="archive-card-meta">
+                      <div class="archive-entry-meta">
                         {date && (
-                          <span class="archive-card-date">{formatDate(date)}</span>
+                          <span class="archive-entry-date">{formatDate(date)}</span>
                         )}
                         {tags.length > 0 && (
-                          <span class="archive-card-tags">
+                          <span class="archive-entry-tags">
                             {tags.map((tag) => (
-                              <span class="archive-card-tag">{tag}</span>
+                              <span class="archive-entry-tag">{tag}</span>
                             ))}
                           </span>
                         )}
@@ -140,7 +145,7 @@ Archive.css = `
 }
 
 .archive-year-section {
-  margin-bottom: 2.5rem;
+  margin-bottom: 2rem;
 }
 
 .archive-year {
@@ -152,74 +157,73 @@ Archive.css = `
   margin: 0 0 1rem 0;
 }
 
-.archive-grid {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 1.25rem;
-}
-
-.archive-card {
+.archive-entries {
   display: flex;
   flex-direction: column;
-  border: 1px solid var(--lightgray);
-  border-radius: 4px;
-  overflow: hidden;
+}
+
+.archive-entry {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px dotted var(--lightgray);
   text-decoration: none !important;
   background-image: none !important;
   color: var(--dark);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: color 0.15s ease;
 }
 
-.archive-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+.archive-entry:hover {
   color: var(--dark);
 }
 
-[saved-theme="dark"] .archive-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+.archive-entry:hover .archive-entry-title span:first-child {
+  color: var(--secondary);
+  transform: translateX(2px);
 }
 
-.archive-card-cover {
-  width: 100%;
-  aspect-ratio: 1200 / 630;
+.archive-entry-thumb {
+  width: 80px;
+  flex-shrink: 0;
+  aspect-ratio: 2 / 3;
   overflow: hidden;
-  border-bottom: 1px solid var(--lightgray);
+  border: 1px solid var(--lightgray);
 }
 
-.archive-card-cover img {
+.archive-entry-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
   display: block;
 }
 
-.archive-card-body {
-  padding: 0.9rem 1rem;
+.archive-entry-body {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.2rem;
+  justify-content: center;
 }
 
-.archive-card-title-row {
+.archive-entry-title {
   display: flex;
   align-items: baseline;
   gap: 0.4rem;
 }
 
-.archive-card-title {
+.archive-entry-title span:first-child {
   font-family: "EB Garamond", Georgia, serif;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--dark);
   line-height: 1.3;
+  transition: color 0.15s ease, transform 0.15s ease;
+  display: inline-block;
 }
 
-.archive-card:hover .archive-card-title {
-  color: var(--secondary);
-}
-
-.archive-card-dot {
+.archive-entry-dot {
   display: inline-block;
   width: 5px;
   height: 5px;
@@ -229,23 +233,26 @@ Archive.css = `
   top: -0.08em;
 }
 
-.archive-card-excerpt {
+.archive-entry-desc {
   font-family: "EB Garamond", Georgia, serif;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   color: var(--darkgray);
-  line-height: 1.45;
+  line-height: 1.4;
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.archive-card-meta {
+.archive-entry-meta {
   display: flex;
   align-items: center;
   gap: 0.6rem;
   flex-wrap: wrap;
-  margin-top: 0.2rem;
+  margin-top: 0.1rem;
 }
 
-.archive-card-date {
+.archive-entry-date {
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.65rem;
   font-weight: 500;
@@ -253,13 +260,13 @@ Archive.css = `
   letter-spacing: 0.02em;
 }
 
-.archive-card-tags {
+.archive-entry-tags {
   display: flex;
   gap: 0.35rem;
   flex-wrap: wrap;
 }
 
-.archive-card-tag {
+.archive-entry-tag {
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.58rem;
   font-weight: 500;
@@ -271,12 +278,12 @@ Archive.css = `
 }
 
 @media (max-width: 640px) {
-  .archive-grid {
-    grid-template-columns: 1fr;
+  .archive-entry-thumb {
+    width: 60px;
   }
 
-  .archive-card-body {
-    padding: 0.75rem 0.85rem;
+  .archive-entry {
+    gap: 0.75rem;
   }
 }
 `
