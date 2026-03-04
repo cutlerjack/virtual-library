@@ -122,8 +122,7 @@ WeatheredNote.css = `
     background: var(--note-bg, #ece5d5);
     border: none;
     cursor: default;
-    transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1),
-                box-shadow 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
+    transition: box-shadow 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
 
     /* Torn / rough edge via clip-path */
     clip-path: polygon(
