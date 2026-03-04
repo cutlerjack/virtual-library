@@ -28,6 +28,12 @@ import StatusDot from "./StatusDot"
 import CustomHeader from "./CustomHeader"
 import RandomRedirect from "./RandomRedirect"
 import NewsletterSignup from "./NewsletterSignup"
+import PostIndex from "./PostIndex"
+import ReadingProgress from "./ReadingProgress"
+import PageTransitions from "./PageTransitions"
+import CursorTrail from "./CursorTrail"
+import FootnoteLink from "./FootnoteLink"
+import InProgressAnimation from "./InProgressAnimation"
 
 export {
   ArticleTitle,
@@ -60,4 +66,10 @@ export {
   CustomHeader,
   RandomRedirect,
   NewsletterSignup,
+  PostIndex,
+  ReadingProgress,
+  PageTransitions,
+  CursorTrail,
+  FootnoteLink,
+  InProgressAnimation,
 }

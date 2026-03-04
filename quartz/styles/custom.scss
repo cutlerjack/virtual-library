@@ -846,6 +846,62 @@ hr {
   }
 }
 
+// ============================================================
+// PAGE TRANSITIONS — Puff (exit) & Settle (enter)
+// ============================================================
+
+.center {
+  transition: opacity 0.35s ease-out, transform 0.35s ease-out, filter 0.2s ease-out;
+}
+
+.center.puff-out {
+  opacity: 0;
+  transform: scale(1.02);
+  filter: blur(2px);
+  transition: opacity 0.2s ease-in, transform 0.2s ease-in, filter 0.2s ease-in;
+}
+
+.center.settle-in {
+  animation: settle 0.35s ease-out forwards;
+}
+
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .center.puff-out {
+    filter: none;
+    transform: none;
+    transition: opacity 0.15s ease;
+  }
+  .center.settle-in {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+// ============================================================
+// FOOTNOTE HOVER CONNECTION
+// ============================================================
+
+.sidenote-highlight {
+  background-color: rgba(196, 122, 69, 0.1);
+  transition: background-color 0.6s ease;
+  border-radius: 2px;
+}
+
+[saved-theme="dark"] .sidenote-highlight {
+  background-color: rgba(196, 122, 69, 0.12);
+}
+
 @media (max-width: 480px) {
   .newsletter-form {
     flex-direction: column;
