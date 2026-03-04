@@ -271,3 +271,47 @@ article a[href^="mailto:"]:hover {
     opacity: 0.5;
   }
 }
+
+// ============================================================
+// MOBILE
+// ============================================================
+
+@media (max-width: 640px) {
+  body {
+    font-size: 1.05rem;
+  }
+
+  h1 { font-size: 1.6rem; }
+  h2 { font-size: 1.3rem; }
+
+  .weathered-note {
+    transform: rotate(-0.3deg);
+    margin: 1rem 0 2rem;
+    padding: 1rem 1.1rem;
+    max-width: 100%;
+  }
+
+  .page-listing li {
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .post-meta-cluster {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .newsletter-form {
+    flex-direction: column;
+  }
+  .newsletter-input {
+    min-width: unset;
+    width: 100%;
+  }
+  .newsletter-btn {
+    width: 100%;
+    text-align: center;
+  }
+}
