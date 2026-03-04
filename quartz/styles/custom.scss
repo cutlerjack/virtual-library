@@ -91,3 +91,14 @@ code, pre, kbd {
   border-bottom-color: var(--secondary);
   color: var(--secondary);
 }
+
+// Reading time — raw data
+.reading-time {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: var(--gray);
+  letter-spacing: 0.01em;
+  margin-bottom: 1.5rem;
+  display: block;
+}

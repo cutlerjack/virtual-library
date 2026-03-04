@@ -24,6 +24,7 @@ import Comments from "./Comments"
 import Flex from "./Flex"
 import ConditionalRender from "./ConditionalRender"
 import WeatheredNote from "./WeatheredNote"
+import StatusDot from "./StatusDot"
 
 export {
   ArticleTitle,
@@ -52,4 +53,5 @@ export {
   Flex,
   ConditionalRender,
   WeatheredNote,
+  StatusDot,
 }
