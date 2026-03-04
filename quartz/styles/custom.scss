@@ -1,66 +1,468 @@
 @use "./base.scss";
 
-// put your custom CSS here!
+// ============================================================
+// STRUCTURAL OVERRIDE — Kill the Quartz three-column skeleton
+// ============================================================
+
+// Force single-column editorial layout everywhere
+.page > #quartz-body {
+  display: block !important;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+// Left sidebar: collapse visually, keep in DOM for search/darkmode JS
+.page > #quartz-body > .left.sidebar {
+  position: fixed !important;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.6rem;
+  z-index: 100;
+  background: none;
+
+  // Search button — small floating icon
+  & > .search {
+    max-width: none;
+    min-width: 0;
+  }
+  & > .search > .search-button {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--light);
+    border: 1px solid var(--lightgray);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.2s;
+    &:hover { opacity: 0.85; }
+    & > p { display: none; }
+    & > svg { width: 13px; height: 13px; }
+  }
+
+  // Darkmode button — small floating icon
+  & > .darkmode {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--light);
+    border: 1px solid var(--lightgray);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.2s;
+    &:hover { opacity: 0.85; }
+  }
+}
+
+// Right sidebar: render below content as a section, not a sidebar column
+.page > #quartz-body > .right.sidebar {
+  position: static !important;
+  height: auto !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin-top: 3rem;
+  border-top: 1px solid var(--lightgray);
+  padding-top: 1.5rem !important;
+  flex-direction: column !important;
+  display: flex !important;
+  gap: 1.5rem;
+}
+
+// On index, about, tags: hide the right sidebar entirely
+body[data-slug="index"] .page > #quartz-body > .right.sidebar,
+body[data-slug="about"] .page > #quartz-body > .right.sidebar,
+body[data-slug="tags"] .page > #quartz-body > .right.sidebar,
+body[data-slug="404"] .page > #quartz-body > .right.sidebar {
+  display: none !important;
+}
+
+// Remove the top spacing Quartz adds
+.page > #quartz-body .page-header {
+  margin-top: 0;
+}
+
+// Center area should be full width within our container
+.page > #quartz-body > .center {
+  max-width: 100%;
+  min-width: 0;
+}
+
+// Remove default page max-width — our container handles it
+.page {
+  max-width: none;
+}
 
 // ============================================================
-// TYPOGRAPHY
+// SUBTLE BACKGROUND GRAIN — Paper texture on the whole page
+// ============================================================
+
+@keyframes grain-drift {
+  0% { background-position: 0 0; }
+  50% { background-position: 15px -15px; }
+  100% { background-position: 0 0; }
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.025;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 256px 256px;
+  mix-blend-mode: multiply;
+  animation: grain-drift 20s linear infinite;
+}
+
+[saved-theme="dark"] body::after {
+  opacity: 0.04;
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after {
+    animation: none;
+  }
+}
+
+// ============================================================
+// ATMOSPHERE — The page should feel like a living object
+// ============================================================
+
+// Warm amber selection — not default blue, feels like highlighting on parchment
+::selection {
+  background: rgba(196, 122, 69, 0.2);
+  color: inherit;
+}
+
+[saved-theme="dark"] ::selection {
+  background: rgba(196, 122, 69, 0.3);
+}
+
+// Smooth dark mode transitions — no hard cut, colors breathe between modes
+body {
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+*, *::before, *::after {
+  transition: background-color 0.4s ease, color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
+}
+
+// Don't transition things that should be instant
+a, button, input, .search-button, .darkmode, .post-index-title {
+  transition: color 0.15s ease, border-color 0.15s ease, opacity 0.2s ease, background-color 0.15s ease;
+}
+
+// Custom scrollbar — thin, editorial, not a chunky browser default
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+[saved-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[saved-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+// Firefox
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+
+[saved-theme="dark"] {
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+// ============================================================
+// TYPOGRAPHY — Bringhurst-level care
 // ============================================================
 
 body, p, li, blockquote {
   font-family: "EB Garamond", Georgia, serif;
   font-size: 1.15rem;
-  line-height: 1.7;
+  line-height: 1.75;
   font-feature-settings: "liga" 1, "kern" 1, "onum" 1;
+  hanging-punctuation: first last;
 }
 
-// Optimal reading measure — Bringhurst's ~65-75 chars
-article p {
-  max-width: 68ch;
+// Optimal reading measure
+article p,
+article li,
+article blockquote {
+  max-width: 65ch;
 }
 
 h1, h2, h3, h4, h5, h6 {
   font-family: "EB Garamond", Georgia, serif;
   font-weight: 600;
-  line-height: 1.3;
-  letter-spacing: -0.01em;
+  line-height: 1.25;
+  letter-spacing: -0.015em;
 }
 
-h1 { font-size: 2rem; }
-h2 { font-size: 1.5rem; }
-h3 { font-size: 1.25rem; }
+h1 { font-size: 2.1rem; }
+h2 { font-size: 1.45rem; }
+h3 { font-size: 1.2rem; }
 
-// Code and monospace elements
 code, pre, kbd {
   font-family: "IBM Plex Mono", monospace;
   font-weight: 500;
-  font-size: 0.875em;
+  font-size: 0.85em;
 }
 
-// Page title uses same serif
-.page-title, .page-header {
-  font-family: "EB Garamond", Georgia, serif;
+// Drop cap on the first paragraph of post articles
+body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug="tags"]):not([data-slug="random"]) {
+  article.popover-hint > p:first-of-type::first-letter {
+    font-family: "EB Garamond", Georgia, serif;
+    float: left;
+    font-size: 3.8em;
+    line-height: 0.75;
+    padding-right: 0.08em;
+    margin-top: 0.05em;
+    font-weight: 500;
+    color: var(--dark);
+  }
+}
+
+// Blockquote styling — editorial, not boxy
+blockquote {
+  border-left: 2px solid var(--secondary);
+  padding-left: 1.2rem;
+  margin-left: 0;
+  margin-right: 0;
+  font-style: italic;
+  color: var(--darkgray);
+}
+
+// Links — sliding underline that grows on hover
+article a.internal,
+article a[href^="http"] {
+  color: var(--dark);
+  text-decoration: none;
+  border-bottom: none;
+  background-image: linear-gradient(var(--secondary), var(--secondary));
+  background-size: 0% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 0.3s ease, color 0.2s ease !important;
+  padding-bottom: 1px;
+}
+
+article a.internal:hover,
+article a[href^="http"]:hover {
+  background-size: 100% 1px;
+  color: var(--secondary);
 }
 
 // ============================================================
-// INDEX PAGE — Gwern-style annotated list
+// ARTICLE TITLE — Post pages
 // ============================================================
 
+.article-title {
+  margin: 0 0 0.2rem 0;
+  font-size: 2.1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+// On index, hide the h1 entirely — the weathered note IS the introduction
+body[data-slug="index"] .article-title {
+  display: none;
+}
+
+// ============================================================
+// CONTENT META — Date and reading time, restrained
+// ============================================================
+
+.content-meta {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--gray);
+  letter-spacing: 0.02em;
+  margin-top: 0;
+  margin-bottom: 2rem;
+  text-transform: lowercase;
+}
+
+// On index, hide content meta and collapse empty article
+body[data-slug="index"] .content-meta {
+  display: none;
+}
+
+body[data-slug="index"] article.popover-hint:empty,
+body[data-slug="index"] article.popover-hint {
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+
+// Remove the double-rule between content and newsletter on index/tags pages
+body[data-slug="index"] .center > hr,
+body[data-slug="tags"] .center > hr,
+body[data-slug="404"] .center > hr {
+  display: none;
+}
+
+// Hide newsletter on 404 page
+body[data-slug="404"] .newsletter-signup {
+  display: none;
+}
+
+// Tighten newsletter spacing on the homepage
+body[data-slug="index"] .newsletter-signup {
+  margin-top: 2rem;
+}
+
+// ============================================================
+// STATUS DOT — Inline with title area
+// ============================================================
+
+.post-meta-cluster {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.25rem;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--gray);
+  letter-spacing: 0.02em;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.status-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.status-label,
+.confidence-tag {
+  text-transform: lowercase;
+}
+
+// ============================================================
+// TAGS — Plain text at the bottom of posts, not pill badges
+// ============================================================
+
+.tags {
+  list-style: none;
+  display: flex;
+  padding-left: 0;
+  gap: 0.8rem;
+  margin: 0;
+  flex-wrap: wrap;
+}
+
+.tags > li {
+  display: inline-block;
+  white-space: nowrap;
+  margin: 0;
+}
+
+a.internal.tag-link {
+  border-radius: 0;
+  background-color: transparent;
+  padding: 0;
+  margin: 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--gray);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  transition: color 0.15s;
+}
+
+a.internal.tag-link::before {
+  content: "#";
+}
+
+a.internal.tag-link:hover {
+  color: var(--secondary);
+}
+
+// Tags in afterBody (below article)
+.page-footer > .tags {
+  margin-bottom: 1.5rem;
+  padding-top: 0.5rem;
+}
+
+// Hide tags on index page
+body[data-slug="index"] .page-footer > .tags {
+  display: none;
+}
+
+// ============================================================
+// INDEX PAGE — Editorial broadsheet
+// ============================================================
+
+body[data-slug="index"] .center {
+  max-width: 680px;
+}
+
+// Page listing with dot leaders
 .page-listing {
-  margin-top: 1rem;
+  margin-top: 0.5rem;
 }
 
 .page-listing h3,
 .section-header {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--gray);
   border-bottom: 1px solid var(--lightgray);
-  padding-bottom: 0.35rem;
-  margin-bottom: 0.9rem;
-  margin-top: 2.5rem;
+  padding-bottom: 0.3rem;
+  margin-bottom: 0.7rem;
+  margin-top: 2.2rem;
   font-family: "IBM Plex Mono", monospace;
+}
+
+.page-listing h3:first-child {
+  margin-top: 0;
 }
 
 .page-listing ul {
@@ -70,11 +472,20 @@ code, pre, kbd {
 }
 
 .page-listing li {
-  padding: 0.22rem 0;
+  padding: 0.2rem 0;
   display: flex;
   align-items: baseline;
-  gap: 0.6rem;
   line-height: 1.4;
+}
+
+// Dot leaders between title and date
+.page-listing li::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px dotted var(--lightgray);
+  margin: 0 0.6rem;
+  position: relative;
+  bottom: 0.25em;
 }
 
 .page-listing li a.internal {
@@ -82,44 +493,49 @@ code, pre, kbd {
   font-family: "EB Garamond", serif;
   color: var(--dark);
   text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.12s, color 0.12s;
+  border-bottom: none;
+  transition: color 0.15s;
   flex-shrink: 0;
+  order: 0;
 }
 
 .page-listing li a.internal:hover {
-  border-bottom-color: var(--secondary);
   color: var(--secondary);
 }
 
-// Reading time — raw data
-.reading-time {
+// Date/meta in the listing
+.page-listing .meta {
   font-family: "IBM Plex Mono", monospace;
-  font-size: 0.78rem;
+  font-size: 0.7rem;
   font-weight: 500;
   color: var(--gray);
-  letter-spacing: 0.01em;
-  margin-bottom: 1.5rem;
-  display: block;
+  flex-shrink: 0;
+  order: 2;
 }
 
 // ============================================================
 // SIDENOTES — Tufte-style margin footnotes
 // ============================================================
 
-@media (min-width: 1200px) {
-  article.popover-hint {
+// Hide the "Footnotes" heading — the sidenotes speak for themselves
+.footnotes h2 {
+  display: none;
+}
+
+@media (min-width: 1000px) {
+  // On post pages, use grid to place sidenotes in the margin
+  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint {
     display: grid;
-    grid-template-columns: 1fr min(68ch, 100%) 280px;
-    column-gap: 2rem;
+    grid-template-columns: min(65ch, 100%) 1fr;
+    column-gap: 2.5rem;
   }
 
-  article.popover-hint > * {
+  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint > * {
+    grid-column: 1;
+  }
+
+  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint .footnotes {
     grid-column: 2;
-  }
-
-  article.popover-hint .footnotes {
-    grid-column: 3;
     grid-row: 1 / 999;
     align-self: start;
     padding-left: 0;
@@ -127,16 +543,16 @@ code, pre, kbd {
     margin-top: 0;
   }
 
-  article.popover-hint .footnotes ol {
+  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint .footnotes ol {
     list-style: none;
     padding: 0;
     margin: 0;
   }
 
-  article.popover-hint .footnotes li {
+  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint .footnotes li {
     font-family: "EB Garamond", serif;
     font-style: italic;
-    font-size: 0.875rem;
+    font-size: 0.85rem;
     line-height: 1.55;
     color: var(--darkgray);
     border-left: 2px solid var(--secondary);
@@ -155,7 +571,7 @@ code, pre, kbd {
   }
 }
 
-@media (max-width: 1199px) {
+@media (max-width: 999px) {
   .footnotes {
     border-top: 1px solid var(--lightgray);
     margin-top: 2.5rem;
@@ -179,7 +595,7 @@ code, pre, kbd {
 }
 
 // ============================================================
-// TAGS PAGE — cookbook / book index style
+// TAGS PAGE — Cookbook / book index style
 // ============================================================
 
 .tag-list {
@@ -216,18 +632,17 @@ code, pre, kbd {
 
 .tag-count {
   font-family: "IBM Plex Mono", monospace;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 500;
   color: var(--gray);
 }
 
 // ============================================================
-// ABOUT PAGE
+// ABOUT PAGE — Intimate, no chrome
 // ============================================================
 
-.page[data-slug="about"] h2,
-article h2.about-heading {
-  font-size: 0.78rem;
+body[data-slug="about"] article h2 {
+  font-size: 0.72rem;
   font-family: "IBM Plex Mono", monospace;
   font-weight: 600;
   letter-spacing: 0.1em;
@@ -239,18 +654,125 @@ article h2.about-heading {
   margin-bottom: 0.8rem;
 }
 
+body[data-slug="about"] article h2:first-of-type {
+  margin-top: 1.5rem;
+}
+
+// Hide anchor icons on about page — they add visual clutter to the fragment style
+body[data-slug="about"] article h2 a {
+  display: none;
+}
+
+// About page doesn't need date/read-time — it's not a blog post
+body[data-slug="about"] .content-meta {
+  display: none;
+}
+
+// On about page, status dot is fine but tighten spacing
+body[data-slug="about"] .post-meta-cluster {
+  margin-bottom: 0.6rem;
+}
+
 article a[href^="mailto:"] {
   font-family: "IBM Plex Mono", monospace;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 500;
   color: var(--secondary);
   text-decoration: none;
   border-bottom: 1px solid transparent;
-  transition: border-color 0.12s;
+  transition: border-color 0.15s;
 }
 
 article a[href^="mailto:"]:hover {
   border-bottom-color: var(--secondary);
+}
+
+// ============================================================
+// TAG PAGES — Fix post titles in tag listings
+// ============================================================
+
+// Post titles under tag sections should not be uppercase
+.section-li h3 {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: -0.01em;
+}
+
+.section-li .section > .tags {
+  margin-top: 0.25rem;
+}
+
+// ============================================================
+// RIGHT SIDEBAR — When visible (post pages), style it minimally
+// ============================================================
+
+.right.sidebar .toc {
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.right.sidebar .toc h3 {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray);
+}
+
+.right.sidebar .backlinks h3 {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray);
+}
+
+// ============================================================
+// COLOPHON / FOOTER
+// ============================================================
+
+footer {
+  border-top: 1px solid var(--lightgray);
+  margin-top: 4rem;
+  padding-top: 1.5rem;
+  padding-bottom: 3rem;
+}
+
+.colophon p {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--gray);
+  letter-spacing: 0.03em;
+  margin: 0;
+  text-align: center;
+}
+
+// ============================================================
+// HORIZONTAL RULE — Editorial divider
+// ============================================================
+
+hr {
+  border: none;
+  border-top: 1px solid var(--lightgray);
+  margin: 2.5rem 0;
+}
+
+// The hr between article and page-footer — make it subtle
+.center > hr {
+  margin: 2rem 0 1.5rem;
+}
+
+// ============================================================
+// SEARCH + DARKMODE — Floating corner controls
+// ============================================================
+
+// The search container/modal needs to be visible when activated
+.search-container {
+  z-index: 999;
 }
 
 // ============================================================
@@ -259,16 +781,15 @@ article a[href^="mailto:"]:hover {
 
 [saved-theme="dark"] {
   pre, code {
-    background: #1e2535;
+    background: #1a2030;
   }
 
   img {
-    opacity: 0.92;
+    opacity: 0.9;
   }
 
   hr {
-    border-color: var(--lightgray);
-    opacity: 0.5;
+    border-color: rgba(255,255,255,0.08);
   }
 }
 
@@ -277,17 +798,25 @@ article a[href^="mailto:"]:hover {
 // ============================================================
 
 @media (max-width: 640px) {
+  .page > #quartz-body {
+    padding: 0 1.25rem;
+  }
+
   body {
     font-size: 1.05rem;
   }
 
-  h1 { font-size: 1.6rem; }
+  h1 { font-size: 1.7rem; }
   h2 { font-size: 1.3rem; }
 
+  .article-title {
+    font-size: 1.7rem;
+  }
+
   .weathered-note {
-    transform: rotate(-0.3deg);
-    margin: 1rem 0 2rem;
-    padding: 1rem 1.1rem;
+    transform: rotate(-0.4deg);
+    margin: 0 0 2rem;
+    padding: 1.3rem 1.4rem;
     max-width: 100%;
   }
 
@@ -296,9 +825,17 @@ article a[href^="mailto:"]:hover {
     gap: 0.1rem;
   }
 
+  .page-listing li::after {
+    display: none;
+  }
+
   .post-meta-cluster {
     flex-wrap: wrap;
     gap: 0.6rem;
+  }
+
+  .right.sidebar {
+    margin-top: 2rem;
   }
 }
 
