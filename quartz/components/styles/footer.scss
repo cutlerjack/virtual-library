@@ -13,3 +13,21 @@ footer {
     margin-top: -1rem;
   }
 }
+
+.colophon-detail {
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  margin: 0;
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.02em;
+  color: var(--gray);
+  transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+}
+
+.colophon:hover .colophon-detail {
+  max-height: 2rem;
+  opacity: 1;
+  margin-top: 0.3rem;
+}
