@@ -88,6 +88,7 @@
 body[data-slug="index"] .page > #quartz-body > .right.sidebar,
 body[data-slug="about"] .page > #quartz-body > .right.sidebar,
 body[data-slug^="tags"] .page > #quartz-body > .right.sidebar,
+body[data-slug="archive"] .page > #quartz-body > .right.sidebar,
 body[data-slug="404"] .page > #quartz-body > .right.sidebar {
   display: none !important;
 }
@@ -243,7 +244,7 @@ code, pre, kbd {
 }
 
 // Drop cap on the first paragraph of post articles
-body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]) {
+body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]):not([data-slug="archive"]) {
   article.popover-hint > p:first-of-type::first-letter {
     font-family: "EB Garamond", Georgia, serif;
     float: left;
@@ -308,6 +309,11 @@ body[data-slug="tags/index"] .article-title {
   display: none;
 }
 
+// On the archive page, hide the default title — the component has its own header
+body[data-slug="archive"] .article-title {
+  display: none;
+}
+
 // ============================================================
 // CONTENT META — Date and reading time, restrained
 // ============================================================
@@ -324,7 +330,8 @@ body[data-slug="tags/index"] .article-title {
 }
 
 // On index, hide content meta and collapse empty article
-body[data-slug="index"] .content-meta {
+body[data-slug="index"] .content-meta,
+body[data-slug="archive"] .content-meta {
   display: none;
 }
 
@@ -335,9 +342,17 @@ body[data-slug="index"] article.popover-hint {
   min-height: 0;
 }
 
+body[data-slug="archive"] article.popover-hint:empty,
+body[data-slug="archive"] article.popover-hint {
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+
 // Remove the double-rule between content and newsletter on index/tags pages
 body[data-slug="index"] .center > hr,
 body[data-slug^="tags"] .center > hr,
+body[data-slug="archive"] .center > hr,
 body[data-slug="404"] .center > hr {
   display: none;
 }
