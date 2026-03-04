@@ -59,6 +59,9 @@ const PostIndex: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponent
                   {status && (
                     <span
                       class="post-shelf-dot"
+                      role="img"
+                      aria-label={`Status: ${status}`}
+                      title={status}
                       style={{
                         backgroundColor:
                           status === "in-progress" ? "#c47a45" : "#5a8a5a",
@@ -211,6 +214,20 @@ PostIndex.css = `
 
 .post-shelf-see-all:hover {
   color: var(--secondary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .post-shelf-item {
+    transition: none;
+  }
+
+  .post-shelf-item:hover {
+    transform: none;
+  }
+
+  .post-shelf-see-all {
+    transition: none;
+  }
 }
 `
 

@@ -50,14 +50,14 @@ const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentPr
 
   const getExcerpt = (post: (typeof posts)[0]) => {
     const desc = post.frontmatter?.description as string | undefined
-    if (desc) return desc.length > 140 ? desc.slice(0, 137) + "..." : desc
+    if (desc) return desc.length > 160 ? desc.slice(0, 160) : desc
     let text = post.description ?? ""
     // Strip footnote reference markers (e.g. "[^1]")
     text = text.replace(/\[\^[\w-]+\]/g, "")
     // Strip leaked footnote patterns (e.g. ".1 ")
     text = text.replace(/\.(\d+)\s/g, ". ")
     text = text.replace(/\s+/g, " ").trim()
-    if (text.length > 140) return text.slice(0, 137) + "..."
+    if (text.length > 160) return text.slice(0, 160)
     return text
   }
 
@@ -92,6 +92,9 @@ const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentPr
                         {status && (
                           <span
                             class="archive-entry-dot"
+                            role="img"
+                            aria-label={`Status: ${status}`}
+                            title={status}
                             style={{
                               backgroundColor:
                                 status === "in-progress" ? "#c47a45" : "#5a8a5a",
@@ -284,6 +287,16 @@ Archive.css = `
 
   .archive-entry {
     gap: 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .archive-entry-title span:first-child {
+    transition: none;
+  }
+
+  .archive-entry:hover .archive-entry-title span:first-child {
+    transform: none;
   }
 }
 `
