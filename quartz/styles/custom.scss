@@ -342,6 +342,13 @@ body[data-slug="404"] .newsletter-signup {
   display: none;
 }
 
+// Random page: minimal chrome
+body[data-slug="random"] article.popover-hint,
+body[data-slug="random"] .center > hr,
+body[data-slug="random"] .newsletter-signup {
+  display: none;
+}
+
 // Tighten newsletter spacing on the homepage
 body[data-slug="index"] .newsletter-signup {
   margin-top: 2rem;

@@ -2,7 +2,6 @@ import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } fro
 import { pathToRoot } from "../util/path"
 
 const RandomRedirect: QuartzComponent = ({ fileData, allFiles }: QuartzComponentProps) => {
-  // Only render on the /random page
   if (fileData.slug !== "random") return null
 
   const baseDir = pathToRoot(fileData.slug!)
@@ -16,6 +15,7 @@ const RandomRedirect: QuartzComponent = ({ fileData, allFiles }: QuartzComponent
         f.slug !== "random" &&
         !String(f.slug).startsWith("tags/"),
     )
+    .filter((f) => f.frontmatter?.title)
     .map((f) => `${baseDir}/${f.slug}`)
 
   const fallback = baseDir || "/"
@@ -23,18 +23,18 @@ const RandomRedirect: QuartzComponent = ({ fileData, allFiles }: QuartzComponent
 
   return (
     <div class="random-redirect">
-      <p>Redirecting to a random post&hellip;</p>
+      <p class="random-message">Let me find you something...</p>
       <script
         dangerouslySetInnerHTML={{
           __html: `
             (function() {
               var posts = ${postsJson};
-              if (posts.length > 0) {
-                var idx = Math.floor(Math.random() * posts.length);
-                window.location.replace(posts[idx]);
-              } else {
-                window.location.replace("${fallback}");
-              }
+              var target = posts.length > 0
+                ? posts[Math.floor(Math.random() * posts.length)]
+                : "${fallback}";
+              setTimeout(function() {
+                window.location.replace(target);
+              }, 1500);
             })();
           `,
         }}
@@ -45,10 +45,21 @@ const RandomRedirect: QuartzComponent = ({ fileData, allFiles }: QuartzComponent
 
 RandomRedirect.css = `
 .random-redirect {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+}
+.random-message {
+  font-family: "EB Garamond", Georgia, serif;
   font-style: italic;
+  font-size: 1.15rem;
   color: var(--gray);
-  font-family: "EB Garamond", serif;
-  margin-top: 3rem;
+  opacity: 0;
+  animation: random-fade-in 0.3s ease 0.1s forwards;
+}
+@keyframes random-fade-in {
+  to { opacity: 1; }
 }
 `
 
