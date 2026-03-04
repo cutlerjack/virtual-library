@@ -13,7 +13,8 @@ const CustomHeader: QuartzComponent = ({ fileData, cfg }: QuartzComponentProps) 
       </a>
       <nav class="site-nav">
         <a href={`${baseDir}/about`}>about</a>
-        <a href={`${baseDir}/tags`}>tags</a>
+        <a href={`${baseDir}/archive`}>archive</a>
+        <a href={`${baseDir}/tags`}>garden</a>
         <a href={`${baseDir}/random`}>random</a>
       </nav>
     </header>
