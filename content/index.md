@@ -1,5 +1,3 @@
 ---
-title: Welcome
+title: Jack Cutler
 ---
-
-Welcome to my Quartz site.
