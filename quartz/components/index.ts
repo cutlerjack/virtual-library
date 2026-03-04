@@ -25,6 +25,7 @@ import Flex from "./Flex"
 import ConditionalRender from "./ConditionalRender"
 import WeatheredNote from "./WeatheredNote"
 import StatusDot from "./StatusDot"
+import CustomHeader from "./CustomHeader"
 
 export {
   ArticleTitle,
@@ -54,4 +55,5 @@ export {
   ConditionalRender,
   WeatheredNote,
   StatusDot,
+  CustomHeader,
 }
