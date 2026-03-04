@@ -49,63 +49,27 @@ document.addEventListener("nav", function() {
 
 WeatheredNote.css = `
   @keyframes note-sway {
-    0%, 100% {
-      transform: rotate(-1deg);
-      box-shadow: 1px 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
-    }
-    25% {
-      transform: rotate(-1.8deg);
-      box-shadow: 2px 3px 12px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04);
-    }
-    75% {
-      transform: rotate(-0.2deg);
-      box-shadow: 0px 2px 6px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.04);
-    }
+    0%, 100% { transform: rotate(-1deg); }
+    25% { transform: rotate(-1.8deg); }
+    75% { transform: rotate(-0.2deg); }
   }
 
   @keyframes note-sway-dark {
-    0%, 100% {
-      transform: rotate(-1deg);
-      box-shadow: 1px 2px 8px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(255,255,255,0.04);
-    }
-    25% {
-      transform: rotate(-1.8deg);
-      box-shadow: 2px 3px 12px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(255,255,255,0.04);
-    }
-    75% {
-      transform: rotate(-0.2deg);
-      box-shadow: 0px 2px 6px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(255,255,255,0.04);
-    }
+    0%, 100% { transform: rotate(-1deg); }
+    25% { transform: rotate(-1.8deg); }
+    75% { transform: rotate(-0.2deg); }
   }
 
   @keyframes note-sway-mobile {
-    0%, 100% {
-      transform: rotate(-0.6deg);
-      box-shadow: 1px 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
-    }
-    25% {
-      transform: rotate(-1.2deg);
-      box-shadow: 2px 3px 10px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.04);
-    }
-    75% {
-      transform: rotate(0deg);
-      box-shadow: 0px 2px 6px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.04);
-    }
+    0%, 100% { transform: rotate(-0.6deg); }
+    25% { transform: rotate(-1.2deg); }
+    75% { transform: rotate(0deg); }
   }
 
   @keyframes note-sway-mobile-dark {
-    0%, 100% {
-      transform: rotate(-0.6deg);
-      box-shadow: 1px 2px 8px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(255,255,255,0.04);
-    }
-    25% {
-      transform: rotate(-1.2deg);
-      box-shadow: 2px 3px 10px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(255,255,255,0.04);
-    }
-    75% {
-      transform: rotate(0deg);
-      box-shadow: 0px 2px 6px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(255,255,255,0.04);
-    }
+    0%, 100% { transform: rotate(-0.6deg); }
+    25% { transform: rotate(-1.2deg); }
+    75% { transform: rotate(0deg); }
   }
 
   .weathered-note {
@@ -122,7 +86,8 @@ WeatheredNote.css = `
     background: var(--note-bg, #ece5d5);
     border: none;
     cursor: default;
-    transition: box-shadow 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
+    filter: drop-shadow(1px 2px 6px rgba(0,0,0,0.08));
+    transition: filter 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
 
     /* Torn / rough edge via clip-path */
     clip-path: polygon(
@@ -152,15 +117,11 @@ WeatheredNote.css = `
   .weathered-note:hover {
     animation-play-state: paused;
     transform: rotate(-0.3deg) translateY(-2px);
-    box-shadow:
-      2px 4px 16px rgba(0,0,0,0.1),
-      0 0 0 0.5px rgba(0,0,0,0.04);
+    filter: drop-shadow(2px 4px 10px rgba(0,0,0,0.13));
   }
 
   [saved-theme="dark"] .weathered-note:hover {
-    box-shadow:
-      2px 4px 16px rgba(0,0,0,0.3),
-      0 0 0 0.5px rgba(255,255,255,0.04);
+    filter: drop-shadow(2px 4px 10px rgba(0,0,0,0.35));
   }
 
   .weathered-note-pin {
@@ -195,6 +156,7 @@ WeatheredNote.css = `
   [saved-theme="dark"] .weathered-note {
     color: #b8b0a0;
     animation: note-sway-dark 6s ease-in-out infinite;
+    filter: drop-shadow(1px 2px 6px rgba(0,0,0,0.25));
   }
 
   [saved-theme="dark"] .weathered-note::before {
@@ -206,12 +168,10 @@ WeatheredNote.css = `
     .weathered-note {
       animation: none;
       transform: rotate(-1deg);
-      box-shadow: 1px 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
     }
     [saved-theme="dark"] .weathered-note {
       animation: none;
       transform: rotate(-1deg);
-      box-shadow: 1px 2px 8px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(255,255,255,0.04);
     }
   }
 
@@ -232,12 +192,10 @@ WeatheredNote.css = `
     .weathered-note {
       animation: none;
       transform: rotate(-0.4deg);
-      box-shadow: 1px 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
     }
     [saved-theme="dark"] .weathered-note {
       animation: none;
       transform: rotate(-0.4deg);
-      box-shadow: 1px 2px 8px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(255,255,255,0.04);
     }
   }
 `

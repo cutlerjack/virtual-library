@@ -137,7 +137,6 @@ PostIndex.css = `
 .post-shelf-cover {
   aspect-ratio: 2 / 3;
   overflow: hidden;
-  border-radius: 3px;
 }
 
 .post-shelf-cover img {
