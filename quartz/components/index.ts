@@ -27,6 +27,7 @@ import WeatheredNote from "./WeatheredNote"
 import StatusDot from "./StatusDot"
 import CustomHeader from "./CustomHeader"
 import RandomRedirect from "./RandomRedirect"
+import NewsletterSignup from "./NewsletterSignup"
 
 export {
   ArticleTitle,
@@ -58,4 +59,5 @@ export {
   StatusDot,
   CustomHeader,
   RandomRedirect,
+  NewsletterSignup,
 }
