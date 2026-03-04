@@ -6,6 +6,8 @@ confidence: likely
 tags:
   - animals
   - systems
+cover: /static/covers/on-migration.jpg
+featured: true
 ---
 
 The Arctic tern flies from pole to pole and back again each year -- roughly 44,000 miles. Over its lifetime, it covers a distance equivalent to three round trips to the moon. It weighs less than a coffee cup. There is no reasonable explanation for why this should work, and yet it does, every year, without fail.

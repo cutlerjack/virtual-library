@@ -6,7 +6,8 @@ confidence: likely
 tags:
   - craft
   - systems
-cover: /static/covers/fermentation.svg
+cover: /static/covers/on-fermentation.jpg
+featured: true
 ---
 
 Fermentation is controlled decay. You create the conditions -- salt, temperature, time -- and then you step back and let the microbes do their work. It requires a kind of trust that modern cooking, with its precise temperatures and instant results, has largely abandoned.

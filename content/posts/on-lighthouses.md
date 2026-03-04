@@ -6,7 +6,8 @@ confidence: likely
 tags:
   - engineering
   - history
-cover: /static/covers/lighthouses.svg
+cover: /static/covers/on-lighthouses.jpg
+featured: true
 ---
 
 A lighthouse is the most generous piece of infrastructure ever devised. It serves everyone and belongs to no one. It does not ask who you are or where you are going. It simply shines, and you either need it or you do not.

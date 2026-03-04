@@ -6,6 +6,7 @@ confidence: likely
 tags:
   - craft
   - history
+cover: /static/covers/on-stone-walls.jpg
 ---
 
 A dry stone wall uses no mortar. Each stone is chosen for its shape and placed so that gravity and friction do the work of holding things together. A good waller can read a pile of rubble the way a typesetter reads a case of letters -- finding the right piece for the right gap without conscious calculation.

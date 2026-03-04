@@ -6,6 +6,8 @@ confidence: likely
 tags:
   - animals
   - evolution
+cover: /static/covers/on-armadillos.jpg
+featured: true
 ---
 
 The armadillo is one of the most unusual mammals alive today.[^1] Few animals have undergone such dramatic changes over millions of years.[^2] They roll themselves into a ball when threatened, wear armor made of bone, and dig burrows with a mechanical efficiency that would impress any engineer.

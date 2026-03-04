@@ -6,7 +6,8 @@ confidence: likely
 tags:
   - systems
   - ecology
-cover: /static/covers/soil.svg
+cover: /static/covers/on-soil.jpg
+featured: true
 ---
 
 An inch of topsoil takes roughly five hundred years to form. We can lose it in a single season of careless tillage. This asymmetry should trouble us more than it does.

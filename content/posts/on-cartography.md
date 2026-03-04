@@ -6,7 +6,8 @@ confidence: likely
 tags:
   - history
   - craft
-cover: /static/covers/cartography.svg
+cover: /static/covers/on-cartography.jpg
+featured: true
 ---
 
 Every map is a lie agreed upon. The Mercator projection inflates Greenland to the size of Africa; the Peters projection corrects this but distorts everything else. You cannot flatten a sphere without breaking something. The cartographer's job is to choose which distortion serves the traveler best.

@@ -6,7 +6,8 @@ confidence: likely
 tags:
   - engineering
   - history
-cover: /static/covers/cathedrals.svg
+cover: /static/covers/on-cathedrals.jpg
+featured: true
 ---
 
 A cathedral is a bet placed across generations. The mason who carved the north transept at Chartres knew he would never see the spire completed; he cut the stone anyway, with the same care as if he were building his own house. More care, probably.

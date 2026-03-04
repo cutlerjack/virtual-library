@@ -5,6 +5,7 @@ status: in-progress
 confidence: likely
 tags:
   - craft
+cover: /static/covers/on-whittling.jpg
 ---
 
 Whittling is subtractive. You begin with more than you need and remove what does not belong. There is no undo, no revision history. Every cut is a commitment, and the wood remembers each one.

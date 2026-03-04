@@ -6,7 +6,7 @@ confidence: likely
 tags:
   - engineering
   - history
-cover: /static/covers/bridges.svg
+cover: /static/covers/on-bridges.jpg
 ---
 
 A bridge is an argument against gravity, made in stone or steel or rope. Every bridge begins as an act of unreasonable optimism: *we can get across*. The engineers work out the details later.

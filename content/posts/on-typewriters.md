@@ -6,7 +6,8 @@ confidence: likely
 tags:
   - craft
   - engineering
-cover: /static/covers/typewriters.svg
+cover: /static/covers/on-typewriters.jpg
+featured: true
 ---
 
 A typewriter enforces a discipline that no word processor can replicate. Each keystroke is permanent, each line irreversible. You think before you type, or you waste paper. This constraint, which seems like a limitation, is actually a gift -- it forces clarity before expression.
