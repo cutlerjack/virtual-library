@@ -252,3 +252,22 @@ article a[href^="mailto:"] {
 article a[href^="mailto:"]:hover {
   border-bottom-color: var(--secondary);
 }
+
+// ============================================================
+// DARK MODE REFINEMENTS
+// ============================================================
+
+[saved-theme="dark"] {
+  pre, code {
+    background: #1e2535;
+  }
+
+  img {
+    opacity: 0.92;
+  }
+
+  hr {
+    border-color: var(--lightgray);
+    opacity: 0.5;
+  }
+}
