@@ -14,7 +14,6 @@ const CustomHeader: QuartzComponent = ({ fileData, cfg }: QuartzComponentProps) 
       <nav class="site-nav">
         <a href={`${baseDir}/about`}>about</a>
         <a href={`${baseDir}/tags`}>tags</a>
-        <a href={`${baseDir}/graph`}>graph</a>
         <a href={`${baseDir}/random`}>random</a>
       </nav>
     </header>
@@ -26,14 +25,17 @@ CustomHeader.css = `
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  padding: 1.75rem 0 1.1rem;
+  padding: 2rem 0 0.85rem;
   border-bottom: 1px solid var(--lightgray);
-  margin-bottom: 3rem;
+  margin-bottom: 2.5rem;
+  max-width: 780px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .site-title {
   font-family: "EB Garamond", Georgia, serif;
-  font-size: 1.15rem;
+  font-size: 1.05rem;
   font-weight: 600;
   color: var(--dark);
   text-decoration: none;
@@ -46,36 +48,43 @@ CustomHeader.css = `
 
 .site-nav {
   display: flex;
-  gap: 1.75rem;
+  gap: 1.5rem;
   align-items: baseline;
 }
 
 .site-nav a {
   font-family: "IBM Plex Mono", monospace;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 500;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   color: var(--gray);
   text-decoration: none;
-  transition: color 0.12s;
+  text-transform: lowercase;
+  transition: color 0.15s;
 }
 
 .site-nav a:hover {
-  color: var(--secondary);
+  color: var(--dark);
+}
+
+/* Override the Quartz header wrapper so our header renders properly */
+header:has(.site-header) {
+  display: block !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
 }
 
 @media (max-width: 640px) {
   .site-header {
-    flex-direction: column;
-    gap: 0.9rem;
-    padding: 1.25rem 0 0.9rem;
+    padding: 1.25rem 0 0.65rem;
+    margin-bottom: 1.75rem;
   }
   .site-nav {
-    gap: 1.1rem;
-    flex-wrap: wrap;
+    gap: 1rem;
   }
   .site-nav a {
-    font-size: 0.8rem;
+    font-size: 0.72rem;
   }
 }
 `

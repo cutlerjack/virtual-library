@@ -7,7 +7,9 @@ interface TagData {
 }
 
 const TagGarden: QuartzComponent = ({ fileData, allFiles }: QuartzComponentProps) => {
-  if (fileData.slug !== "tags") return null
+  const slug = fileData.slug ?? ""
+  const isTagsIndex = slug === "tags" || slug === "tags/" || slug === "tags/index"
+  if (!isTagsIndex) return null
 
   // Filter to real content posts
   const contentFiles = allFiles.filter((f) => {
@@ -65,14 +67,14 @@ const TagGarden: QuartzComponent = ({ fileData, allFiles }: QuartzComponentProps
   return (
     <div class="tag-garden-container">
       <canvas class="tag-garden-canvas" />
-      <span class="tag-garden-count">{totalPosts} seedlings so far.</span>
+      <span class="tag-garden-count">{totalPosts} {totalPosts === 1 ? "seedling" : "seedlings"} so far.</span>
       <div class="tag-garden-tooltip">
         <div class="tag-garden-tooltip-title" />
         <div class="tag-garden-tooltip-links" />
       </div>
       <div class="tag-garden-mobile">
         <span class="tag-garden-count" style={{ position: "static", transform: "none", textAlign: "center", display: "block", marginBottom: "1.5rem" }}>
-          {totalPosts} seedlings so far.
+          {totalPosts} {totalPosts === 1 ? "seedling" : "seedlings"} so far.
         </span>
         <ul class="tag-garden-mobile-list">
           {tagData.map((td) => {
@@ -166,23 +168,25 @@ TagGarden.afterDOMLoaded = `
     var n = tagData.length;
     if (n === 0) return;
 
-    var padding = 40;
-    var usableW = w - padding * 2;
+    var padding = 60;
+    // For few tags, don't spread across the full width — cluster more centrally
+    var maxSpread = Math.min(w - padding * 2, n * 120);
+    var startX = (w - maxSpread) / 2;
     var baseY = h - 30; // ground line
 
     for (var i = 0; i < n; i++) {
       var td = tagData[i];
       var rng = seededRandom(hashStr(td.tagName));
 
-      // Distribute plants across canvas width with some randomness
+      // Distribute plants across available spread
       var baseX;
       if (n === 1) {
         baseX = w / 2;
       } else {
-        baseX = padding + (usableW / (n - 1)) * i;
+        baseX = startX + (maxSpread / (n - 1)) * i;
       }
       // Add slight horizontal jitter
-      baseX += (rng() - 0.5) * Math.min(usableW / n * 0.3, 20);
+      baseX += (rng() - 0.5) * Math.min(maxSpread / n * 0.3, 20);
       baseX = Math.max(padding, Math.min(w - padding, baseX));
 
       var postCount = td.posts.length;
