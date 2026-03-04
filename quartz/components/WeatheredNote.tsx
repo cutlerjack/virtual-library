@@ -4,31 +4,33 @@ const WeatheredNote: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
   if (fileData.slug !== "index") return null
 
   return (
-    <div class="weathered-note">
-      <div class="weathered-note-pin" aria-hidden="true">
-        {/* Pushpin - circle with center dot */}
-        <svg class="pin-icon pin-pushpin" width="12" height="12" viewBox="0 0 12 12" fill="none">
-          <circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.2" opacity="0.4" />
-          <circle cx="6" cy="6" r="1.5" fill="currentColor" opacity="0.35" />
-        </svg>
-        {/* Paperclip */}
-        <svg class="pin-icon pin-paperclip" width="12" height="14" viewBox="0 0 12 14" fill="none">
-          <path d="M3 12V4a3 3 0 0 1 6 0v6a1.5 1.5 0 0 1-3 0V5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity="0.4" />
-        </svg>
-        {/* Thumbtack */}
-        <svg class="pin-icon pin-thumbtack" width="12" height="14" viewBox="0 0 12 14" fill="none">
-          <circle cx="6" cy="4" r="3" stroke="currentColor" stroke-width="1.1" opacity="0.4" />
-          <line x1="6" y1="7" x2="6" y2="13" stroke="currentColor" stroke-width="1.1" opacity="0.35" stroke-linecap="round" />
-        </svg>
-        {/* Tape strip */}
-        <svg class="pin-icon pin-tape" width="20" height="8" viewBox="0 0 20 8" fill="none">
-          <rect x="0.5" y="1" width="19" height="6" rx="0.5" stroke="currentColor" stroke-width="0.8" opacity="0.25" fill="currentColor" fill-opacity="0.06" />
-        </svg>
-      </div>
-      <div class="weathered-note-text">
-        This is a place I'm building as I go. Everything here is subject
-        to change, revision, and second-guessing. I write about whatever
-        I cannot stop thinking about. You're welcome to look around.
+    <div class="weathered-note-wrap">
+      <div class="weathered-note">
+        <div class="weathered-note-pin" aria-hidden="true">
+          {/* Pushpin - circle with center dot */}
+          <svg class="pin-icon pin-pushpin" width="12" height="12" viewBox="0 0 12 12" fill="none">
+            <circle cx="6" cy="6" r="4" stroke="currentColor" stroke-width="1.2" opacity="0.4" />
+            <circle cx="6" cy="6" r="1.5" fill="currentColor" opacity="0.35" />
+          </svg>
+          {/* Paperclip */}
+          <svg class="pin-icon pin-paperclip" width="12" height="14" viewBox="0 0 12 14" fill="none">
+            <path d="M3 12V4a3 3 0 0 1 6 0v6a1.5 1.5 0 0 1-3 0V5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" opacity="0.4" />
+          </svg>
+          {/* Thumbtack */}
+          <svg class="pin-icon pin-thumbtack" width="12" height="14" viewBox="0 0 12 14" fill="none">
+            <circle cx="6" cy="4" r="3" stroke="currentColor" stroke-width="1.1" opacity="0.4" />
+            <line x1="6" y1="7" x2="6" y2="13" stroke="currentColor" stroke-width="1.1" opacity="0.35" stroke-linecap="round" />
+          </svg>
+          {/* Tape strip */}
+          <svg class="pin-icon pin-tape" width="20" height="8" viewBox="0 0 20 8" fill="none">
+            <rect x="0.5" y="1" width="19" height="6" rx="0.5" stroke="currentColor" stroke-width="0.8" opacity="0.25" fill="currentColor" fill-opacity="0.06" />
+          </svg>
+        </div>
+        <div class="weathered-note-text">
+          This is a place I'm building as I go. Everything here is subject
+          to change, revision, and second-guessing. I write about whatever
+          I cannot stop thinking about. You're welcome to look around.
+        </div>
       </div>
     </div>
   )
@@ -72,6 +74,11 @@ WeatheredNote.css = `
     75% { transform: rotate(0deg); }
   }
 
+  .weathered-note-wrap {
+    filter: drop-shadow(1px 2px 6px rgba(0,0,0,0.08));
+    transition: filter 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
+  }
+
   .weathered-note {
     position: relative;
     animation: note-sway 6s ease-in-out infinite;
@@ -86,8 +93,6 @@ WeatheredNote.css = `
     background: var(--note-bg, #ece5d5);
     border: none;
     cursor: default;
-    filter: drop-shadow(1px 2px 6px rgba(0,0,0,0.08));
-    transition: filter 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
 
     /* Torn / rough edge via clip-path */
     clip-path: polygon(
@@ -117,10 +122,13 @@ WeatheredNote.css = `
   .weathered-note:hover {
     animation-play-state: paused;
     transform: rotate(-0.3deg) translateY(-2px);
+  }
+
+  .weathered-note-wrap:hover {
     filter: drop-shadow(2px 4px 10px rgba(0,0,0,0.13));
   }
 
-  [saved-theme="dark"] .weathered-note:hover {
+  [saved-theme="dark"] .weathered-note-wrap:hover {
     filter: drop-shadow(2px 4px 10px rgba(0,0,0,0.35));
   }
 
@@ -153,10 +161,13 @@ WeatheredNote.css = `
     --note-bg: #1e2433;
   }
 
+  [saved-theme="dark"] .weathered-note-wrap {
+    filter: drop-shadow(1px 2px 6px rgba(0,0,0,0.25));
+  }
+
   [saved-theme="dark"] .weathered-note {
     color: #b8b0a0;
     animation: note-sway-dark 6s ease-in-out infinite;
-    filter: drop-shadow(1px 2px 6px rgba(0,0,0,0.25));
   }
 
   [saved-theme="dark"] .weathered-note::before {
