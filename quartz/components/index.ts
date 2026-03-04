@@ -35,6 +35,7 @@ import CursorTrail from "./CursorTrail"
 import FootnoteLink from "./FootnoteLink"
 import InProgressAnimation from "./InProgressAnimation"
 import TagGarden from "./TagGarden"
+import Archive from "./Archive"
 
 export {
   ArticleTitle,
@@ -74,4 +75,5 @@ export {
   FootnoteLink,
   InProgressAnimation,
   TagGarden,
+  Archive,
 }

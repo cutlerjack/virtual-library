@@ -25,6 +25,7 @@ export const defaultContentPageLayout: PageLayout = {
     Component.InProgressAnimation(),
     Component.WeatheredNote(),
     Component.PostIndex(),
+    Component.Archive(),
     Component.ArticleTitle(),
     Component.StatusDot(),
     Component.ContentMeta(),
