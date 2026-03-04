@@ -177,3 +177,46 @@ code, pre, kbd {
     padding-left: 0.65rem;
   }
 }
+
+// ============================================================
+// TAGS PAGE — cookbook / book index style
+// ============================================================
+
+.tag-list {
+  column-count: 2;
+  column-gap: 3rem;
+  margin-top: 1.5rem;
+}
+
+@media (max-width: 640px) {
+  .tag-list {
+    column-count: 1;
+  }
+}
+
+.tag-entry {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.18rem 0;
+  border-bottom: 1px dotted var(--lightgray);
+  break-inside: avoid;
+}
+
+.tag-entry a {
+  font-family: "EB Garamond", serif;
+  font-size: 0.95rem;
+  color: var(--dark);
+  text-decoration: none;
+}
+
+.tag-entry a:hover {
+  color: var(--secondary);
+}
+
+.tag-count {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--gray);
+}
