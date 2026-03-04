@@ -26,6 +26,7 @@ import ConditionalRender from "./ConditionalRender"
 import WeatheredNote from "./WeatheredNote"
 import StatusDot from "./StatusDot"
 import CustomHeader from "./CustomHeader"
+import RandomRedirect from "./RandomRedirect"
 
 export {
   ArticleTitle,
@@ -56,4 +57,5 @@ export {
   WeatheredNote,
   StatusDot,
   CustomHeader,
+  RandomRedirect,
 }
