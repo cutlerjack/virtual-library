@@ -102,3 +102,78 @@ code, pre, kbd {
   margin-bottom: 1.5rem;
   display: block;
 }
+
+// ============================================================
+// SIDENOTES — Tufte-style margin footnotes
+// ============================================================
+
+@media (min-width: 1200px) {
+  article.popover-hint {
+    display: grid;
+    grid-template-columns: 1fr min(68ch, 100%) 280px;
+    column-gap: 2rem;
+  }
+
+  article.popover-hint > * {
+    grid-column: 2;
+  }
+
+  article.popover-hint .footnotes {
+    grid-column: 3;
+    grid-row: 1 / 999;
+    align-self: start;
+    padding-left: 0;
+    border-top: none;
+    margin-top: 0;
+  }
+
+  article.popover-hint .footnotes ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  article.popover-hint .footnotes li {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: var(--darkgray);
+    border-left: 2px solid var(--secondary);
+    padding-left: 0.65rem;
+    margin-bottom: 1.25rem;
+    opacity: 0.85;
+  }
+
+  sup a[href^="#user-content-fn"] {
+    font-size: 0.7em;
+    color: var(--secondary);
+    text-decoration: none;
+    vertical-align: super;
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 500;
+  }
+}
+
+@media (max-width: 1199px) {
+  .footnotes {
+    border-top: 1px solid var(--lightgray);
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+  }
+
+  .footnotes ol {
+    padding-left: 1rem;
+  }
+
+  .footnotes li {
+    font-family: "EB Garamond", serif;
+    font-style: italic;
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--gray);
+    margin-bottom: 0.75rem;
+    border-left: 2px solid var(--secondary);
+    padding-left: 0.65rem;
+  }
+}
