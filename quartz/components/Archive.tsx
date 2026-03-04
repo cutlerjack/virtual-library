@@ -191,7 +191,7 @@ Archive.css = `
   flex-shrink: 0;
   aspect-ratio: 2 / 3;
   overflow: hidden;
-  border: 1px solid var(--lightgray);
+  border-radius: 2px;
 }
 
 .archive-entry-thumb img {

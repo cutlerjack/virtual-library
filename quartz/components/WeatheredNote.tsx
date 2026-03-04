@@ -50,67 +50,67 @@ document.addEventListener("nav", function() {
 WeatheredNote.css = `
   @keyframes note-sway {
     0%, 100% {
-      transform: rotate(-0.8deg);
+      transform: rotate(-1deg);
       box-shadow: 1px 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
     }
     25% {
-      transform: rotate(-1.1deg);
-      box-shadow: 2px 2px 10px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.04);
+      transform: rotate(-1.8deg);
+      box-shadow: 2px 3px 12px rgba(0,0,0,0.08), 0 0 0 0.5px rgba(0,0,0,0.04);
     }
     75% {
-      transform: rotate(-0.5deg);
-      box-shadow: 0px 2px 7px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(0,0,0,0.04);
+      transform: rotate(-0.2deg);
+      box-shadow: 0px 2px 6px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.04);
     }
   }
 
   @keyframes note-sway-dark {
     0%, 100% {
-      transform: rotate(-0.8deg);
+      transform: rotate(-1deg);
       box-shadow: 1px 2px 8px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(255,255,255,0.04);
     }
     25% {
-      transform: rotate(-1.1deg);
-      box-shadow: 2px 2px 10px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(255,255,255,0.04);
+      transform: rotate(-1.8deg);
+      box-shadow: 2px 3px 12px rgba(0,0,0,0.28), 0 0 0 0.5px rgba(255,255,255,0.04);
     }
     75% {
-      transform: rotate(-0.5deg);
-      box-shadow: 0px 2px 7px rgba(0,0,0,0.15), 0 0 0 0.5px rgba(255,255,255,0.04);
+      transform: rotate(-0.2deg);
+      box-shadow: 0px 2px 6px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(255,255,255,0.04);
     }
   }
 
   @keyframes note-sway-mobile {
     0%, 100% {
-      transform: rotate(-0.4deg);
+      transform: rotate(-0.6deg);
       box-shadow: 1px 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
     }
     25% {
-      transform: rotate(-0.6deg);
-      box-shadow: 2px 2px 10px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.04);
+      transform: rotate(-1.2deg);
+      box-shadow: 2px 3px 10px rgba(0,0,0,0.07), 0 0 0 0.5px rgba(0,0,0,0.04);
     }
     75% {
-      transform: rotate(-0.2deg);
-      box-shadow: 0px 2px 7px rgba(0,0,0,0.05), 0 0 0 0.5px rgba(0,0,0,0.04);
+      transform: rotate(0deg);
+      box-shadow: 0px 2px 6px rgba(0,0,0,0.04), 0 0 0 0.5px rgba(0,0,0,0.04);
     }
   }
 
   @keyframes note-sway-mobile-dark {
     0%, 100% {
-      transform: rotate(-0.4deg);
+      transform: rotate(-0.6deg);
       box-shadow: 1px 2px 8px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(255,255,255,0.04);
     }
     25% {
-      transform: rotate(-0.6deg);
-      box-shadow: 2px 2px 10px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(255,255,255,0.04);
+      transform: rotate(-1.2deg);
+      box-shadow: 2px 3px 10px rgba(0,0,0,0.25), 0 0 0 0.5px rgba(255,255,255,0.04);
     }
     75% {
-      transform: rotate(-0.2deg);
-      box-shadow: 0px 2px 7px rgba(0,0,0,0.15), 0 0 0 0.5px rgba(255,255,255,0.04);
+      transform: rotate(0deg);
+      box-shadow: 0px 2px 6px rgba(0,0,0,0.12), 0 0 0 0.5px rgba(255,255,255,0.04);
     }
   }
 
   .weathered-note {
     position: relative;
-    animation: note-sway 10s ease-in-out infinite;
+    animation: note-sway 6s ease-in-out infinite;
     max-width: 48ch;
     margin: 0 auto 3rem;
     padding: 1.6rem 1.8rem 1.5rem;
@@ -194,7 +194,7 @@ WeatheredNote.css = `
 
   [saved-theme="dark"] .weathered-note {
     color: #b8b0a0;
-    animation: note-sway-dark 10s ease-in-out infinite;
+    animation: note-sway-dark 6s ease-in-out infinite;
   }
 
   [saved-theme="dark"] .weathered-note::before {
@@ -205,26 +205,26 @@ WeatheredNote.css = `
   @media (prefers-reduced-motion: reduce) {
     .weathered-note {
       animation: none;
-      transform: rotate(-0.8deg);
+      transform: rotate(-1deg);
       box-shadow: 1px 2px 8px rgba(0,0,0,0.06), 0 0 0 0.5px rgba(0,0,0,0.04);
     }
     [saved-theme="dark"] .weathered-note {
       animation: none;
-      transform: rotate(-0.8deg);
+      transform: rotate(-1deg);
       box-shadow: 1px 2px 8px rgba(0,0,0,0.2), 0 0 0 0.5px rgba(255,255,255,0.04);
     }
   }
 
   @media (max-width: 640px) {
     .weathered-note {
-      animation: note-sway-mobile 10s ease-in-out infinite;
+      animation: note-sway-mobile 6s ease-in-out infinite;
       margin: 0 0 2rem;
       padding: 1.3rem 1.4rem;
       max-width: 100%;
       font-size: 0.95rem;
     }
     [saved-theme="dark"] .weathered-note {
-      animation: note-sway-mobile-dark 10s ease-in-out infinite;
+      animation: note-sway-mobile-dark 6s ease-in-out infinite;
     }
   }
 
