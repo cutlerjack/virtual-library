@@ -5,20 +5,28 @@ const FootnoteLink: QuartzComponent = () => {
 }
 
 FootnoteLink.afterDOMLoaded = `
+document.addEventListener("nav", function() {
   document.querySelectorAll('a[href^="#user-content-fn-"]').forEach(function(link) {
     var fnId = link.getAttribute('href').replace('#user-content-fn-', '');
     var sidenote = document.querySelector('.sidenote[data-fn="' + fnId + '"]');
     var footnoteLi = document.getElementById('user-content-fn-' + fnId);
 
-    link.addEventListener('mouseenter', function() {
+    function onEnter() {
       if (sidenote) sidenote.classList.add('sidenote-highlight');
       if (footnoteLi) footnoteLi.classList.add('sidenote-highlight');
-    });
-    link.addEventListener('mouseleave', function() {
+    }
+    function onLeave() {
       if (sidenote) sidenote.classList.remove('sidenote-highlight');
       if (footnoteLi) footnoteLi.classList.remove('sidenote-highlight');
+    }
+    link.addEventListener('mouseenter', onEnter);
+    link.addEventListener('mouseleave', onLeave);
+    window.addCleanup(function() {
+      link.removeEventListener('mouseenter', onEnter);
+      link.removeEventListener('mouseleave', onLeave);
     });
   });
+});
 `
 
 export default (() => FootnoteLink) satisfies QuartzComponentConstructor

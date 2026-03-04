@@ -5,6 +5,7 @@ const InProgressAnimation: QuartzComponent = () => {
 }
 
 InProgressAnimation.afterDOMLoaded = `
+document.addEventListener("nav", function() {
   if (document.body.getAttribute('data-slug') !== 'about') return;
 
   var emElements = document.querySelectorAll('article em');
@@ -27,6 +28,7 @@ InProgressAnimation.afterDOMLoaded = `
     span.style.animationDelay = (idx * 1.6) + 's';
     target.appendChild(span);
   });
+});
 `
 
 InProgressAnimation.css = `

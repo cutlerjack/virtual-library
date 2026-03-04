@@ -35,6 +35,7 @@ const WeatheredNote: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
 }
 
 WeatheredNote.afterDOMLoaded = `
+document.addEventListener("nav", function() {
   const pins = document.querySelectorAll('.pin-icon');
   if (pins.length === 0) return;
   const today = new Date();
@@ -43,6 +44,7 @@ WeatheredNote.afterDOMLoaded = `
   pins.forEach((p, i) => {
     p.style.display = i === idx ? 'block' : 'none';
   });
+});
 `
 
 WeatheredNote.css = `

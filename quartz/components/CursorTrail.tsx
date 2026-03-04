@@ -5,12 +5,17 @@ const CursorTrail: QuartzComponent = () => {
 }
 
 CursorTrail.afterDOMLoaded = `
+(function() {
+  // CursorTrail is a persistent global overlay — initialize once, never tear down.
+  // Guard against duplicate initialization on SPA nav.
+  if (document.getElementById('cursor-trail-canvas')) return;
   if ('ontouchstart' in window) return;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
   const FADE_MS = 400;
   const dots = [];
   const canvas = document.createElement('canvas');
+  canvas.id = 'cursor-trail-canvas';
   canvas.style.cssText = 'position:fixed;inset:0;pointer-events:none;z-index:9997;';
   document.body.appendChild(canvas);
   const ctx = canvas.getContext('2d');
@@ -54,9 +59,8 @@ CursorTrail.afterDOMLoaded = `
   }
   requestAnimationFrame(draw);
 
-  window.addCleanup?.(() => {
-    canvas.remove();
-  });
+  // Do NOT register addCleanup — this canvas persists across all SPA navigations.
+})();
 `
 
 export default (() => CursorTrail) satisfies QuartzComponentConstructor

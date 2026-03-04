@@ -11,6 +11,7 @@ const ReadingProgress: QuartzComponent = ({ fileData }: QuartzComponentProps) =>
 }
 
 ReadingProgress.afterDOMLoaded = `
+document.addEventListener("nav", function() {
   const bar = document.getElementById('reading-progress');
   if (!bar) return;
 
@@ -28,6 +29,11 @@ ReadingProgress.afterDOMLoaded = `
 
   window.addEventListener('scroll', updateProgress, { passive: true });
   updateProgress();
+
+  window.addCleanup(function() {
+    window.removeEventListener('scroll', updateProgress);
+  });
+});
 `
 
 ReadingProgress.css = `

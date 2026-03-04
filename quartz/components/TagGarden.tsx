@@ -100,7 +100,7 @@ const TagGarden: QuartzComponent = ({ fileData, allFiles }: QuartzComponentProps
 }
 
 TagGarden.afterDOMLoaded = `
-(function() {
+document.addEventListener("nav", function() {
   var dataEl = document.getElementById("tag-garden-data");
   if (!dataEl) return;
   var canvas = document.querySelector(".tag-garden-canvas");
@@ -498,7 +498,7 @@ TagGarden.afterDOMLoaded = `
       particles = [];
     });
   }
-})();
+});
 `
 
 export default (() => TagGarden) satisfies QuartzComponentConstructor
