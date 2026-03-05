@@ -118,11 +118,13 @@ PostIndex.css = `
 .post-shelf-item {
   display: block;
   text-decoration: none;
+  background: none !important;
   background-image: none !important;
   color: var(--dark);
   border-bottom: none !important;
+  border-radius: 0 !important;
+  padding: 0 !important;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  border-radius: 4px;
 }
 
 .post-shelf-item:hover {
