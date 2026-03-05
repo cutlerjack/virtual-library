@@ -15,23 +15,42 @@ document.addEventListener("nav", function() {
   const bar = document.getElementById('reading-progress');
   if (!bar) return;
 
+  // Check if we're on desktop with margin decorations
+  var isWide = window.matchMedia('(min-width: 1000px)').matches;
+
   function updateProgress() {
-    const article = document.querySelector('article');
+    var article = document.querySelector('article');
     if (!article) return;
-    const rect = article.getBoundingClientRect();
-    const articleTop = rect.top + window.scrollY;
-    const articleHeight = rect.height;
-    const windowHeight = window.innerHeight;
-    const scrolled = window.scrollY - articleTop + windowHeight * 0.3;
-    const progress = Math.min(Math.max(scrolled / articleHeight, 0), 1);
-    bar.style.transform = 'scaleX(' + progress + ')';
+    var rect = article.getBoundingClientRect();
+    var articleTop = rect.top + window.scrollY;
+    var articleHeight = rect.height;
+    var windowHeight = window.innerHeight;
+    var scrolled = window.scrollY - articleTop + windowHeight * 0.3;
+    var progress = Math.min(Math.max(scrolled / articleHeight, 0), 1);
+
+    if (isWide) {
+      // Set CSS custom property on article for the margin vine fill
+      article.style.setProperty('--read-progress', progress);
+      bar.style.transform = 'scaleX(0)';
+      bar.style.opacity = '0';
+    } else {
+      bar.style.transform = 'scaleX(' + progress + ')';
+      bar.style.opacity = '0.7';
+    }
+  }
+
+  function onResize() {
+    isWide = window.matchMedia('(min-width: 1000px)').matches;
+    updateProgress();
   }
 
   window.addEventListener('scroll', updateProgress, { passive: true });
+  window.addEventListener('resize', onResize, { passive: true });
   updateProgress();
 
   window.addCleanup(function() {
     window.removeEventListener('scroll', updateProgress);
+    window.removeEventListener('resize', onResize);
   });
 });
 `

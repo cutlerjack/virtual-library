@@ -33,9 +33,22 @@ export default ((opts?: Options) => {
 
     return (
       <footer class={`${displayClass ?? ""}`}>
-        <div class="colophon">
-          <p class="colophon-main">Built by hand. Set in EB Garamond &amp; IBM Plex Mono.</p>
-          <p class="colophon-detail">{wordLabel}</p>
+        <div class="colophon-card">
+          <div class="colophon-ruled-line" aria-hidden="true" />
+          <div class="colophon-fields">
+            <div class="colophon-field">
+              <span class="colophon-label">Provenance</span>
+              <span class="colophon-value">Built by hand</span>
+            </div>
+            <div class="colophon-field">
+              <span class="colophon-label">Typefaces</span>
+              <span class="colophon-value">EB Garamond &amp; IBM Plex Mono</span>
+            </div>
+            <div class="colophon-field">
+              <span class="colophon-label">Corpus</span>
+              <span class="colophon-value">{wordLabel}</span>
+            </div>
+          </div>
         </div>
       </footer>
     )

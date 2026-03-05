@@ -8,9 +8,12 @@ const CustomHeader: QuartzComponent = ({ fileData, cfg }: QuartzComponentProps) 
 
   return (
     <header class="site-header">
-      <a href={baseDir} class="site-title">
-        {title}
-      </a>
+      <div class="site-title-group">
+        <a href={baseDir} class="site-title">
+          {title}
+        </a>
+        <span class="site-coordinates" aria-hidden="true" />
+      </div>
       <nav class="site-nav">
         <a href={`${baseDir}/about`}>about</a>
         <a href={`${baseDir}/archive`}>archive</a>
@@ -20,6 +23,26 @@ const CustomHeader: QuartzComponent = ({ fileData, cfg }: QuartzComponentProps) 
     </header>
   )
 }
+
+CustomHeader.afterDOMLoaded = `
+document.addEventListener("nav", function() {
+  const coord = document.querySelector('.site-coordinates');
+  if (!coord) return;
+  const slug = document.body.getAttribute('data-slug') || '';
+  const map = {
+    'index': '48\\u00b052\\u2032N',
+    'about': 'basecamp',
+    'archive': 'catalog',
+    'random': 'drift',
+    '404': 'terra incognita',
+  };
+  let label = map[slug];
+  if (!label && slug.startsWith('tags')) label = 'field notes';
+  if (!label && slug.startsWith('posts/')) label = 'specimen';
+  if (!label) label = 'survey';
+  coord.textContent = label;
+});
+`
 
 CustomHeader.css = `
 .site-header {
@@ -34,6 +57,12 @@ CustomHeader.css = `
   margin-right: auto;
 }
 
+.site-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
 .site-title {
   font-family: "EB Garamond", Georgia, serif;
   font-size: 1.05rem;
@@ -45,6 +74,21 @@ CustomHeader.css = `
 
 .site-title:hover {
   color: var(--secondary);
+}
+
+.site-coordinates {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.6rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--gray);
+  opacity: 0.5;
+  text-transform: lowercase;
+  transition: opacity 0.3s;
+}
+
+.site-header:hover .site-coordinates {
+  opacity: 0.8;
 }
 
 .site-nav {
@@ -80,6 +124,9 @@ header:has(.site-header) {
   .site-header {
     padding: 1.25rem 0 0.65rem;
     margin-bottom: 1.75rem;
+  }
+  .site-coordinates {
+    display: none;
   }
   .site-nav {
     gap: 1rem;

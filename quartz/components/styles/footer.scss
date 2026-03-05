@@ -1,7 +1,6 @@
 footer {
-  text-align: left;
+  text-align: center;
   margin-bottom: 4rem;
-  opacity: 0.7;
 
   & ul {
     list-style: none;
@@ -14,20 +13,72 @@ footer {
   }
 }
 
-.colophon-detail {
-  max-height: 0;
-  overflow: hidden;
-  opacity: 0;
-  margin: 0;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.65rem;
-  letter-spacing: 0.02em;
-  color: var(--gray);
-  transition: max-height 0.3s ease, opacity 0.3s ease, margin-top 0.3s ease;
+.colophon-card {
+  max-width: 320px;
+  margin: 0 auto;
+  padding: 1.2rem 1.5rem 1rem;
+  border: 1px solid var(--lightgray);
+  position: relative;
 }
 
-.colophon:hover .colophon-detail {
-  max-height: 2rem;
-  opacity: 1;
-  margin-top: 0.3rem;
+.colophon-ruled-line {
+  position: absolute;
+  top: 0;
+  left: 1.5rem;
+  right: 1.5rem;
+  height: 100%;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    transparent,
+    transparent calc(1.4rem - 1px),
+    var(--lightgray) calc(1.4rem - 1px),
+    var(--lightgray) 1.4rem
+  );
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.colophon-fields {
+  position: relative;
+}
+
+.colophon-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  line-height: 1.4rem;
+  gap: 1rem;
+}
+
+.colophon-label {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gray);
+  flex-shrink: 0;
+}
+
+.colophon-value {
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 0.82rem;
+  font-style: italic;
+  color: var(--darkgray);
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .colophon-card {
+    max-width: 280px;
+    padding: 1rem 1.2rem 0.8rem;
+  }
+
+  .colophon-label {
+    font-size: 0.55rem;
+  }
+
+  .colophon-value {
+    font-size: 0.78rem;
+  }
 }

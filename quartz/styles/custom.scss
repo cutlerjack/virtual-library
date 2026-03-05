@@ -47,6 +47,7 @@
     opacity: 0.45;
     transition: opacity 0.2s;
     &:hover { opacity: 0.85; }
+    &:focus-visible { opacity: 0.85; outline: 2px solid var(--secondary); outline-offset: 2px; }
     & > p { display: none; }
     & > svg { width: 13px; height: 13px; }
   }
@@ -67,6 +68,7 @@
     opacity: 0.45;
     transition: opacity 0.2s;
     &:hover { opacity: 0.85; }
+    &:focus-visible { opacity: 0.85; outline: 2px solid var(--secondary); outline-offset: 2px; }
   }
 }
 
@@ -288,28 +290,31 @@ blockquote {
   color: var(--darkgray);
 }
 
-// Links — sliding underline that grows on hover
+// Links — ink-well underline that draws on hover
 article a.internal,
 article a[href^="http"] {
   color: var(--dark);
   text-decoration: none;
   border-bottom: none;
-  background-image: linear-gradient(var(--secondary), var(--secondary));
-  background-size: 0% 1px;
-  background-position: 0 100%;
+  // Two-layer underline: a faint always-visible hint + a bold draw-on-hover
+  background-image:
+    linear-gradient(var(--secondary), var(--secondary)),
+    linear-gradient(var(--secondary), var(--secondary));
+  background-size: 100% 0.5px, 0% 1.5px;
+  background-position: 0 100%, 0 100%;
   background-repeat: no-repeat;
-  transition: background-size 0.3s ease, color 0.2s ease !important;
-  padding-bottom: 1px;
+  transition: background-size 0.4s cubic-bezier(0.25, 0.1, 0.25, 1), color 0.2s ease !important;
+  padding-bottom: 1.5px;
 }
 
 article a.internal:hover,
 article a[href^="http"]:hover {
-  background-size: 100% 1px;
+  background-size: 100% 0.5px, 100% 1.5px;
   color: var(--secondary);
 }
 
 // ============================================================
-// ARTICLE TITLE — Post pages
+// ARTICLE TITLE — Post pages, styled as specimen labels
 // ============================================================
 
 .article-title {
@@ -318,6 +323,31 @@ article a[href^="http"]:hover {
   font-weight: 600;
   letter-spacing: -0.02em;
   line-height: 1.2;
+}
+
+// Specimen label wrapper: groups title + status + meta into a structured card
+body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]):not([data-slug="archive"]):not([data-slug="404"]) {
+  .popover-hint ~ .popover-hint,
+  .page-header > .popover-hint:first-of-type {
+    // Target the wrapper div that contains article-title, post-meta, content-meta
+  }
+
+  .article-title {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--lightgray);
+    margin-bottom: 0.4rem;
+  }
+
+  .post-meta-cluster {
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--lightgray);
+    margin-bottom: 0;
+  }
+
+  .content-meta {
+    margin-bottom: 2.5rem;
+    padding-top: 0.35rem;
+  }
 }
 
 // On index, hide the h1 entirely — the weathered note IS the introduction
@@ -678,7 +708,7 @@ body[data-slug="index"] .post-shelf-grid {
       position: relative;
     }
 
-    // Vertical rule in the left margin
+    // Vertical rule in the left margin — fills as you scroll (vine growth)
     article.popover-hint::before {
       content: "";
       position: absolute;
@@ -686,9 +716,32 @@ body[data-slug="index"] .post-shelf-grid {
       bottom: 0;
       left: -1.5rem;
       width: 1px;
-      background: var(--secondary);
+      // Two-tone: read portion is brighter, unread is faint
+      background: linear-gradient(
+        to bottom,
+        var(--secondary) 0%,
+        var(--secondary) calc(var(--read-progress, 0) * 100%),
+        var(--secondary) calc(var(--read-progress, 0) * 100%)
+      );
       opacity: 0.12;
       pointer-events: none;
+      // The read portion glows brighter via a mask
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        rgba(0,0,0,1) 0%,
+        rgba(0,0,0,1) calc(var(--read-progress, 0) * 100%),
+        rgba(0,0,0,0.3) calc(var(--read-progress, 0) * 100%),
+        rgba(0,0,0,0.3) 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        rgba(0,0,0,1) 0%,
+        rgba(0,0,0,1) calc(var(--read-progress, 0) * 100%),
+        rgba(0,0,0,0.3) calc(var(--read-progress, 0) * 100%),
+        rgba(0,0,0,0.3) 100%
+      );
+      opacity: 0.35;
+      transition: none;
     }
 
     // Tick marks at h2 and h3 headings
@@ -713,7 +766,7 @@ body[data-slug="index"] .post-shelf-grid {
 
   [saved-theme="dark"] body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]):not([data-slug="archive"]) {
     article.popover-hint::before {
-      opacity: 0.08;
+      opacity: 0.25;
     }
 
     article.popover-hint h2::before,
@@ -864,20 +917,10 @@ article a[href^="mailto:"]:hover {
 // ============================================================
 
 footer {
-  border-top: 1px solid var(--lightgray);
+  border-top: none;
   margin-top: 4rem;
   padding-top: 1.5rem;
   padding-bottom: 3rem;
-}
-
-.colophon p {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.68rem;
-  font-weight: 500;
-  color: var(--gray);
-  letter-spacing: 0.03em;
-  margin: 0;
-  text-align: center;
 }
 
 // ============================================================
