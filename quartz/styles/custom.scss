@@ -144,6 +144,27 @@ body::after {
 }
 
 // ============================================================
+// TOPOGRAPHIC BACKGROUND — Subtle contour lines behind the page
+// ============================================================
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.04;
+  background-image: url("/static/topography-light.svg");
+  background-size: 600px 600px;
+  background-repeat: repeat;
+}
+
+[saved-theme="dark"] body::before {
+  opacity: 0.035;
+  background-image: url("/static/topography-dark.svg");
+}
+
+// ============================================================
 // ATMOSPHERE — The page should feel like a living object
 // ============================================================
 
@@ -469,6 +490,31 @@ body[data-slug="index"] .center {
   max-width: 680px;
 }
 
+// Widen the post shelf grid beyond the 680px column
+body[data-slug="index"] .post-shelf-grid {
+  width: calc(100vw - 4rem);
+  max-width: 1100px;
+  margin-left: 50%;
+  transform: translateX(-50%);
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 900px) {
+  body[data-slug="index"] .post-shelf-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  body[data-slug="index"] .post-shelf-grid {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    transform: none;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 // Page listing with dot leaders
 .page-listing {
   margin-top: 0.5rem;
@@ -618,6 +664,62 @@ body[data-slug="index"] .center {
     margin-bottom: 0.75rem;
     border-left: 2px solid var(--secondary);
     padding-left: 0.65rem;
+  }
+}
+
+// ============================================================
+// MARGIN DECORATIONS — Vertical rule & heading tick marks
+// ============================================================
+
+@media (min-width: 1000px) {
+  // Post pages only
+  body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]):not([data-slug="archive"]) {
+    article.popover-hint {
+      position: relative;
+    }
+
+    // Vertical rule in the left margin
+    article.popover-hint::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: -1.5rem;
+      width: 1px;
+      background: var(--secondary);
+      opacity: 0.12;
+      pointer-events: none;
+    }
+
+    // Tick marks at h2 and h3 headings
+    article.popover-hint h2,
+    article.popover-hint h3 {
+      position: relative;
+    }
+
+    article.popover-hint h2::before,
+    article.popover-hint h3::before {
+      content: "";
+      position: absolute;
+      left: -1.5rem;
+      top: 0.55em;
+      width: 8px;
+      height: 1px;
+      background: var(--secondary);
+      opacity: 0.25;
+      pointer-events: none;
+    }
+  }
+
+  [saved-theme="dark"] body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]):not([data-slug="archive"]) {
+    article.popover-hint::before {
+      opacity: 0.08;
+    }
+
+    article.popover-hint h2::before,
+    article.popover-hint h3::before {
+      opacity: 0.15;
+    }
   }
 }
 
@@ -788,9 +890,28 @@ hr {
   margin: 2.5rem 0;
 }
 
-// The hr between article and page-footer — make it subtle
+// The hr between article and page-footer — botanical fleuron
 .center > hr {
-  margin: 2rem 0 1.5rem;
+  border: none;
+  background: none;
+  height: auto;
+  margin: 2.5rem auto 1.5rem;
+  text-align: center;
+  overflow: visible;
+}
+
+.center > hr::after {
+  content: "❧";
+  display: block;
+  font-family: "EB Garamond", Georgia, serif;
+  font-size: 1.2rem;
+  color: var(--gray);
+  opacity: 0.5;
+  line-height: 1;
+}
+
+[saved-theme="dark"] .center > hr::after {
+  opacity: 0.35;
 }
 
 // ============================================================
