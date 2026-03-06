@@ -3,7 +3,7 @@ import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } fro
 const ReadingProgress: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
   const slug = fileData.slug ?? ""
   // Only show on post pages
-  if (slug === "index" || slug === "about" || slug === "random" || slug === "tags" || slug.startsWith("tags/")) {
+  if (slug === "index" || slug === "about" || slug === "random" || slug === "archive" || slug === "tags" || slug.startsWith("tags/")) {
     return null
   }
 
@@ -48,9 +48,18 @@ document.addEventListener("nav", function() {
   window.addEventListener('resize', onResize, { passive: true });
   updateProgress();
 
+  // Reset bar on prenav to prevent flash of old progress
+  function onPrenav() {
+    bar.style.transform = 'scaleX(0)';
+    var article = document.querySelector('article');
+    if (article) article.style.setProperty('--read-progress', 0);
+  }
+  document.addEventListener('prenav', onPrenav);
+
   window.addCleanup(function() {
     window.removeEventListener('scroll', updateProgress);
     window.removeEventListener('resize', onResize);
+    document.removeEventListener('prenav', onPrenav);
   });
 });
 `

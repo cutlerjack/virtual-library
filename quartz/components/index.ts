@@ -36,6 +36,7 @@ import FootnoteLink from "./FootnoteLink"
 import InProgressAnimation from "./InProgressAnimation"
 import TagGarden from "./TagGarden"
 import Archive from "./Archive"
+import Frontispiece from "./Frontispiece"
 
 export {
   ArticleTitle,
@@ -76,4 +77,5 @@ export {
   InProgressAnimation,
   TagGarden,
   Archive,
+  Frontispiece,
 }

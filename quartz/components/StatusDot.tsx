@@ -6,7 +6,7 @@ const StatusDot: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
 
   if (!status && !confidence) return null
 
-  const dotColor = status === "in-progress" ? "#c47a45" : status === "finished" ? "#5a8a5a" : undefined
+  const dotColor = status === "in-progress" ? "var(--color-status-active)" : status === "finished" ? "var(--color-status-complete)" : undefined
 
   return (
     <div class="post-meta-cluster">
@@ -22,37 +22,7 @@ const StatusDot: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
 }
 
 StatusDot.css = `
-.post-meta-cluster {
-  display: flex;
-  align-items: center;
-  gap: 1.25rem;
-  margin-bottom: 0.6rem;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: var(--gray);
-  letter-spacing: 0.01em;
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.status-dot {
-  display: inline-block;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.status-label,
-.confidence-tag {
-  text-transform: lowercase;
-  color: var(--gray);
-}
+/* .post-meta-cluster lives in custom.scss — single source of truth */
 `
 
 export default (() => StatusDot) satisfies QuartzComponentConstructor

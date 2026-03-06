@@ -15,10 +15,13 @@ export default ((opts?: Options) => {
           f.slug !== "index" &&
           f.slug !== "about" &&
           f.slug !== "random" &&
+          f.slug !== "archive" &&
+          f.slug !== "tags" &&
           !String(f.slug).startsWith("tags/"),
       )
       .reduce((sum, f) => {
-        const text = f.description ?? ""
+        // Use full text content, not the truncated description excerpt
+        const text = (f as any).text ?? f.description ?? ""
         return sum + text.split(/\s+/).filter(Boolean).length
       }, 0)
 

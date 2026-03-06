@@ -17,6 +17,7 @@ document.addEventListener("nav", function() {
     }
   }
   if (!target) return;
+  if (target.classList.contains('in-progress-text')) return;
 
   var words = target.textContent.split(' ');
   target.innerHTML = '';

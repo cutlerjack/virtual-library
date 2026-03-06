@@ -3,30 +3,19 @@ import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } fro
 const NewsletterSignup: QuartzComponent = ({}: QuartzComponentProps) => {
   return (
     <div class="newsletter-signup">
-      <div class="newsletter-letter">
+      <div class="newsletter-card">
+        <div class="newsletter-card-header">
+          <span class="newsletter-label">Field Dispatch</span>
+          <span class="newsletter-seal" aria-hidden="true">JC</span>
+        </div>
         <p class="newsletter-prompt">
           I write when something won't leave me alone. If you'd like
           to hear about it, leave your address.
         </p>
-        <form
-          class="newsletter-form"
-          action="https://buttondown.com/api/emails/embed-subscribe/USERNAME"
-          method="post"
-          target="popupwindow"
-        >
-          <input
-            class="newsletter-input"
-            type="email"
-            name="email"
-            placeholder="you@example.com"
-            required
-          />
-          <button class="newsletter-btn" type="submit" aria-label="Subscribe">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M5 12h14M12 5l7 7-7 7"/>
-            </svg>
-          </button>
-        </form>
+        <p class="newsletter-status">
+          <span class="newsletter-status-dot" aria-hidden="true" />
+          transmission pending
+        </p>
       </div>
     </div>
   )
@@ -34,75 +23,123 @@ const NewsletterSignup: QuartzComponent = ({}: QuartzComponentProps) => {
 
 NewsletterSignup.css = `
 .newsletter-signup {
-  border-top: 1px solid var(--lightgray);
-  margin-top: 3.5rem;
-  padding-top: 1.8rem;
+  border-top: 1px solid var(--color-border);
+  margin-top: var(--space-xl);
+  padding-top: var(--space-l);
 }
 
-.newsletter-letter {
+.newsletter-card {
   max-width: 420px;
+  padding: var(--space-l) var(--space-l) var(--space-l);
+  border: 1px solid var(--lightgray);
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 27px,
+      var(--lightgray) 27px,
+      var(--lightgray) 28px
+    ),
+    var(--light);
+  background-position: 0 0.4rem;
+  position: relative;
+}
+
+[saved-theme="dark"] .newsletter-card {
+  border-color: rgba(255,255,255,0.06);
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 27px,
+      rgba(255,255,255,0.04) 27px,
+      rgba(255,255,255,0.04) 28px
+    ),
+    var(--light);
+  background-position: 0 0.4rem;
+}
+
+.newsletter-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-s);
+}
+
+.newsletter-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.newsletter-seal {
+  width: var(--size-seal);
+  height: var(--size-seal);
+  border-radius: 50%;
+  background: var(--color-status-active);
+  color: var(--color-surface);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.85;
+  flex-shrink: 0;
+}
+
+[saved-theme="dark"] .newsletter-seal {
+  opacity: 0.75;
 }
 
 .newsletter-prompt {
   font-style: italic;
-  color: var(--darkgray);
-  font-size: 0.95rem;
-  margin-bottom: 1rem;
-  font-family: "EB Garamond", serif;
+  color: var(--color-text-secondary);
+  font-size: var(--text-base);
+  margin-bottom: var(--space-s);
+  margin-top: 0;
+  font-family: var(--font-body);
   line-height: 1.6;
 }
 
-.newsletter-form {
-  display: flex;
-  gap: 0;
-  align-items: stretch;
-}
-
-.newsletter-input {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.78rem;
-  font-weight: 500;
-  padding: 0.55rem 0.8rem;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--lightgray);
-  color: var(--dark);
-  flex: 1;
-  min-width: 180px;
-  outline: none;
-  transition: border-color 0.25s ease !important;
-  border-radius: 0;
-}
-
-.newsletter-input:focus {
-  border-bottom-color: var(--secondary);
-}
-
-.newsletter-input::placeholder {
-  color: var(--gray);
-  opacity: 0.6;
-}
-
-.newsletter-btn {
+.newsletter-status {
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0.55rem 0.75rem;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--lightgray);
-  color: var(--gray);
-  cursor: pointer;
-  transition: color 0.2s ease, transform 0.2s ease !important;
+  gap: var(--space-2xs);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: var(--tracking-wide);
+  text-transform: lowercase;
+  margin: 0;
+  opacity: 0.65;
 }
 
-.newsletter-btn:hover {
-  color: var(--secondary);
-  transform: translateX(3px);
+.newsletter-status-dot {
+  width: var(--size-status-dot);
+  height: var(--size-status-dot);
+  border-radius: 50%;
+  background: var(--color-status-active);
+  animation: status-breathe 4s ease-in-out infinite;
 }
 
-.newsletter-btn svg {
-  display: block;
+@media (prefers-reduced-motion: reduce) {
+  .newsletter-status-dot {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .newsletter-card {
+    max-width: 100%;
+    padding: 1.2rem 1.3rem 1.1rem;
+  }
 }
 `
 

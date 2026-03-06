@@ -6,6 +6,8 @@ prof
 tsconfig.tsbuildinfo
 .obsidian
 .quartz-cache
+.claude/
+.playwright-mcp/
 private/
 drafts/
 .replit

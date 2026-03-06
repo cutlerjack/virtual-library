@@ -66,7 +66,7 @@ const TagGarden: QuartzComponent = ({ fileData, allFiles }: QuartzComponentProps
 
   return (
     <div class="tag-garden-container">
-      <canvas class="tag-garden-canvas" />
+      <canvas class="tag-garden-canvas" role="img" aria-label="Tag garden: a visual map of writing topics as growing plants" />
       <span class="tag-garden-count">{totalPosts} {totalPosts === 1 ? "seedling" : "seedlings"} so far.</span>
       <div class="tag-garden-tooltip">
         <div class="tag-garden-tooltip-title" />
@@ -136,13 +136,46 @@ document.addEventListener("nav", function() {
     };
   }
 
-  var BUD_COLORS = ["#c47a45", "#8a7e6b", "#5a8a5a", "#6b7e8a"];
-  var STEM_COLOR = "rgba(232, 228, 220, 0.3)";
-  var STEM_HIGHLIGHT = "rgba(232, 228, 220, 0.7)";
+  // Theme-aware colors — read from CSS and update on theme toggle
+  function getThemeColors() {
+    var cs = getComputedStyle(document.documentElement);
+    var isDark = document.documentElement.getAttribute("saved-theme") === "dark";
+    var secondary = cs.getPropertyValue("--secondary").trim() || "#c47a45";
+    var gray = cs.getPropertyValue("--gray").trim() || "#8a7e6b";
+    var darkgray = cs.getPropertyValue("--darkgray").trim() || "#5a5a5a";
+    var bg = cs.getPropertyValue("--light").trim() || (isDark ? "#141822" : "#F8F6F3");
+
+    if (isDark) {
+      return {
+        BUD_COLORS: [secondary, gray, "#5a8a5a", "#6b7e8a"],
+        STEM_COLOR: "rgba(232, 228, 220, 0.2)",
+        STEM_HIGHLIGHT: "rgba(232, 228, 220, 0.6)",
+        PARTICLE_ALPHA_BASE: 0.03,
+        LABEL_COLOR: "rgba(232, 228, 220, 0.5)",
+        LABEL_HIGHLIGHT: "rgba(232, 228, 220, 0.85)",
+        BG: bg
+      };
+    } else {
+      return {
+        BUD_COLORS: [secondary, gray, "#5a8a5a", "#6b7e8a"],
+        STEM_COLOR: "rgba(80, 70, 60, 0.18)",
+        STEM_HIGHLIGHT: "rgba(80, 70, 60, 0.5)",
+        PARTICLE_ALPHA_BASE: 0.04,
+        LABEL_COLOR: "rgba(80, 70, 60, 0.4)",
+        LABEL_HIGHLIGHT: "rgba(80, 70, 60, 0.75)",
+        BG: bg
+      };
+    }
+  }
+
+  var theme = getThemeColors();
+  var BUD_COLORS = theme.BUD_COLORS;
+  var STEM_COLOR = theme.STEM_COLOR;
+  var STEM_HIGHLIGHT = theme.STEM_HIGHLIGHT;
   var BUD_HIGHLIGHT_ALPHA = 1.0;
-  var PARTICLE_COLOR = "rgba(232, 228, 220, 0.08)";
-  var LABEL_COLOR = "rgba(232, 228, 220, 0.6)";
-  var BG = "#141822";
+  var LABEL_COLOR = theme.LABEL_COLOR;
+  var LABEL_HIGHLIGHT = theme.LABEL_HIGHLIGHT;
+  var BG = theme.BG;
 
   // Plant data structures
   var plants = [];
@@ -290,7 +323,10 @@ document.addEventListener("nav", function() {
       var p = particles[i];
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      ctx.fillStyle = "rgba(232, 228, 220, " + p.alpha + ")";
+      var isDarkNow = document.documentElement.getAttribute("saved-theme") === "dark";
+      ctx.fillStyle = isDarkNow
+        ? "rgba(232, 228, 220, " + p.alpha + ")"
+        : "rgba(80, 70, 60, " + (p.alpha * 1.2) + ")";
       ctx.fill();
     }
 
@@ -338,7 +374,7 @@ document.addEventListener("nav", function() {
       // Label below stem
       ctx.font = "10px 'IBM Plex Mono', monospace";
       ctx.textAlign = "center";
-      ctx.fillStyle = hovered ? "rgba(232, 228, 220, 0.85)" : LABEL_COLOR;
+      ctx.fillStyle = hovered ? LABEL_HIGHLIGHT : LABEL_COLOR;
       ctx.fillText(plant.tagName, plant.baseX, plant.baseY + 16);
     }
   }
@@ -486,6 +522,37 @@ document.addEventListener("nav", function() {
     animate();
   }
 
+  // Theme-change observer — update colors when dark/light mode toggles
+  function refreshTheme() {
+    theme = getThemeColors();
+    BUD_COLORS = theme.BUD_COLORS;
+    STEM_COLOR = theme.STEM_COLOR;
+    STEM_HIGHLIGHT = theme.STEM_HIGHLIGHT;
+    LABEL_COLOR = theme.LABEL_COLOR;
+    LABEL_HIGHLIGHT = theme.LABEL_HIGHLIGHT;
+    BG = theme.BG;
+    // Re-assign bud colors based on new theme
+    for (var i = 0; i < plants.length; i++) {
+      var plant = plants[i];
+      for (var b = 0; b < plant.buds.length; b++) {
+        plant.buds[b].color = BUD_COLORS[(hashStr(tagData[i].tagName) + b) & 3];
+      }
+    }
+    draw();
+  }
+
+  var themeDebounce = null;
+  var themeObserver = new MutationObserver(function(mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+      if (mutations[i].attributeName === "saved-theme") {
+        if (themeDebounce) clearTimeout(themeDebounce);
+        themeDebounce = setTimeout(refreshTheme, 200);
+        break;
+      }
+    }
+  });
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["saved-theme"] });
+
   // SPA cleanup
   if (window.addCleanup) {
     window.addCleanup(function() {
@@ -493,6 +560,7 @@ document.addEventListener("nav", function() {
       canvas.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("mouseleave", onMouseLeave);
       window.removeEventListener("resize", onResize);
+      themeObserver.disconnect();
       hoveredPlantIdx = -1;
       plants = [];
       particles = [];

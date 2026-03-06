@@ -29,6 +29,7 @@ export const defaultContentPageLayout: PageLayout = {
     Component.ArticleTitle(),
     Component.StatusDot(),
     Component.ContentMeta(),
+    Component.Frontispiece(),
   ],
   left: [
     Component.Search(),

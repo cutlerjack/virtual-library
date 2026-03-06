@@ -1,4 +1,5 @@
 import { resolveRelative } from "../util/path"
+import { hashTitle } from "../util/hash"
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
 import { getDate } from "./Date"
 
@@ -50,7 +51,11 @@ const PostIndex: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponent
                 {cover ? (
                   <img src={cover} alt={title} loading="lazy" />
                 ) : (
-                  <div class="post-shelf-cover-placeholder" />
+                  <div
+                    class="post-shelf-cover-placeholder"
+                    data-hash={hashTitle(title)}
+                    style={{ ["--cover-seed" as any]: hashTitle(title) % 360 }}
+                  />
                 )}
               </div>
               <div class="post-shelf-meta">
@@ -64,7 +69,7 @@ const PostIndex: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponent
                       title={status}
                       style={{
                         backgroundColor:
-                          status === "in-progress" ? "#c47a45" : "#5a8a5a",
+                          status === "in-progress" ? "var(--color-status-active)" : "var(--color-status-complete)",
                       }}
                     />
                   )}
@@ -86,26 +91,26 @@ const PostIndex: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponent
 
 PostIndex.css = `
 .post-shelf {
-  margin-top: 1rem;
+  margin-top: var(--space-m);
 }
 
 .post-shelf-header {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
   font-weight: 600;
-  letter-spacing: 0.1em;
+  letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
-  color: var(--gray);
-  border-bottom: 1px solid var(--lightgray);
-  padding-bottom: 0.3rem;
-  margin-bottom: 0.6rem;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-2xs);
+  margin-bottom: var(--space-xs);
   margin-top: 0;
 }
 
 .post-shelf-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 1.5rem;
+  gap: var(--space-l);
 }
 
 @media (max-width: 640px) {
@@ -118,27 +123,47 @@ PostIndex.css = `
 .post-shelf-item {
   display: block;
   text-decoration: none;
-  background: none !important;
-  background-image: none !important;
+  background: none;
+  background-image: none;
   color: var(--dark);
-  border-bottom: none !important;
-  border-radius: 0 !important;
-  padding: 0 !important;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-bottom: none;
+  border-radius: 0;
+  padding: 0;
+  transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
 }
 
 .post-shelf-item:hover {
   transform: translateY(-3px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-[saved-theme="dark"] .post-shelf-item:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-lg);
 }
 
 .post-shelf-cover {
   aspect-ratio: 2 / 3;
   overflow: hidden;
+  background: var(--lightgray);
+  position: relative;
+}
+
+.post-shelf-cover::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: url("/static/topography-light.svg");
+  background-size: 200px 200px;
+  background-repeat: repeat;
+  opacity: 0;
+  mix-blend-mode: multiply;
+  transition: opacity var(--duration-normal) var(--ease-out);
+  pointer-events: none;
+}
+
+[saved-theme="dark"] .post-shelf-cover::after {
+  background-image: url("/static/topography-dark.svg");
+  mix-blend-mode: screen;
+}
+
+.post-shelf-item:hover .post-shelf-cover::after {
+  opacity: 0.15;
 }
 
 .post-shelf-cover img {
@@ -155,27 +180,75 @@ PostIndex.css = `
 .post-shelf-cover-placeholder {
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, var(--highlight) 0%, var(--lightgray) 100%);
+  --seed: var(--cover-seed, 30);
+  --hue: calc(var(--seed) * 1deg);
+  background:
+    repeating-linear-gradient(
+      calc(var(--seed) * 2.7deg + 30deg),
+      transparent 0px,
+      transparent 8px,
+      hsla(calc(30 + var(--seed)), 25%, 60%, 0.07) 8px,
+      hsla(calc(30 + var(--seed)), 25%, 60%, 0.07) 9px
+    ),
+    repeating-linear-gradient(
+      calc(var(--seed) * 1.3deg + 90deg),
+      transparent 0px,
+      transparent 12px,
+      hsla(calc(30 + var(--seed)), 20%, 55%, 0.05) 12px,
+      hsla(calc(30 + var(--seed)), 20%, 55%, 0.05) 13px
+    ),
+    linear-gradient(
+      calc(var(--seed) * 0.8deg + 135deg),
+      hsla(calc(35 + var(--seed)), 30%, 82%, 0.6) 0%,
+      hsla(calc(35 + var(--seed) * 0.5), 18%, 88%, 0.4) 50%,
+      hsla(calc(30 + var(--seed) * 0.3), 15%, 92%, 0.6) 100%
+    ),
+    var(--lightgray);
+}
+
+[saved-theme="dark"] .post-shelf-cover-placeholder {
+  background:
+    repeating-linear-gradient(
+      calc(var(--seed) * 2.7deg + 30deg),
+      transparent 0px,
+      transparent 8px,
+      hsla(calc(30 + var(--seed)), 20%, 40%, 0.12) 8px,
+      hsla(calc(30 + var(--seed)), 20%, 40%, 0.12) 9px
+    ),
+    repeating-linear-gradient(
+      calc(var(--seed) * 1.3deg + 90deg),
+      transparent 0px,
+      transparent 12px,
+      hsla(calc(30 + var(--seed)), 15%, 35%, 0.08) 12px,
+      hsla(calc(30 + var(--seed)), 15%, 35%, 0.08) 13px
+    ),
+    linear-gradient(
+      calc(var(--seed) * 0.8deg + 135deg),
+      hsla(calc(35 + var(--seed)), 15%, 25%, 0.6) 0%,
+      hsla(calc(35 + var(--seed) * 0.5), 10%, 22%, 0.4) 50%,
+      hsla(calc(30 + var(--seed) * 0.3), 12%, 20%, 0.6) 100%
+    ),
+    var(--darkgray);
 }
 
 .post-shelf-meta {
-  padding-top: 0.45rem;
+  padding-top: var(--space-xs);
 }
 
 .post-shelf-title {
   display: flex;
   align-items: baseline;
-  gap: 0.35rem;
-  font-family: "EB Garamond", Georgia, serif;
-  font-size: 0.95rem;
-  line-height: 1.3;
-  color: var(--dark);
+  gap: var(--space-2xs);
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  line-height: var(--line-tight);
+  color: var(--color-text);
 }
 
 .post-shelf-dot {
   display: inline-block;
-  width: 5px;
-  height: 5px;
+  width: var(--size-status-dot);
+  height: var(--size-status-dot);
   border-radius: 50%;
   flex-shrink: 0;
   position: relative;
@@ -184,12 +257,12 @@ PostIndex.css = `
 
 .post-shelf-desc {
   display: block;
-  font-family: "EB Garamond", Georgia, serif;
+  font-family: var(--font-body);
   font-style: italic;
-  font-size: 0.82rem;
-  line-height: 1.35;
-  color: var(--darkgray);
-  margin-top: 0.15rem;
+  font-size: var(--text-meta);
+  line-height: var(--line-tight);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-3xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -197,22 +270,22 @@ PostIndex.css = `
 
 .post-shelf-see-all {
   display: block;
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
   font-weight: 500;
-  letter-spacing: 0.04em;
-  color: var(--gray);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
   text-decoration: none;
-  border-bottom: none !important;
-  background-image: none !important;
-  margin-top: 0.8rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--lightgray);
-  transition: color 0.15s;
+  border-bottom: none;
+  background-image: none;
+  margin-top: var(--space-s);
+  padding-top: var(--space-xs);
+  border-top: 1px solid var(--color-border);
+  transition: color var(--duration-fast) ease;
 }
 
 .post-shelf-see-all:hover {
-  color: var(--secondary);
+  color: var(--color-accent);
 }
 
 @media (prefers-reduced-motion: reduce) {

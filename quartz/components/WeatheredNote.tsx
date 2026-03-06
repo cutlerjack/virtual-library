@@ -26,7 +26,7 @@ const WeatheredNote: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
             <rect x="0.5" y="1" width="19" height="6" rx="0.5" stroke="currentColor" stroke-width="0.8" opacity="0.25" fill="currentColor" fill-opacity="0.06" />
           </svg>
         </div>
-        <div class="weathered-note-text">
+        <div class="weathered-note-text" data-variants="true">
           This is a place I'm building as I go. Everything here is subject
           to change, revision, and second-guessing. I write about whatever
           I cannot stop thinking about. You're welcome to look around.
@@ -38,25 +38,35 @@ const WeatheredNote: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
 
 WeatheredNote.afterDOMLoaded = `
 document.addEventListener("nav", function() {
-  const pins = document.querySelectorAll('.pin-icon');
+  var pins = document.querySelectorAll('.pin-icon');
   if (pins.length === 0) return;
-  const today = new Date();
-  const dayHash = today.getFullYear() * 366 + today.getMonth() * 31 + today.getDate();
-  const idx = dayHash % pins.length;
-  pins.forEach((p, i) => {
+  var today = new Date();
+  var dayHash = today.getFullYear() * 366 + today.getMonth() * 31 + today.getDate();
+  var idx = dayHash % pins.length;
+  pins.forEach(function(p, i) {
     p.style.display = i === idx ? 'block' : 'none';
   });
+
+  // Daily variant text — different voice each day
+  var variants = [
+    "This is a place I\\u2019m building as I go. Everything here is subject to change, revision, and second-guessing. I write about whatever I cannot stop thinking about. You\\u2019re welcome to look around.",
+    "Nothing here is finished. I write to think, and I publish to commit. If something catches your eye, stay a while.",
+    "I keep this place the way I keep a notebook\\u2014messy, honest, always mid-thought. You\\u2019re reading over my shoulder.",
+    "These are field notes from wherever my attention wanders. Some entries are polished; most are not. That\\u2019s the point.",
+    "I write about things that won\\u2019t leave me alone. This site is where they end up. Consider yourself warned.",
+    "Welcome to the in-between. Everything here is a draft of something, or the remains of something else. Pull up a chair.",
+    "This is less a website and more a cabinet of curiosities. I collect ideas the way some people collect stamps\\u2014compulsively, without a clear system."
+  ];
+  var noteText = document.querySelector('.weathered-note-text[data-variants]');
+  if (noteText && variants.length > 0) {
+    var textIdx = dayHash % variants.length;
+    noteText.textContent = variants[textIdx] ?? variants[0];
+  }
 });
 `
 
 WeatheredNote.css = `
   @keyframes note-sway {
-    0%, 100% { transform: rotate(-1deg); }
-    25% { transform: rotate(-1.8deg); }
-    75% { transform: rotate(-0.2deg); }
-  }
-
-  @keyframes note-sway-dark {
     0%, 100% { transform: rotate(-1deg); }
     25% { transform: rotate(-1.8deg); }
     75% { transform: rotate(-0.2deg); }
@@ -68,29 +78,31 @@ WeatheredNote.css = `
     75% { transform: rotate(0deg); }
   }
 
-  @keyframes note-sway-mobile-dark {
-    0%, 100% { transform: rotate(-0.6deg); }
-    25% { transform: rotate(-1.2deg); }
-    75% { transform: rotate(0deg); }
+  :root {
+    --note-bg: #ece5d5;
+  }
+
+  [saved-theme="dark"] {
+    --note-bg: #1e2433;
   }
 
   .weathered-note-wrap {
-    filter: drop-shadow(1px 2px 6px rgba(0,0,0,0.08));
-    transition: filter 0.4s cubic-bezier(0.23, 1, 0.32, 1) !important;
+    filter: drop-shadow(var(--shadow-md));
+    transition: filter var(--duration-slow) var(--ease-out);
   }
 
   .weathered-note {
     position: relative;
     animation: note-sway 6s ease-in-out infinite;
     max-width: 48ch;
-    margin: 0 auto 3rem;
-    padding: 1.6rem 1.8rem 1.5rem;
+    margin: 0 auto var(--space-xl);
+    padding: var(--space-l) 1.8rem var(--space-l);
     font-style: italic;
-    font-family: "EB Garamond", Georgia, serif;
-    font-size: 1rem;
-    line-height: 1.7;
-    color: #4a4438;
-    background: var(--note-bg, #ece5d5);
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    line-height: var(--line-body);
+    color: var(--color-text);
+    background: var(--note-bg);
     border: none;
     cursor: default;
 
@@ -125,11 +137,15 @@ WeatheredNote.css = `
   }
 
   .weathered-note-wrap:hover {
-    filter: drop-shadow(2px 4px 10px rgba(0,0,0,0.13));
+    filter: drop-shadow(var(--shadow-lg));
+  }
+
+  [saved-theme="dark"] .weathered-note-wrap {
+    filter: drop-shadow(var(--shadow-md));
   }
 
   [saved-theme="dark"] .weathered-note-wrap:hover {
-    filter: drop-shadow(2px 4px 10px rgba(0,0,0,0.35));
+    filter: drop-shadow(var(--shadow-lg));
   }
 
   .weathered-note-pin {
@@ -137,8 +153,8 @@ WeatheredNote.css = `
     top: -3px;
     left: 50%;
     transform: translateX(-50%);
-    color: #8a7e6b;
-    transition: transform 0.3s ease !important;
+    color: var(--color-text-muted);
+    transition: transform var(--duration-normal) ease;
   }
 
   .weathered-note:hover .weathered-note-pin {
@@ -153,21 +169,8 @@ WeatheredNote.css = `
     display: none;
   }
 
-  :root {
-    --note-bg: #ece5d5;
-  }
-
-  [saved-theme="dark"] {
-    --note-bg: #1e2433;
-  }
-
-  [saved-theme="dark"] .weathered-note-wrap {
-    filter: drop-shadow(1px 2px 6px rgba(0,0,0,0.25));
-  }
-
   [saved-theme="dark"] .weathered-note {
-    color: #b8b0a0;
-    animation: note-sway-dark 6s ease-in-out infinite;
+    color: var(--color-text-secondary);
   }
 
   [saved-theme="dark"] .weathered-note::before {
@@ -180,31 +183,20 @@ WeatheredNote.css = `
       animation: none;
       transform: rotate(-1deg);
     }
-    [saved-theme="dark"] .weathered-note {
-      animation: none;
-      transform: rotate(-1deg);
-    }
   }
 
   @media (max-width: 640px) {
     .weathered-note {
       animation: note-sway-mobile 6s ease-in-out infinite;
-      margin: 0 0 2rem;
-      padding: 1.3rem 1.4rem;
+      margin: 0 0 var(--space-l);
+      padding: var(--space-s) var(--space-l);
       max-width: 100%;
-      font-size: 0.95rem;
-    }
-    [saved-theme="dark"] .weathered-note {
-      animation: note-sway-mobile-dark 6s ease-in-out infinite;
+      font-size: var(--text-base);
     }
   }
 
   @media (max-width: 640px) and (prefers-reduced-motion: reduce) {
     .weathered-note {
-      animation: none;
-      transform: rotate(-0.4deg);
-    }
-    [saved-theme="dark"] .weathered-note {
       animation: none;
       transform: rotate(-0.4deg);
     }

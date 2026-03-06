@@ -31,6 +31,12 @@ CursorTrail.afterDOMLoaded = `
 
   function draw(now) {
     if (!canvas || !ctx) { drawing = false; return; }
+    // Idle check: stop RAF loop when no dots remain
+    if (dots.length === 0) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawing = false;
+      return;
+    }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     var color = getColor();
     for (var i = dots.length - 1; i >= 0; i--) {
@@ -72,6 +78,11 @@ CursorTrail.afterDOMLoaded = `
   document.addEventListener('mousemove', function(e) {
     dots.push({ x: e.clientX, y: e.clientY, born: performance.now() });
     if (dots.length > 30) dots.splice(0, dots.length - 30);
+    // Restart RAF loop if it went idle
+    if (!drawing && canvas) {
+      drawing = true;
+      requestAnimationFrame(draw);
+    }
   });
 
   // Re-create canvas on every SPA navigation (micromorph removes it from body).

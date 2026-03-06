@@ -7,20 +7,23 @@ const CustomHeader: QuartzComponent = ({ fileData, cfg }: QuartzComponentProps) 
   const baseDir = pathToRoot(fileData.slug!)
 
   return (
-    <header class="site-header">
-      <div class="site-title-group">
-        <a href={baseDir} class="site-title">
-          {title}
-        </a>
-        <span class="site-coordinates" aria-hidden="true" />
-      </div>
-      <nav class="site-nav">
-        <a href={`${baseDir}/about`}>about</a>
-        <a href={`${baseDir}/archive`}>archive</a>
-        <a href={`${baseDir}/tags`}>garden</a>
-        <a href={`${baseDir}/random`}>random</a>
-      </nav>
-    </header>
+    <>
+      <a class="skip-link" href="#quartz-body">Skip to content</a>
+      <header class="site-header">
+        <div class="site-title-group">
+          <a href={baseDir} class="site-title">
+            {title}
+          </a>
+          <span class="site-coordinates" aria-hidden="true" />
+        </div>
+        <nav class="site-nav">
+          <a href={`${baseDir}/about`}>about</a>
+          <a href={`${baseDir}/archive`}>archive</a>
+          <a href={`${baseDir}/tags`}>garden</a>
+          <a href={`${baseDir}/random`}>random</a>
+        </nav>
+      </header>
+    </>
   )
 }
 
@@ -41,10 +44,48 @@ document.addEventListener("nav", function() {
   if (!label && slug.startsWith('posts/')) label = 'specimen';
   if (!label) label = 'survey';
   coord.textContent = label;
+
+  // Active page indicator — highlight the current nav link
+  var navLinks = document.querySelectorAll('.site-nav a');
+  navLinks.forEach(function(link) {
+    link.classList.remove('current');
+    var href = link.getAttribute('href') || '';
+    // Normalize: strip leading ./ or trailing /
+    href = href.replace(/^\\.\\//,'').replace(/\\/$/,'');
+    // Match exact slug or slug prefix
+    if (slug === href || (href !== '' && slug.startsWith(href + '/'))) {
+      link.classList.add('current');
+    }
+    // Edge case: tags link should match tags index and all tag pages
+    if (href.endsWith('tags') && (slug === 'tags' || slug.startsWith('tags/'))) {
+      link.classList.add('current');
+    }
+  });
 });
 `
 
 CustomHeader.css = `
+.skip-link {
+  position: fixed;
+  top: -100%;
+  left: 1rem;
+  z-index: 10000;
+  padding: 0.5rem 1rem;
+  background: var(--light);
+  border: 1px solid var(--lightgray);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: var(--dark);
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus-visible {
+  top: 1rem;
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+}
+
 .site-header {
   display: flex;
   justify-content: space-between;
@@ -64,7 +105,7 @@ CustomHeader.css = `
 }
 
 .site-title {
-  font-family: "EB Garamond", Georgia, serif;
+  font-family: var(--font-body);
   font-size: 1.05rem;
   font-weight: 600;
   color: var(--dark);
@@ -77,14 +118,14 @@ CustomHeader.css = `
 }
 
 .site-coordinates {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
   font-weight: 400;
   letter-spacing: 0.08em;
-  color: var(--gray);
+  color: var(--color-text-muted);
   opacity: 0.5;
   text-transform: lowercase;
-  transition: opacity 0.3s;
+  transition: opacity var(--duration-normal);
 }
 
 .site-header:hover .site-coordinates {
@@ -93,23 +134,42 @@ CustomHeader.css = `
 
 .site-nav {
   display: flex;
-  gap: 1.5rem;
+  gap: var(--space-l);
   align-items: baseline;
 }
 
 .site-nav a {
-  font-family: "IBM Plex Mono", monospace;
-  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
   font-weight: 500;
-  letter-spacing: 0.06em;
-  color: var(--gray);
+  letter-spacing: var(--tracking-wide);
+  color: var(--color-text-muted);
   text-decoration: none;
   text-transform: lowercase;
-  transition: color 0.15s;
+  transition: color var(--duration-fast), background-size var(--duration-slow);
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 10%, transparent) 0%, transparent 70%) no-repeat center center;
+  background-size: 0% 0%;
+  padding: 0.15em 0.3em;
+  margin: -0.15em -0.3em;
+  border-radius: var(--radius-sm);
 }
 
 .site-nav a:hover {
-  color: var(--dark);
+  color: var(--color-text);
+  background-size: 280% 280%;
+}
+
+.site-nav a.current {
+  color: var(--color-text);
+  border-bottom: 1px solid var(--color-accent);
+  padding-bottom: 1px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-nav a {
+    transition: color var(--duration-fast, 0.15s);
+    background: none;
+  }
 }
 
 /* Override the Quartz header wrapper so our header renders properly */
