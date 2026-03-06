@@ -51,13 +51,13 @@
   --color-accent: var(--secondary);
   --color-accent-warm: var(--tertiary);
   --color-highlight: var(--highlight);
-  --color-status-active: #c47a45;
+  --color-status-active: #b86830;
   --color-status-complete: #5a8a5a;
 
-  // --- Shadows ---
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
-  --shadow-md: 1px 2px 6px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 4px 14px rgba(0, 0, 0, 0.10);
+  // --- Shadows (warm tint — lamplight, not fluorescent) ---
+  --shadow-sm: 0 1px 3px rgba(120, 80, 40, 0.07);
+  --shadow-md: 1px 2px 6px rgba(120, 80, 40, 0.09);
+  --shadow-lg: 0 4px 14px rgba(120, 80, 40, 0.12);
 
   // --- Radii ---
   --radius-none: 0;
@@ -77,16 +77,16 @@
 [saved-theme="dark"] {
   --color-status-active: #d4895a;
   --color-status-complete: #6fa06f;
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.15);
-  --shadow-md: 1px 2px 6px rgba(0, 0, 0, 0.25);
-  --shadow-lg: 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-sm: 0 1px 3px rgba(15, 20, 35, 0.2);
+  --shadow-md: 1px 2px 6px rgba(15, 20, 35, 0.3);
+  --shadow-lg: 0 4px 14px rgba(15, 20, 35, 0.4);
 }
 
 // --- Seasonal palette shifts ---
 // Accent color subtly reflects the season. Summer uses baseline (no override).
-:root[data-season="spring"]  { --secondary: #9c5e33; --tertiary: #b88a50; }
-:root[data-season="autumn"]  { --secondary: #a04a2a; --tertiary: #c06a38; }
-:root[data-season="winter"]  { --secondary: #8e5c42; --tertiary: #a08060; }
+:root[data-season="spring"]  { --secondary: #8a5028; --tertiary: #b07a40; }
+:root[data-season="autumn"]  { --secondary: #8b2e18; --tertiary: #b05a2a; }
+:root[data-season="winter"]  { --secondary: #7a4a35; --tertiary: #907058; }
 
 [saved-theme="dark"][data-season="spring"]  { --secondary: #c88b50; --tertiary: #d4a060; }
 [saved-theme="dark"][data-season="autumn"]  { --secondary: #c47040; --tertiary: #d47a4a; }
@@ -229,15 +229,18 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.025;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 256px 256px;
+  opacity: 0.045;
+  // Two grain layers at different frequencies for organic paper feel
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n2)'/%3E%3C/svg%3E");
+  background-size: 256px 256px, 192px 192px;
   mix-blend-mode: multiply;
   animation: grain-drift 20s linear infinite;
 }
 
 [saved-theme="dark"] body::after {
-  opacity: 0.04;
+  opacity: 0.06;
   mix-blend-mode: screen;
 }
 
@@ -257,33 +260,35 @@ body::before {
   inset: 0;
   pointer-events: none;
   z-index: 1;
-  opacity: 0.04;
+  opacity: 0.07;
   background-image: url("/static/topography-light.svg");
   background-size: 600px 600px;
   background-repeat: repeat;
   background-position: 0 var(--topo-y, 0);
 
-  // Sandwich mask — topo visible on margins, fades out over the content column
+  // Wider mask — topo lines visible across more of the page, subtly present even in content area
   -webkit-mask-image: linear-gradient(
     to right,
     rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 0.6) 15%,
-    rgba(0, 0, 0, 0.08) 28%,
-    rgba(0, 0, 0, 0.08) 72%,
-    rgba(0, 0, 0, 0.6) 85%,
+    rgba(0, 0, 0, 0.5) 18%,
+    rgba(0, 0, 0, 0.15) 35%,
+    rgba(0, 0, 0, 0.15) 65%,
+    rgba(0, 0, 0, 0.5) 82%,
     rgba(0, 0, 0, 1) 100%
   );
   mask-image: linear-gradient(
     to right,
     rgba(0, 0, 0, 1) 0%,
-    rgba(0, 0, 0, 0.08) 28%,
-    rgba(0, 0, 0, 0.08) 72%,
+    rgba(0, 0, 0, 0.5) 18%,
+    rgba(0, 0, 0, 0.15) 35%,
+    rgba(0, 0, 0, 0.15) 65%,
+    rgba(0, 0, 0, 0.5) 82%,
     rgba(0, 0, 0, 1) 100%
   );
 }
 
 [saved-theme="dark"] body::before {
-  opacity: 0.035;
+  opacity: 0.05;
   background-image: url("/static/topography-dark.svg");
 }
 
@@ -291,14 +296,14 @@ body::before {
 // ATMOSPHERE — The page should feel like a living object
 // ============================================================
 
-// Warm amber selection — not default blue, feels like highlighting on parchment
+// Warm amber selection — bold enough to feel intentional, like ink on parchment
 ::selection {
-  background: rgba(196, 122, 69, 0.2);
+  background: rgba(180, 100, 40, 0.25);
   color: inherit;
 }
 
 [saved-theme="dark"] ::selection {
-  background: rgba(196, 122, 69, 0.3);
+  background: rgba(196, 122, 69, 0.35);
 }
 
 // Global focus ring — keyboard users see amber outline; mouse clicks do not
@@ -1020,7 +1025,7 @@ body[data-slug="index"] .post-shelf-grid {
       top: 0.45em;
       width: 10px;
       height: 6px;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 5 C3 4 5 2 9 1 C5 3 3 3 1 5Z' fill='%23a0522d' opacity='0.35'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 5 C3 4 5 2 9 1 C5 3 3 3 1 5Z' fill='%238b3a1f' opacity='0.4'/%3E%3C/svg%3E");
       background-size: contain;
       background-repeat: no-repeat;
       opacity: 0.7;
@@ -1369,6 +1374,15 @@ hr {
   hr {
     border-color: rgba(255,255,255,0.08);
   }
+}
+
+// Desk-lamp glow — warm radial light falling from above in dark mode
+[saved-theme="dark"] body {
+  background-image: radial-gradient(
+    ellipse 80% 50% at 50% 0%,
+    rgba(140, 100, 60, 0.03) 0%,
+    transparent 70%
+  );
 }
 
 // ============================================================
