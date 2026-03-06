@@ -1380,6 +1380,56 @@ footer {
 }
 
 // ============================================================
+// ============================================================
+// LIST MARKERS — Accent-colored dots and styled numerals
+// ============================================================
+
+article ul:not(.tags):not(.page-listing ul):not(.overflow) {
+  list-style: none;
+  padding-left: 1.2em;
+}
+
+article ul:not(.tags):not(.page-listing ul):not(.overflow) > li {
+  position: relative;
+}
+
+article ul:not(.tags):not(.page-listing ul):not(.overflow) > li::before {
+  content: "";
+  position: absolute;
+  left: -1.05em;
+  top: 0.65em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  opacity: 0.6;
+}
+
+article ol:not(.footnotes ol) {
+  padding-left: 1.5em;
+  list-style: none;
+  counter-reset: article-ol;
+}
+
+article ol:not(.footnotes ol) > li {
+  counter-increment: article-ol;
+  position: relative;
+}
+
+article ol:not(.footnotes ol) > li::before {
+  content: counter(article-ol);
+  position: absolute;
+  left: -1.5em;
+  width: 1.2em;
+  text-align: right;
+  font-family: var(--font-body);
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--color-accent);
+  opacity: 0.7;
+}
+
+// ============================================================
 // HORIZONTAL RULE — Editorial divider
 // ============================================================
 
@@ -1387,6 +1437,27 @@ hr {
   border: none;
   border-top: 1px solid var(--lightgray);
   margin: 2.5rem 0;
+}
+
+// Article-internal hr — centered fleuron ornament
+article hr {
+  border: none;
+  background: none;
+  height: auto;
+  margin: 2rem auto;
+  text-align: center;
+  overflow: visible;
+}
+
+article hr::after {
+  content: "⁂";
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  opacity: 0.4;
+  line-height: 1;
+  letter-spacing: 0.2em;
 }
 
 // The hr between article and page-footer — botanical fleuron
@@ -1409,8 +1480,46 @@ hr {
   line-height: 1;
 }
 
-[saved-theme="dark"] .center > hr::after {
+[saved-theme="dark"] .center > hr::after,
+[saved-theme="dark"] article hr::after {
   opacity: 0.35;
+}
+
+// ============================================================
+// CODE BLOCKS — Warm theme, accent left border
+// ============================================================
+
+pre {
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface) 97%, var(--color-accent) 3%);
+}
+
+code {
+  font-size: 0.88em;
+  padding: 0.15em 0.35em;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-surface) 94%, var(--color-accent) 6%);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+// Code title / language indicator
+figure[data-rehype-pretty-code-figure] > [data-rehype-pretty-code-title] {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: var(--space-3xs) 0;
+  margin-bottom: var(--space-2xs);
 }
 
 // ============================================================
@@ -1427,8 +1536,17 @@ hr {
 // ============================================================
 
 [saved-theme="dark"] {
-  pre, code {
+  pre {
     background: #1a2030;
+    border-left-color: var(--color-accent);
+  }
+
+  code {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  pre code {
+    background: none;
   }
 
   img {
