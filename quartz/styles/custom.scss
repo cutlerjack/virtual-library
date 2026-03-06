@@ -306,11 +306,12 @@ body::before {
   background: rgba(196, 122, 69, 0.35);
 }
 
-// Global focus ring — keyboard users see amber outline; mouse clicks do not
+// Global focus ring — keyboard users see amber outline + warm glow; mouse clicks do not
 *:focus-visible {
   outline: 2px solid var(--secondary);
   outline-offset: 2px;
   border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--secondary) 8%, transparent);
 }
 *:focus:not(:focus-visible) {
   outline: none;
@@ -1950,4 +1951,119 @@ body.topo-pulse::before {
 // not the one inside .page-header (which wraps TagGarden)
 body[data-slug="tags/index"] .center > .popover-hint {
   display: none;
+}
+
+// ============================================================
+// PRINT STYLESHEET — Clean reading surface
+// ============================================================
+
+@media print {
+  @page {
+    margin: 2cm;
+  }
+
+  // Hide everything except article content
+  .site-header,
+  .header-spacer,
+  .search-container,
+  .darkmode,
+  .site-nav,
+  #cursor-trail-canvas,
+  .reading-progress,
+  .margin-vine,
+  .newsletter-signup,
+  .newsletter-card,
+  .colophon-card,
+  footer ul,
+  .tags,
+  .backlinks,
+  .toc,
+  .right.sidebar,
+  .skip-link,
+  .post-shelf,
+  .weathered-note-wrap,
+  .bottom-drawer-msg,
+  .tag-garden-container {
+    display: none !important;
+  }
+
+  body,
+  body::before {
+    background: none !important;
+    background-image: none !important;
+  }
+
+  article {
+    max-width: none;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #000;
+  }
+
+  article a {
+    color: #000;
+    text-decoration: underline;
+    background: none !important;
+    background-image: none !important;
+  }
+
+  // Show link URLs after text
+  article a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+
+  article a.internal::after {
+    content: none;
+  }
+
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+
+  img, figure {
+    page-break-inside: avoid;
+    max-width: 100%;
+  }
+
+  pre {
+    border: 1px solid #ccc;
+    page-break-inside: avoid;
+  }
+}
+
+// ============================================================
+// REDUCED MOTION — Comprehensive audit (Phase 7)
+// ============================================================
+// All transitions, animations, and transforms must have fallbacks.
+// The main blocks are: page transitions, scroll-reveal, note sway,
+// cursor trail, status dot breathe, ink-blot nav hover, link lift,
+// book-pull shelf hover, topo parallax, header condense.
+// Each is gated behind checks in either CSS or JS.
+
+@media (prefers-reduced-motion: reduce) {
+  // Ensure no transforms on hover for links
+  article a.internal:hover,
+  article a[href^="http"]:hover {
+    transform: none;
+  }
+
+  // Kill all scroll-reveal transitions (JS also skips for reduced motion)
+  .scroll-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  // Kill book-pull hover on shelf items
+  .post-shelf-item:hover {
+    transform: none;
+  }
+
+  // Kill ink-blot on nav links
+  .site-nav a {
+    background: none !important;
+    transition: color var(--duration-fast) ease;
+  }
 }

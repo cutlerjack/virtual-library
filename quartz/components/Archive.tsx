@@ -178,7 +178,7 @@ const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentPr
                     >
                       {cover && (
                         <div class="archive-entry-thumb">
-                          <img src={cover} alt="" loading="lazy" />
+                          <img src={cover} alt="" loading="lazy" decoding="async" />
                         </div>
                       )}
                       <div class="archive-entry-body">

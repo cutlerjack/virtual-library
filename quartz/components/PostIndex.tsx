@@ -49,7 +49,7 @@ const PostIndex: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponent
             <a href={href} class="internal post-shelf-item">
               <div class="post-shelf-cover">
                 {cover ? (
-                  <img src={cover} alt={title} loading="lazy" />
+                  <img src={cover} alt={title} loading="lazy" decoding="async" />
                 ) : (
                   <div
                     class="post-shelf-cover-placeholder"
