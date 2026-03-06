@@ -23,6 +23,7 @@ const CustomHeader: QuartzComponent = ({ fileData, cfg }: QuartzComponentProps) 
           <a href={`${baseDir}/random`}>random</a>
         </nav>
       </header>
+      <div class="header-spacer" />
     </>
   )
 }

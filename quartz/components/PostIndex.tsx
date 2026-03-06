@@ -129,11 +129,12 @@ PostIndex.css = `
   border-bottom: none;
   border-radius: 0;
   padding: 0;
-  transition: transform var(--duration-fast) var(--ease-out), box-shadow var(--duration-fast) var(--ease-out);
+  transition: transform var(--duration-normal) var(--ease-out), box-shadow var(--duration-normal) var(--ease-out);
+  transform-style: preserve-3d;
 }
 
 .post-shelf-item:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px) rotateY(-2deg);
   box-shadow: var(--shadow-lg);
 }
 

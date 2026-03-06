@@ -13,7 +13,7 @@ CursorTrail.afterDOMLoaded = `
   if ('ontouchstart' in window) return;
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-  var FADE_MS = 400;
+  var FADE_MS = 450;
   var dots = [];
   var canvas = null;
   var ctx = null;
@@ -39,6 +39,26 @@ CursorTrail.afterDOMLoaded = `
     }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     var color = getColor();
+
+    // Draw connecting lines between recent dots (pen trail)
+    if (dots.length > 1) {
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 0.8;
+      var started = false;
+      for (var j = 0; j < dots.length; j++) {
+        var d = dots[j];
+        var a = now - d.born;
+        if (a > FADE_MS) continue;
+        var lineAlpha = 0.07 * (1 - a / FADE_MS);
+        ctx.globalAlpha = lineAlpha;
+        if (!started) { ctx.moveTo(d.x, d.y); started = true; }
+        else { ctx.lineTo(d.x, d.y); }
+      }
+      ctx.stroke();
+    }
+
+    // Draw dots
     for (var i = dots.length - 1; i >= 0; i--) {
       var dot = dots[i];
       var age = now - dot.born;
@@ -46,8 +66,8 @@ CursorTrail.afterDOMLoaded = `
         dots.splice(i, 1);
         continue;
       }
-      var alpha = 0.15 * (1 - age / FADE_MS);
-      var radius = 1.5 * (1 - age / FADE_MS * 0.5);
+      var alpha = 0.22 * (1 - age / FADE_MS);
+      var radius = 2 * (1 - age / FADE_MS * 0.5);
       ctx.beginPath();
       ctx.arc(dot.x, dot.y, radius, 0, Math.PI * 2);
       ctx.fillStyle = color;
