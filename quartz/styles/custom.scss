@@ -397,6 +397,62 @@ article figure + p {
   margin-top: 1.5em;
 }
 
+// Full-bleed images — break out of the 65ch column
+article .full-bleed {
+  max-width: none;
+  width: calc(100% + 4rem);
+  margin-left: -2rem;
+  margin-right: -2rem;
+
+  img {
+    width: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+}
+
+// Full-bleed edge — extends to viewport edges
+article .full-bleed-edge {
+  max-width: none;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-right: 0;
+
+  img {
+    width: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+}
+
+// Figure captions
+article figure {
+  margin: var(--space-l) 0;
+  max-width: none;
+
+  img {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+  }
+
+  figcaption {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-top: var(--space-xs);
+    font-style: normal;
+  }
+}
+
+@media (max-width: 640px) {
+  article .full-bleed {
+    width: calc(100% + 2.5rem);
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+  }
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-body);
   font-weight: 600;
@@ -771,6 +827,13 @@ body[data-slug="index"] .post-shelf-grid {
   margin-left: 50%;
   transform: translateX(-50%);
   grid-template-columns: repeat(4, 1fr);
+  perspective: 1200px;
+}
+
+// Subtle 3D tilt — books sit on a real shelf
+body[data-slug="index"] .post-shelf-grid .post-shelf-item {
+  transform: rotateX(1.5deg);
+  transform-origin: bottom center;
 }
 
 @media (max-width: 900px) {

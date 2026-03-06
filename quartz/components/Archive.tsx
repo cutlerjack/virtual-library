@@ -398,13 +398,13 @@ Archive.css = `
   display: flex;
   flex-direction: row;
   gap: var(--space-m);
-  padding: var(--space-s) var(--space-s);
+  padding: var(--space-xs) var(--space-s);
   text-decoration: none;
   background-image: none;
   color: var(--dark);
   position: relative;
   background-color: transparent;
-  transition: background-color var(--duration-fast) ease;
+  transition: background-color var(--duration-fast) ease, padding var(--duration-fast) ease;
 }
 
 /* Ruled notebook lines on each entry */
@@ -433,6 +433,7 @@ Archive.css = `
 
 .archive-entry:hover {
   background-color: var(--highlight);
+  padding: var(--space-s) var(--space-s);
 }
 
 .archive-entry:hover .archive-entry-title span:first-child {

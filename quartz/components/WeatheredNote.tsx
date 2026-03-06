@@ -94,12 +94,12 @@ WeatheredNote.css = `
   .weathered-note {
     position: relative;
     animation: note-sway 6s ease-in-out infinite;
-    max-width: 48ch;
+    max-width: 56ch;
     margin: 0 auto var(--space-xl);
-    padding: var(--space-l) 1.8rem var(--space-l);
+    padding: var(--space-l) 2rem var(--space-l);
     font-style: italic;
     font-family: var(--font-body);
-    font-size: var(--text-base);
+    font-size: var(--text-body);
     line-height: var(--line-body);
     color: var(--color-text);
     background: var(--note-bg);

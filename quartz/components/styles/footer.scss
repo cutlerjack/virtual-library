@@ -1,6 +1,6 @@
 footer {
   text-align: center;
-  margin-bottom: var(--space-2xl);
+  margin-bottom: 0;
 
   & ul {
     list-style: none;
@@ -14,18 +14,42 @@ footer {
 }
 
 .colophon-card {
-  max-width: 320px;
-  margin: 0 auto;
-  padding: var(--space-s) var(--space-l) var(--space-m);
-  border: 1px solid var(--color-border);
+  // Full-width band instead of centered card
+  max-width: none;
+  margin: 0 calc(-2rem);
+  padding: var(--space-l) 2rem var(--space-xl);
+  border: none;
+  border-top: 1px solid var(--color-border);
   position: relative;
+  background-image: url("/static/topography-light.svg");
+  background-size: 600px 600px;
+  background-repeat: repeat;
+  background-position: center;
+
+  // Topo visible at low opacity as footer surface
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: var(--color-surface);
+    opacity: 0.92;
+    pointer-events: none;
+  }
+}
+
+[saved-theme="dark"] .colophon-card {
+  background-image: url("/static/topography-dark.svg");
+
+  &::before {
+    opacity: 0.93;
+  }
 }
 
 .colophon-ruled-line {
   position: absolute;
   top: 0;
-  left: var(--space-l);
-  right: var(--space-l);
+  left: 2rem;
+  right: 2rem;
   height: 100%;
   background-image: repeating-linear-gradient(
     to bottom,
@@ -34,12 +58,14 @@ footer {
     var(--color-border) calc(1.4rem - 1px),
     var(--color-border) 1.4rem
   );
-  opacity: 0.4;
+  opacity: 0.3;
   pointer-events: none;
 }
 
 .colophon-fields {
   position: relative;
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .colophon-field {
@@ -70,8 +96,8 @@ footer {
 
 @media (max-width: 640px) {
   .colophon-card {
-    max-width: 280px;
-    padding: var(--space-xs) var(--space-s) var(--space-xs);
+    margin: 0 calc(-1.25rem);
+    padding: var(--space-m) 1.25rem var(--space-l);
   }
 
   .colophon-label {
