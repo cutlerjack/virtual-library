@@ -5,18 +5,20 @@
 // ============================================================
 
 :root {
-  // --- Typography scale ---
+  // --- Typography scale (minor third, ratio 1.2, base 1.15rem) ---
+  //   0.56 → 0.67 → 0.80 → 0.96 → 1.15 → 1.38 → 1.66 → 1.99 → 2.39
   --font-body: "EB Garamond", Georgia, serif;
   --font-mono: "IBM Plex Mono", monospace;
-  --text-2xs: 0.55rem;
-  --text-xs: 0.6rem;
-  --text-sm: 0.72rem;
-  --text-meta: 0.8rem;     // meta labels, nav, descriptions
-  --text-base: 0.95rem;    // shelf titles, card body
-  --text-body: 1.15rem;    // article body text
-  --text-md: 1.2rem;       // h3, sub-headings
-  --text-lg: 1.45rem;
-  --text-xl: 2.1rem;
+  --text-2xs: 0.56rem;     // micro-labels, accession numbers
+  --text-xs: 0.67rem;      // specimen labels, nav coordinates
+  --text-sm: 0.8rem;       // meta, dates, tag counts
+  --text-meta: 0.8rem;     // alias for readability
+  --text-base: 0.96rem;    // shelf titles, card body, UI text
+  --text-body: 1.15rem;    // article body text (the anchor)
+  --text-md: 1.38rem;      // h3, blockquotes
+  --text-lg: 1.66rem;      // h2
+  --text-xl: 1.99rem;      // h1, article-title
+  --text-2xl: 2.39rem;     // pull quotes, display text
   --line-body: 1.75;
   --line-heading: 1.25;
   --line-tight: 1.35;
@@ -364,7 +366,10 @@ body, p, li, blockquote {
   font-size: var(--text-body);
   line-height: var(--line-body);
   font-feature-settings: "liga" 1, "kern" 1, "onum" 1;
+  font-variant-numeric: oldstyle-nums;
   hanging-punctuation: first last;
+  hyphens: auto;
+  -webkit-hyphens: auto;
 }
 
 // Optimal reading measure
@@ -374,16 +379,31 @@ article blockquote {
   max-width: 65ch;
 }
 
+// Tight coupling — first paragraph after heading hugs it
+article h2 + p,
+article h3 + p,
+article h4 + p {
+  margin-top: 0.25em;
+}
+
+// Breathing room — paragraph after full-bleed image needs extra space
+article .full-bleed + p,
+article figure + p {
+  margin-top: 1.5em;
+}
+
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-body);
   font-weight: 600;
   line-height: var(--line-heading);
   letter-spacing: var(--tracking-tight);
+  text-wrap: balance;
 }
 
 h1 { font-size: var(--text-xl); }
 h2 { font-size: var(--text-lg); }
 h3 { font-size: var(--text-md); }
+h4, h5, h6 { font-size: var(--text-body); }
 
 code, pre, kbd {
   font-family: var(--font-mono);
@@ -391,28 +411,95 @@ code, pre, kbd {
   font-size: 0.85em;
 }
 
-// Drop cap on the first paragraph of post articles
+// Drop cap on the first paragraph of post articles — illuminated manuscript feel
 body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]):not([data-slug="archive"]) {
   article.popover-hint > p:first-of-type::first-letter {
     font-family: var(--font-body);
     float: left;
-    font-size: 3.8em;
-    line-height: 0.75;
-    padding-right: 0.08em;
+    font-size: 4.2em;
+    line-height: 0.72;
+    padding-right: 0.1em;
     margin-top: 0.05em;
-    font-weight: 500;
-    color: var(--color-text);
+    font-weight: 600;
+    color: var(--secondary);
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.04);
   }
 }
 
-// Blockquote styling — editorial, not boxy
+[saved-theme="dark"] body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]):not([data-slug="archive"]) {
+  article.popover-hint > p:first-of-type::first-letter {
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.15);
+  }
+}
+
+// Blockquote styling — a voice change, not a box
 blockquote {
   border-left: 2px solid var(--secondary);
-  padding-left: 1.2rem;
+  padding-left: 1.5rem;
   margin-left: 0;
   margin-right: 0;
   font-style: italic;
   color: var(--darkgray);
+  font-size: var(--text-md);
+  line-height: 1.6;
+  margin-top: 1.5em;
+  margin-bottom: 1.5em;
+
+  p {
+    font-size: inherit;
+    line-height: inherit;
+  }
+}
+
+// Pull quote — breaks the column, demands attention
+.pull-quote,
+article .pull-quote {
+  border: none;
+  border-left: none;
+  padding: var(--space-l) 0;
+  margin: var(--space-xl) calc(-2rem) var(--space-xl);
+  padding-left: 2rem;
+  padding-right: 2rem;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: var(--text-2xl);
+  line-height: var(--line-heading);
+  text-align: center;
+  color: var(--color-text);
+  max-width: none;
+  position: relative;
+  hyphens: none;
+
+  &::before {
+    content: "\201C";
+    position: absolute;
+    top: -0.15em;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 3em;
+    line-height: 1;
+    color: var(--color-accent);
+    opacity: 0.15;
+    font-style: normal;
+    pointer-events: none;
+  }
+
+  p {
+    font-size: inherit;
+    line-height: inherit;
+    max-width: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .pull-quote,
+  article .pull-quote {
+    margin-left: calc(-1.25rem);
+    margin-right: calc(-1.25rem);
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    font-size: var(--text-xl);
+  }
 }
 
 // Links — ink-well underline that draws on hover
@@ -433,7 +520,7 @@ article a[href^="http"] {
   background-size: 100% 0.5px, 0% 1.5px;
   background-position: 0 100%, 0 100%;
   background-repeat: no-repeat;
-  transition: background-size 0.4s var(--ease-out), color 0.2s ease;
+  transition: background-size 0.25s var(--ease-out), color var(--duration-fast) ease;
   padding-bottom: 1.5px;
 }
 
@@ -453,6 +540,7 @@ article a[href^="http"]:hover {
   font-weight: 600;
   letter-spacing: var(--tracking-tight);
   line-height: var(--line-heading);
+  text-wrap: balance;
 }
 
 // Specimen label wrapper: groups title + status + meta into a structured card
@@ -821,7 +909,14 @@ body[data-slug="index"] .post-shelf-grid {
     text-decoration: none;
     vertical-align: super;
     font-family: var(--font-mono);
-    font-weight: 500;
+    font-weight: 600;
+    padding: 0.05em 0.2em;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
+
+    &:hover {
+      background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    }
   }
 }
 
@@ -845,6 +940,22 @@ body[data-slug="index"] .post-shelf-grid {
     margin-bottom: var(--space-s);
     border-left: 2px solid var(--color-accent);
     padding-left: 0.65rem;
+  }
+
+  sup a[href^="#user-content-fn"] {
+    font-size: 0.7em;
+    color: var(--color-accent);
+    text-decoration: none;
+    vertical-align: super;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    padding: 0.05em 0.2em;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--duration-fast) ease;
+
+    &:hover {
+      background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    }
   }
 }
 
@@ -1273,11 +1384,11 @@ hr {
     font-size: var(--text-base);
   }
 
-  h1 { font-size: 1.7rem; }
-  h2 { font-size: 1.3rem; }
+  h1 { font-size: var(--text-lg); }
+  h2 { font-size: var(--text-md); }
 
   .article-title {
-    font-size: 1.7rem;
+    font-size: var(--text-lg);
   }
 
   .weathered-note {

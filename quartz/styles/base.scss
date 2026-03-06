@@ -344,8 +344,6 @@ input[type="checkbox"] {
 
 blockquote {
   margin: 1rem 0;
-  /* border-left handled by custom.scss — 2px editorial rule */
-  padding-left: 1rem;
   transition: border-color 0.2s ease;
 }
 
