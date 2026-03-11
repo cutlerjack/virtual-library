@@ -4,3 +4,6 @@ dist/
 .vite/
 .tmp-bookshelf/
 .tmp-bookshelf-ts-site/
+PDFs/
+Library/
+Test Images/
