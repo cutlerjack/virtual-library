@@ -172,6 +172,27 @@ body {
     &:hover { opacity: 0.85; }
     &:focus-visible { opacity: 0.85; outline: 2px solid var(--secondary); outline-offset: 2px; }
   }
+
+  // Sound toggle button — small floating icon
+  & > .sound-toggle {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--light);
+    border: 1px solid var(--lightgray);
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.2s;
+    color: var(--dark);
+    &:hover { opacity: 0.85; }
+    &:focus-visible { opacity: 0.85; outline: 2px solid var(--secondary); outline-offset: 2px; }
+    &[aria-pressed="true"] { opacity: 0.65; }
+  }
 }
 
 // Right sidebar: render below content as a section, not a sidebar column
@@ -1978,6 +1999,7 @@ body[data-slug="tags/index"] .center > .popover-hint {
   .header-spacer,
   .search-container,
   .darkmode,
+  .sound-toggle,
   .site-nav,
   #cursor-trail-canvas,
   .reading-progress,
