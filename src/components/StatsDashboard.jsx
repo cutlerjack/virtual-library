@@ -1,6 +1,8 @@
 import { useMemo, useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { computeLibraryStats } from '../utils/statsAggregation'
+import { toSvgUrl, downloadSvg, buildChronicleSvg, buildShelfSvg } from '../utils/svgExport'
 
 const COLORS = ['#201819', '#8f8174', '#c7b9a8', '#b45309', '#5f4b3b', '#dbcfbf', '#9a8775', '#3b302b']
 const COLORS_SCIFI = ['#b6c9e1', '#8fa8c7', '#6e8bb0', '#5b718e', '#9fb7d4', '#7a8ea8', '#a8bfd8', '#6f8198']
@@ -90,112 +92,7 @@ function StatsDashboard({ books, yearlyGoal, onUpdateGoal, quests = [], statsAdj
     }
   }, [yearlyGoal, isEditingGoal])
 
-  const stats = useMemo(() => {
-    const now = new Date()
-    const currentYear = now.getFullYear()
-    const currentMonth = now.getMonth()
-    const startOfMonth = new Date(currentYear, currentMonth, 1)
-    const isCurrentYear = selectedYear === currentYear
-
-    const finishedBooks = books.filter(book => book.dateFinished)
-    const finishedThisYear = finishedBooks.filter(book => {
-      const date = new Date(book.dateFinished)
-      return date.getFullYear() === selectedYear
-    })
-    const finishedThisMonth = isCurrentYear
-      ? finishedThisYear.filter(book => {
-        const date = new Date(book.dateFinished)
-        return date >= startOfMonth
-      })
-      : []
-
-    const totalPages = books.reduce((sum, book) => sum + (book.pageCount || 0), 0)
-    const pagesThisYear = finishedThisYear.reduce((sum, book) => sum + (book.pageCount || 0), 0)
-    const pagesThisMonth = finishedThisMonth.reduce((sum, book) => sum + (book.pageCount || 0), 0)
-
-    const ratedBooks = books.filter(book => book.rating > 0)
-    const avgRating = ratedBooks.length > 0
-      ? ratedBooks.reduce((sum, book) => sum + book.rating, 0) / ratedBooks.length
-      : 0
-    const avgRatingFiveStar = avgRating / 2
-
-    const genreCounts = {}
-    books.forEach(book => {
-      const tags = book.tags || []
-      tags.forEach(tag => {
-        genreCounts[tag] = (genreCounts[tag] || 0) + 1
-      })
-    })
-    const genreData = Object.entries(genreCounts)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([name, value]) => ({ name, value }))
-
-    const monthlyData = Array(12).fill(0).map((_, i) => ({
-      month: new Date(selectedYear, i, 1).toLocaleString('default', { month: 'short' }),
-      books: 0,
-    }))
-    finishedThisYear.forEach(book => {
-      const month = new Date(book.dateFinished).getMonth()
-      monthlyData[month].books++
-    })
-
-    const sortedFinishedDates = finishedThisYear
-      .map(book => new Date(book.dateFinished))
-      .sort((a, b) => a - b)
-
-    const streak = calculateCadenceStreak(sortedFinishedDates, 7)
-    const daysSinceLast = sortedFinishedDates.length > 0
-      ? Math.floor((now - sortedFinishedDates[sortedFinishedDates.length - 1]) / (1000 * 60 * 60 * 24))
-      : null
-
-    const xp = totalPages
-    const level = Math.max(1, Math.floor(xp / 1200) + 1)
-    const nextLevelAt = level * 1200
-    const xpToNext = Math.max(0, nextLevelAt - xp)
-
-    const quoteCount = books.reduce((sum, book) => sum + (book.quotes?.length || 0), 0)
-    const ratingsThisMonth = finishedThisMonth.filter(book => book.rating > 0).length
-
-    const questProgress = (quests || []).map((quest) => {
-      const target = Math.max(quest.target || 1, 1)
-      let current = 0
-      if (quest.type === 'books') current = finishedThisMonth.length
-      if (quest.type === 'pages') current = pagesThisMonth
-      if (quest.type === 'quotes') current = quoteCount
-      if (quest.type === 'ratings') current = ratingsThisMonth
-      return {
-        ...quest,
-        progress: Math.min(current / target, 1),
-        value: `${current}/${target}`,
-      }
-    })
-
-    const achievements = [
-      { label: 'First Tome', threshold: 1, value: finishedBooks.length },
-      { label: 'A Dozen Read', threshold: 12, value: finishedBooks.length },
-      { label: 'Pages of the Realm', threshold: 1000, value: totalPages },
-      { label: 'Five-Star Oracle', threshold: 3, value: ratedBooks.filter(b => b.rating >= 10).length },
-    ]
-
-    return {
-      totalBooks: books.length,
-      finishedThisYear: finishedThisYear.length,
-      totalPages,
-      pagesThisYear,
-      avgRating: avgRatingFiveStar.toFixed(1),
-      genreData,
-      monthlyData: monthlyData.slice(0, isCurrentYear ? currentMonth + 1 : 12),
-      streak,
-      daysSinceLast,
-      isCurrentYear,
-      level,
-      xp,
-      xpToNext,
-      quests: questProgress,
-      achievements,
-    }
-  }, [books, quests, selectedYear])
+  const stats = useMemo(() => computeLibraryStats(books, quests, selectedYear), [books, quests, selectedYear])
 
   const adjustmentsForYear = statsAdjustments[selectedYear] || { books: 0, pages: 0 }
   const adjustedBooks = stats.finishedThisYear + (adjustmentsForYear.books || 0)
@@ -741,100 +638,6 @@ function StatsDashboard({ books, yearlyGoal, onUpdateGoal, quests = [], statsAdj
       </motion.div>
     </motion.div>
   )
-}
-
-function toSvgUrl(svg) {
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
-}
-
-function downloadSvg(svg, filename) {
-  const link = document.createElement('a')
-  link.href = toSvgUrl(svg)
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-}
-
-function buildChronicleSvg({ year, books, pages, streak, level, palette, theme }) {
-  return `
-  <svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
-    <defs>
-      <linearGradient id="bg" x1="0" x2="1">
-        <stop offset="0%" stop-color="${palette.bg}"/>
-        <stop offset="100%" stop-color="${theme === 'scifi' ? '#0f141c' : '#efe7dc'}"/>
-      </linearGradient>
-    </defs>
-    <rect width="900" height="520" rx="28" fill="url(#bg)"/>
-    <rect x="40" y="40" width="820" height="440" rx="22" fill="none" stroke="${palette.accent}" stroke-opacity="0.2"/>
-    <text x="60" y="90" font-size="18" fill="${palette.muted}" letter-spacing="4" font-family="Space Grotesk, Inter, sans-serif">YEARLY CHRONICLE</text>
-    <text x="60" y="140" font-size="44" fill="${palette.fg}" letter-spacing="6" font-family="Space Grotesk, Inter, sans-serif">${year}</text>
-
-    <text x="60" y="220" font-size="16" fill="${palette.muted}" letter-spacing="2">BOOKS READ</text>
-    <text x="60" y="265" font-size="36" fill="${palette.fg}">${books}</text>
-
-    <text x="260" y="220" font-size="16" fill="${palette.muted}" letter-spacing="2">PAGES</text>
-    <text x="260" y="265" font-size="36" fill="${palette.fg}">${pages.toLocaleString()}</text>
-
-    <text x="460" y="220" font-size="16" fill="${palette.muted}" letter-spacing="2">STREAK</text>
-    <text x="460" y="265" font-size="36" fill="${palette.fg}">${streak} days</text>
-
-    <text x="660" y="220" font-size="16" fill="${palette.muted}" letter-spacing="2">LEVEL</text>
-    <text x="660" y="265" font-size="36" fill="${palette.fg}">${level}</text>
-
-    <rect x="60" y="320" width="780" height="8" rx="4" fill="${theme === 'scifi' ? '#1b2430' : '#e7ddd1'}"/>
-    <rect x="60" y="320" width="${Math.min(780, 120 + books * 8)}" height="8" rx="4" fill="${palette.accent}"/>
-    <text x="60" y="370" font-size="16" fill="${palette.muted}">A private archive of your reading year.</text>
-  </svg>
-  `
-}
-
-function buildShelfSvg({ year, titles, palette, theme }) {
-  const rows = titles.slice(0, 6).map((title, index) => {
-    const y = 150 + index * 40
-    return `<text x="80" y="${y}" font-size="20" fill="${palette.fg}" font-family="Space Grotesk, Inter, sans-serif">${escapeXml(title)}</text>`
-  }).join('')
-
-  return `
-  <svg xmlns="http://www.w3.org/2000/svg" width="900" height="520" viewBox="0 0 900 520">
-    <rect width="900" height="520" rx="28" fill="${palette.bg}"/>
-    <text x="60" y="90" font-size="18" fill="${palette.muted}" letter-spacing="4" font-family="Space Grotesk, Inter, sans-serif">SHELF SNAPSHOT</text>
-    <text x="60" y="130" font-size="28" fill="${palette.fg}" letter-spacing="3" font-family="Space Grotesk, Inter, sans-serif">${year}</text>
-    <rect x="60" y="160" width="780" height="1" fill="${theme === 'scifi' ? '#1e2834' : '#d8cbbd'}"/>
-    ${rows || `<text x="80" y="220" font-size="20" fill="${palette.muted}">No titles yet.</text>`}
-    <text x="60" y="470" font-size="14" fill="${palette.muted}">private archive • virtual library</text>
-  </svg>
-  `
-}
-
-function escapeXml(value) {
-  return String(value)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-}
-
-function calculateCadenceStreak(dates, maxGapDays) {
-  if (dates.length === 0) {
-    return { current: 0, best: 0 }
-  }
-  let current = 1
-  let best = 1
-  let run = 1
-  for (let i = 1; i < dates.length; i += 1) {
-    const gap = Math.floor((dates[i] - dates[i - 1]) / (1000 * 60 * 60 * 24))
-    if (gap <= maxGapDays) {
-      run += 1
-    } else {
-      best = Math.max(best, run)
-      run = 1
-    }
-  }
-  best = Math.max(best, run)
-  const lastGap = Math.floor((Date.now() - dates[dates.length - 1]) / (1000 * 60 * 60 * 24))
-  current = lastGap <= maxGapDays ? run : 0
-  return { current, best }
 }
 
 export default StatsDashboard

@@ -1,8 +1,10 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import StarRating from './StarRating'
-import { findSpineInLibraryMap, normalizeIsbn } from '../utils/storage'
-import { quoteText } from '../utils/documentUtils'
+import { normalizeIsbn } from '../utils/storage'
+import SpineStylePanel from './book-modal/SpineStylePanel'
+import QuotesTab from './book-modal/QuotesTab'
+import MemoriesTab from './book-modal/MemoriesTab'
 
 const Icons = {
   close: (
@@ -14,11 +16,6 @@ const Icons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
       <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
-    </svg>
-  ),
-  quote: (
-    <svg viewBox="0 0 24 24" fill="currentColor">
-      <path d="M14.017 21v-7.391c0-5.704 3.731-9.57 8.983-10.609l.995 2.151c-2.432.917-3.995 3.638-3.995 5.849h4v10h-9.983zm-14.017 0v-7.391c0-5.704 3.748-9.57 9-10.609l.996 2.151c-2.433.917-3.996 3.638-3.996 5.849h3.983v10h-9.983z" />
     </svg>
   ),
 }
@@ -37,14 +34,9 @@ function BookModal({
   onSaveSpineToLibrary,
 }) {
   const [activeTab, setActiveTab] = useState('details')
-  const [newQuote, setNewQuote] = useState('')
   const [newTag, setNewTag] = useState('')
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [selectedExhibit, setSelectedExhibit] = useState(exhibits[0]?.id || '')
-  const [memoryTitle, setMemoryTitle] = useState('')
-  const [memoryNote, setMemoryNote] = useState('')
-  const [memoryImage, setMemoryImage] = useState('')
-  const spineMatch = useMemo(() => findSpineInLibraryMap(spineLibrary || {}, book.isbn), [spineLibrary, book.isbn])
 
   const handleRatingChange = (rating) => {
     onUpdate({ ...book, rating })
@@ -69,19 +61,6 @@ function BookModal({
     onUpdate({ ...book, tags: book.tags.filter(t => t !== tag) })
   }
 
-  const handleAddQuote = () => {
-    if (newQuote.trim()) {
-      onUpdate({ ...book, quotes: [...(book.quotes || []), { text: newQuote.trim(), createdAt: new Date().toISOString() }] })
-      setNewQuote('')
-    }
-  }
-
-  const handleRemoveQuote = (index) => {
-    const newQuotes = [...(book.quotes || [])]
-    newQuotes.splice(index, 1)
-    onUpdate({ ...book, quotes: newQuotes })
-  }
-
   const handleNotesChange = (notes) => {
     onUpdate({ ...book, notes })
   }
@@ -92,73 +71,8 @@ function BookModal({
     }
   }, [exhibits, selectedExhibit])
 
-  useEffect(() => {
-    if (spineMatch?.spineImage && !book.spineImage) {
-      onUpdate({
-        ...book,
-        spineImage: spineMatch.spineImage,
-        spineSource: 'photo',
-        spineCrop: spineMatch.crop || null,
-      })
-    }
-  }, [spineMatch, book, onUpdate])
-
-  const handleAddMemory = () => {
-    if (!memoryTitle.trim() && !memoryNote.trim()) return
-    const memories = book.memories || []
-    const newMemory = {
-      id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}`,
-      title: memoryTitle.trim() || 'Untitled Memory',
-      note: memoryNote.trim(),
-      imageUrl: memoryImage.trim() || null,
-      createdAt: new Date().toISOString(),
-    }
-    onUpdate({ ...book, memories: [newMemory, ...memories] })
-    setMemoryTitle('')
-    setMemoryNote('')
-    setMemoryImage('')
-  }
-
   const handleDateChange = (field, value) => {
     onUpdate({ ...book, [field]: value || null })
-  }
-
-  const handleSpineImageUpload = (event) => {
-    const file = event.target.files?.[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : ''
-      if (!result) return
-      onUpdate({ ...book, spineImage: result, spineSource: 'photo' })
-    }
-    reader.readAsDataURL(file)
-  }
-
-  const handleRemoveSpineImage = () => {
-    onUpdate({ ...book, spineImage: null, spineSource: 'texture', spineCrop: null })
-  }
-
-  const handleApplyLibrarySpine = () => {
-    if (!spineMatch?.spineImage) return
-    onUpdate({
-      ...book,
-      spineImage: spineMatch.spineImage,
-      spineSource: 'photo',
-      spineCrop: spineMatch.crop || null,
-    })
-  }
-
-  const handleSaveSpineToLibrary = () => {
-    if (!book.isbn || !book.spineImage) return
-    onSaveSpineToLibrary?.({
-      isbn: book.isbn,
-      spineImage: book.spineImage,
-      crop: book.spineCrop || null,
-      title: book.title,
-      author: book.author,
-    })
   }
 
   return (
@@ -239,113 +153,13 @@ function BookModal({
               <StarRating rating={book.rating} onRate={handleRatingChange} size="lg" />
             </div>
 
-            {/* Spine styling */}
-            <div className="mb-4">
-              <label className="text-xs uppercase tracking-wider text-muted block mb-2">Spine Style</label>
-              <div className="flex items-center gap-4 flex-wrap">
-                <label className="flex items-center gap-2 text-sm text-muted">
-                  <span>Color</span>
-                  <input
-                    type="color"
-                    value={book.spineColor || '#654321'}
-                    onChange={(e) => onUpdate({ ...book, spineColor: e.target.value })}
-                    className="h-8 w-12 rounded-md border border-white/10 bg-transparent"
-                    aria-label="Spine color"
-                  />
-                </label>
-                <label className="flex items-center gap-2 text-sm text-muted">
-                  <span>Texture</span>
-                  <select
-                    value={book.spineTexture || 'leather'}
-                    onChange={(e) => onUpdate({ ...book, spineTexture: e.target.value })}
-                    className="input-field text-sm py-1.5"
-                  >
-                    <option value="leather">Leather</option>
-                    <option value="paper">Paper</option>
-                    <option value="newsprint">Newsprint</option>
-                    <option value="smooth">Smooth</option>
-                  </select>
-                </label>
-                <label className="flex items-center gap-2 text-sm text-muted">
-                  <span>Source</span>
-                  <select
-                    value={book.spineSource || (book.spineImage ? 'photo' : 'texture')}
-                    onChange={(e) => onUpdate({ ...book, spineSource: e.target.value })}
-                    className="input-field text-sm py-1.5"
-                  >
-                    <option value="texture">Textured</option>
-                    <option value="photo">Photographic</option>
-                  </select>
-                </label>
-                <label className="flex items-center gap-2 text-sm text-muted">
-                  <span>Font</span>
-                  <select
-                    value={book.spineFont || 'garamond'}
-                    onChange={(e) => onUpdate({ ...book, spineFont: e.target.value })}
-                    className="input-field text-sm py-1.5"
-                  >
-                    <option value="garamond">Cormorant Garamond</option>
-                    <option value="cinzel">Cinzel</option>
-                    <option value="playfair">Playfair Display</option>
-                    <option value="fell">IM Fell English</option>
-                    <option value="baskerville">Libre Baskerville</option>
-                  </select>
-                </label>
-                <button
-                  type="button"
-                  onClick={() => onApplyFontToAll?.(book.spineFont || 'garamond')}
-                  className="btn-secondary text-xs px-3 py-2"
-                >
-                  Apply font to all
-                </button>
-              </div>
-              <div className="mt-3 flex items-end gap-3 flex-wrap">
-                <label className="text-sm text-muted">
-                  Spine Image
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleSpineImageUpload}
-                    className="input-field text-sm py-2 mt-2"
-                  />
-                </label>
-                {book.spineImage && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveSpineImage}
-                    className="btn-secondary text-xs px-3 py-2"
-                  >
-                    Remove spine image
-                  </button>
-                )}
-                <span className="text-xs text-muted">Tip: use a tall, cropped spine photo.</span>
-              </div>
-              <div className="mt-3 flex items-center gap-3 flex-wrap">
-                <button
-                  type="button"
-                  onClick={handleApplyLibrarySpine}
-                  className="btn-secondary text-xs px-3 py-2"
-                  disabled={!spineMatch?.spineImage}
-                >
-                  Apply from library
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveSpineToLibrary}
-                  className="btn-secondary text-xs px-3 py-2"
-                  disabled={!book.isbn || !book.spineImage}
-                >
-                  Save to library
-                </button>
-                <span className="text-xs text-muted">
-                  {book.isbn
-                    ? spineMatch?.spineImage
-                      ? 'Library match found for this ISBN.'
-                      : 'No spine saved for this ISBN yet.'
-                    : 'Add an ISBN to enable spine lookup.'}
-                </span>
-              </div>
-            </div>
+            <SpineStylePanel
+              book={book}
+              onUpdate={onUpdate}
+              onApplyFontToAll={onApplyFontToAll}
+              spineLibrary={spineLibrary}
+              onSaveSpineToLibrary={onSaveSpineToLibrary}
+            />
 
             <div className="mb-4">
               <label className="text-xs uppercase tracking-wider text-muted block mb-2">Book Display</label>
@@ -566,85 +380,11 @@ function BookModal({
           )}
 
           {activeTab === 'quotes' && (
-            <div>
-              <h3 className="text-xs uppercase tracking-wider text-muted mb-3">Favorite Quotes</h3>
-              <div className="space-y-3 mb-4 max-h-40 overflow-y-auto">
-                {book.quotes?.length > 0 ? (
-                  book.quotes.map((quote, index) => (
-                    <div
-                      key={index}
-                      className="flex gap-3 items-start p-3 rounded-lg group"
-                      style={{ background: 'rgba(32, 24, 25, 0.05)' }}
-                    >
-                      <span className="w-4 h-4 text-[#b45309] flex-shrink-0 mt-0.5">{Icons.quote}</span>
-                      <p className="flex-1 text-sm italic text-[#4b3f37]">{quoteText(quote)}</p>
-                      <button
-                        onClick={() => handleRemoveQuote(index)}
-                        className="text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))
-                ) : (
-                  <p className="text-muted text-sm italic">No quotes saved yet</p>
-                )}
-              </div>
-              <div className="flex gap-2">
-                <textarea
-                  value={newQuote}
-                  onChange={(e) => setNewQuote(e.target.value)}
-                  placeholder="Add a memorable quote..."
-                  className="input-field text-sm py-2 flex-1 h-16 resize-none"
-                />
-                <button onClick={handleAddQuote} className="btn-secondary self-end">
-                  Add
-                </button>
-              </div>
-            </div>
+            <QuotesTab book={book} onUpdate={onUpdate} />
           )}
 
           {activeTab === 'memories' && (
-            <div className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <input
-                  type="text"
-                  value={memoryTitle}
-                  onChange={(e) => setMemoryTitle(e.target.value)}
-                  placeholder="Memory title"
-                  className="input-field text-sm py-2"
-                />
-                <input
-                  type="url"
-                  value={memoryImage}
-                  onChange={(e) => setMemoryImage(e.target.value)}
-                  placeholder="Image URL (optional)"
-                  className="input-field text-sm py-2"
-                />
-              </div>
-              <textarea
-                value={memoryNote}
-                onChange={(e) => setMemoryNote(e.target.value)}
-                placeholder="Capture a memory tied to this book..."
-                className="input-field h-28 resize-none"
-              />
-              <button onClick={handleAddMemory} className="btn-secondary">
-                Add Memory
-              </button>
-              <div className="memories-grid">
-                {(book.memories || []).length === 0 ? (
-                  <p className="text-muted text-sm italic">No memories saved yet</p>
-                ) : (
-                  book.memories.map((memory) => (
-                    <div key={memory.id} className="memory-card">
-                      {memory.imageUrl && <img src={memory.imageUrl} alt="" />}
-                      <div className="memory-title">{memory.title}</div>
-                      {memory.note && <p>{memory.note}</p>}
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+            <MemoriesTab book={book} onUpdate={onUpdate} />
           )}
         </div>
 
