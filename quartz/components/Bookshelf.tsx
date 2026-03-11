@@ -176,4 +176,164 @@ const Bookshelf: QuartzComponent = ({ fileData, allFiles }: QuartzComponentProps
   )
 }
 
+Bookshelf.afterDOMLoaded = `
+document.addEventListener("nav", function() {
+  var dataEl = document.getElementById("bookshelf-data");
+  if (!dataEl) return;
+  var viewport = document.querySelector(".bookshelf-viewport");
+  if (!viewport) return;
+  var track = document.querySelector(".bookshelf-track");
+  if (!track) return;
+  var arrowLeft = document.querySelector(".bookshelf-arrow-left");
+  var arrowRight = document.querySelector(".bookshelf-arrow-right");
+  if (!arrowLeft || !arrowRight) return;
+
+  var books;
+  try { books = JSON.parse(dataEl.textContent || "[]"); } catch(e) { return; }
+  if (!books.length) return;
+
+  var bookEls = track.querySelectorAll(".bookshelf-book");
+  if (!bookEls.length) return;
+
+  var SPINE_W = 42;
+  var COVER_W = SPINE_W * 4;
+  var BOOK_W_OPEN = SPINE_W * 5;
+  var GAP = 4;
+  var SCROLL_SPEED = 3;
+  var SCROLL_INTERVAL = 10;
+
+  var scrollX = 0;
+  var openIndex = -1;
+  var isScrolling = false;
+  var scrollInterval = null;
+  var reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function getBooksInViewport() {
+    return viewport.getBoundingClientRect().width / (SPINE_W + GAP);
+  }
+
+  function getMaxScroll() {
+    var booksInView = getBooksInViewport();
+    var extra = openIndex > -1 ? COVER_W : 0;
+    return Math.max(0, (SPINE_W + GAP) * (books.length - booksInView) + extra + 5);
+  }
+
+  function clampScroll(val) {
+    return Math.max(0, Math.min(getMaxScroll(), val));
+  }
+
+  function applyScroll() {
+    for (var i = 0; i < bookEls.length; i++) {
+      bookEls[i].style.transform = "translateX(-" + scrollX + "px)";
+      bookEls[i].style.transition = isScrolling
+        ? "transform 100ms linear"
+        : "all 500ms ease";
+      if (reducedMotion) bookEls[i].style.transition = "none";
+    }
+    arrowLeft.setAttribute("data-hidden", scrollX <= 0 ? "true" : "false");
+    arrowRight.setAttribute("data-hidden", scrollX >= getMaxScroll() ? "true" : "false");
+  }
+
+  function openBook(index) {
+    if (openIndex === index) {
+      bookEls[index].classList.remove("open");
+      openIndex = -1;
+    } else {
+      if (openIndex > -1) bookEls[openIndex].classList.remove("open");
+      bookEls[index].classList.add("open");
+      openIndex = index;
+      var booksInView = getBooksInViewport();
+      scrollX = clampScroll((index - (booksInView - 4.5) / 2) * (SPINE_W + GAP));
+    }
+    applyScroll();
+  }
+
+  function onBookClick(e) {
+    var btn = e.currentTarget;
+    var idx = Array.prototype.indexOf.call(bookEls, btn);
+    if (idx === -1) return;
+    openBook(idx);
+
+    if (openIndex === idx) {
+      var href = btn.getAttribute("data-href");
+      if (href) {
+        var link = document.createElement("a");
+        link.href = href;
+        link.classList.add("internal");
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
+    }
+  }
+
+  for (var i = 0; i < bookEls.length; i++) {
+    bookEls[i].addEventListener("click", onBookClick);
+  }
+
+  var isMobile = "ontouchstart" in window;
+  var startEvt = isMobile ? "touchstart" : "mouseenter";
+  var stopEvt = isMobile ? "touchend" : "mouseleave";
+
+  function startScrollRight() {
+    isScrolling = true;
+    scrollInterval = setInterval(function() {
+      scrollX = clampScroll(scrollX + SCROLL_SPEED);
+      applyScroll();
+    }, SCROLL_INTERVAL);
+  }
+
+  function startScrollLeft() {
+    isScrolling = true;
+    scrollInterval = setInterval(function() {
+      scrollX = clampScroll(scrollX - SCROLL_SPEED);
+      applyScroll();
+    }, SCROLL_INTERVAL);
+  }
+
+  function stopScroll() {
+    isScrolling = false;
+    if (scrollInterval) { clearInterval(scrollInterval); scrollInterval = null; }
+    applyScroll();
+  }
+
+  arrowRight.addEventListener(startEvt, startScrollRight);
+  arrowRight.addEventListener(stopEvt, stopScroll);
+  arrowLeft.addEventListener(startEvt, startScrollLeft);
+  arrowLeft.addEventListener(stopEvt, stopScroll);
+
+  var currentPath = window.location.pathname.replace(/\\/$/, "");
+  for (var j = 0; j < books.length; j++) {
+    var bookPath = "/" + books[j].slug.replace(/\\/$/, "");
+    if (currentPath === bookPath || currentPath.endsWith(bookPath)) {
+      openBook(j);
+      break;
+    }
+  }
+
+  function onResize() {
+    scrollX = clampScroll(scrollX);
+    applyScroll();
+  }
+  window.addEventListener("resize", onResize);
+
+  applyScroll();
+
+  if (window.addCleanup) {
+    window.addCleanup(function() {
+      for (var k = 0; k < bookEls.length; k++) {
+        bookEls[k].removeEventListener("click", onBookClick);
+      }
+      arrowRight.removeEventListener(startEvt, startScrollRight);
+      arrowRight.removeEventListener(stopEvt, stopScroll);
+      arrowLeft.removeEventListener(startEvt, startScrollLeft);
+      arrowLeft.removeEventListener(stopEvt, stopScroll);
+      window.removeEventListener("resize", onResize);
+      stopScroll();
+    });
+  }
+});
+`
+
 export default (() => Bookshelf) satisfies QuartzComponentConstructor
