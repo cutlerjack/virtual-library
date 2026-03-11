@@ -1,52 +1,50 @@
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
 
-const NewsletterSignup: QuartzComponent = ({}: QuartzComponentProps) => {
+const NewsletterSignup: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
+  if (fileData.slug === "index") return null
+
   return (
-    <div class="newsletter-signup">
-      <div class="newsletter-card">
-        <div class="newsletter-card-header">
-          <span class="newsletter-label">Field Dispatch</span>
-          <span class="newsletter-seal" aria-hidden="true">JC</span>
-        </div>
-        <p class="newsletter-prompt">
-          I write when something won't leave me alone. If you'd like
-          to hear about it, leave your address.
-        </p>
-        <p class="newsletter-status">
-          <span class="newsletter-status-dot" aria-hidden="true" />
-          transmission pending
-        </p>
+    <div class="field-dispatch">
+      <div class="field-dispatch-header">
+        <span class="field-dispatch-label">FIELD DISPATCH</span>
+        <span class="field-dispatch-seal" aria-hidden="true">
+          JC
+        </span>
       </div>
+      <p class="field-dispatch-body">
+        I write when something won't leave me alone. If you'd like to hear about it, leave your
+        address.
+      </p>
+      <p class="field-dispatch-status">
+        <span class="field-dispatch-status-dot" aria-hidden="true" />
+        transmission pending
+      </p>
     </div>
   )
 }
 
 NewsletterSignup.css = `
-.newsletter-signup {
-  border-top: 1px solid var(--color-border);
-  margin-top: var(--space-xl);
-  padding-top: var(--space-l);
-}
-
-.newsletter-card {
-  max-width: 420px;
-  padding: var(--space-l) var(--space-l) var(--space-l);
-  border: 1px solid var(--lightgray);
+.field-dispatch {
+  max-width: 56ch;
+  margin: var(--space-xl) auto 0;
+  padding: var(--space-l);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-sm);
+  position: relative;
   background:
     repeating-linear-gradient(
       to bottom,
       transparent 0px,
       transparent 27px,
-      var(--lightgray) 27px,
-      var(--lightgray) 28px
+      var(--color-border) 27px,
+      var(--color-border) 28px
     ),
-    var(--light);
+    var(--light, #fffdf8);
   background-position: 0 0.4rem;
-  position: relative;
 }
 
-[saved-theme="dark"] .newsletter-card {
-  border-color: rgba(255,255,255,0.06);
+[saved-theme="dark"] .field-dispatch {
   background:
     repeating-linear-gradient(
       to bottom,
@@ -55,90 +53,101 @@ NewsletterSignup.css = `
       rgba(255,255,255,0.04) 27px,
       rgba(255,255,255,0.04) 28px
     ),
-    var(--light);
+    var(--light, #1a1a1a);
   background-position: 0 0.4rem;
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: var(--shadow-md);
 }
 
-.newsletter-card-header {
+.field-dispatch-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: var(--space-s);
 }
 
-.newsletter-label {
+.field-dispatch-label {
   font-family: var(--font-mono);
-  font-size: var(--text-sm);
+  font-size: var(--text-xs);
   font-weight: 600;
   letter-spacing: var(--tracking-wider);
   text-transform: uppercase;
   color: var(--color-text-muted);
 }
 
-.newsletter-seal {
-  width: var(--size-seal);
-  height: var(--size-seal);
+.field-dispatch-seal {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  background: var(--color-status-active);
-  color: var(--color-surface);
+  background: var(--color-accent);
+  color: #fff;
   font-family: var(--font-body);
   font-size: var(--text-xs);
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.85;
+  opacity: 0.6;
+  transform: rotate(-6deg);
   flex-shrink: 0;
+  box-shadow: var(--shadow-sm);
 }
 
-[saved-theme="dark"] .newsletter-seal {
-  opacity: 0.75;
+[saved-theme="dark"] .field-dispatch-seal {
+  opacity: 0.5;
 }
 
-.newsletter-prompt {
-  font-style: italic;
-  color: var(--color-text-secondary);
-  font-size: var(--text-base);
-  margin-bottom: var(--space-s);
-  margin-top: 0;
+.field-dispatch-body {
   font-family: var(--font-body);
-  line-height: 1.6;
+  font-style: italic;
+  font-size: var(--text-sm);
+  line-height: 1.65;
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-s);
 }
 
-.newsletter-status {
+.field-dispatch-status {
   display: flex;
   align-items: center;
-  gap: var(--space-2xs);
+  gap: var(--space-xs);
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 500;
-  color: var(--color-text-muted);
   letter-spacing: var(--tracking-wide);
   text-transform: lowercase;
+  color: var(--color-text-muted);
   margin: 0;
-  opacity: 0.65;
+  opacity: 0.6;
 }
 
-.newsletter-status-dot {
-  width: var(--size-status-dot);
-  height: var(--size-status-dot);
+.field-dispatch-status-dot {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: var(--color-status-active);
-  animation: status-breathe 4s ease-in-out infinite;
+  background: var(--color-accent);
+  animation: dispatch-breathe 4s ease-in-out infinite;
+}
+
+@keyframes dispatch-breathe {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .newsletter-status-dot {
+  .field-dispatch-status-dot {
     animation: none;
     opacity: 1;
+  }
+  .field-dispatch-seal {
+    transform: rotate(-6deg);
   }
 }
 
 @media (max-width: 640px) {
-  .newsletter-card {
+  .field-dispatch {
     max-width: 100%;
-    padding: 1.2rem 1.3rem 1.1rem;
+    padding: var(--space-m);
   }
 }
 `
