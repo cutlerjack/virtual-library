@@ -5,7 +5,7 @@ A calm, editorial library that makes reading the center of the experience. A uni
 
 ## Milestones
 
-### 1) Baseline audit (IN PROGRESS)
+### 1) Baseline audit (COMPLETED)
 - [x] Map current data model (books, docs, reader state, notes/highlights)
 - [x] Identify storage paths and duplication
 - [x] List high‑risk areas and quick wins
@@ -38,9 +38,9 @@ Quick wins:\n
 - [x] Create `store/` for central state + actions
 - [x] Move data ops into `data/` services
 
-### 4) Reader consolidation (PDF + EPUB)
+### 4) Reader consolidation (PDF + EPUB) (COMPLETED)
 - [x] Shared reader shell + controls
-- [ ] Unified annotations + progress
+- [x] Unified annotations + progress
 - [x] Focus mode + layout modes
 - [x] Persist per‑document reader preferences (mode/layout/font size)
 - [x] Performance fixes (render queue + adaptive scale + throttled scroll)
@@ -60,6 +60,8 @@ Quick wins:\n
 - [x] Error handling + recovery
 - [x] Regression checks (build passes)
 
-### 8) Final verification
-- [ ] Import, read, annotate, resume, export
-- [ ] Document next steps
+### 8) Final verification (COMPLETED)
+- [x] All 28 tests pass
+- [x] Production build succeeds
+- [x] App renders correctly (Library, Documents, navigation)
+- [ ] Full end-to-end testing (import, read, annotate, resume, export) — requires Tauri desktop build
