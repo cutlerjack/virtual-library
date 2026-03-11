@@ -17,3 +17,13 @@ export function inferMime(filename) {
 export function normalizeDocTitle(filename) {
   return filename.replace(/\.[^/.]+$/, '').replace(/[_-]+/g, ' ').trim()
 }
+
+/** Extract text from a quote (handles both legacy string and new {text, createdAt} formats) */
+export function quoteText(quote) {
+  return typeof quote === 'string' ? quote : quote?.text || ''
+}
+
+/** Extract createdAt from a quote (returns null for legacy strings) */
+export function quoteCreatedAt(quote) {
+  return typeof quote === 'string' ? null : quote?.createdAt || null
+}

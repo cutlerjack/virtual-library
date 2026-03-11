@@ -1,3 +1,5 @@
+import { quoteText, quoteCreatedAt } from '../utils/documentUtils'
+
 export function selectAllTags(books) {
   const tagSet = new Set()
   books.forEach((book) => {
@@ -82,10 +84,10 @@ export function selectAllAnnotations(books, documents) {
         itemTitle: book.title,
         type: 'quote',
         format: 'book',
-        text: quote,
+        text: quoteText(quote),
         location: null,
         locationLabel: null,
-        createdAt: book.lastTouched || book.addedAt || null,
+        createdAt: quoteCreatedAt(quote) || book.lastTouched || book.addedAt || null,
       })
     })
     ;(book.reflections || []).forEach((reflection, index) => {

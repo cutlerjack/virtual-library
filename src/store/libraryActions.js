@@ -91,7 +91,7 @@ export function createLibraryActions({
     const date = new Date().toISOString()
     const book = books.find((entry) => entry.id === bookId)
     if (!book) return
-    const quotes = [...(book.quotes || []), text]
+    const quotes = [...(book.quotes || []), { text: text.trim(), createdAt: date }]
     updateBookItem(bookId, { quotes, lastTouched: date })
     recordActivity('quotes', bookId)
   }

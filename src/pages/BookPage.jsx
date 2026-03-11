@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import StarRating from '../components/StarRating'
+import { quoteText } from '../utils/documentUtils'
 
 const STATUS_LABELS = {
   'to-read': 'To Read',
@@ -125,7 +126,7 @@ function BookPage({ books, shelves, allTags, onUpdate, onDelete, onLogPages, onA
           <div className="book-page-quotes">
             {book.quotes.map((quote, i) => (
               <blockquote key={i} className="book-page-quote">
-                {quote}
+                {quoteText(quote)}
               </blockquote>
             ))}
           </div>

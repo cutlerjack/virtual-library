@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react'
 import { motion } from 'framer-motion'
 import StarRating from './StarRating'
 import { findSpineInLibraryMap, normalizeIsbn } from '../utils/storage'
+import { quoteText } from '../utils/documentUtils'
 
 const Icons = {
   close: (
@@ -70,7 +71,7 @@ function BookModal({
 
   const handleAddQuote = () => {
     if (newQuote.trim()) {
-      onUpdate({ ...book, quotes: [...(book.quotes || []), newQuote.trim()] })
+      onUpdate({ ...book, quotes: [...(book.quotes || []), { text: newQuote.trim(), createdAt: new Date().toISOString() }] })
       setNewQuote('')
     }
   }
@@ -576,7 +577,7 @@ function BookModal({
                       style={{ background: 'rgba(32, 24, 25, 0.05)' }}
                     >
                       <span className="w-4 h-4 text-[#b45309] flex-shrink-0 mt-0.5">{Icons.quote}</span>
-                      <p className="flex-1 text-sm italic text-[#4b3f37]">{quote}</p>
+                      <p className="flex-1 text-sm italic text-[#4b3f37]">{quoteText(quote)}</p>
                       <button
                         onClick={() => handleRemoveQuote(index)}
                         className="text-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"

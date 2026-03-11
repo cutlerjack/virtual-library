@@ -891,7 +891,7 @@ function buildBookAnnotations(item) {
     annotations.push({
       id: `${item.id}-quote-${index}`,
       type: 'quote',
-      body: quote,
+      body: typeof quote === 'string' ? quote : quote?.text || '',
       title: null,
       color: null,
       source: 'book',
@@ -959,7 +959,7 @@ function buildSearchText(item) {
   if (item.kind === 'book') {
     const chunks = [item.title, item.author, ...(item.tags || [])]
     if (item.notes) chunks.push(item.notes)
-    if (item.quotes?.length) chunks.push(item.quotes.join('\n'))
+    if (item.quotes?.length) chunks.push(item.quotes.map((q) => typeof q === 'string' ? q : q?.text || '').join('\n'))
     return chunks.filter(Boolean).join('\n')
   }
 

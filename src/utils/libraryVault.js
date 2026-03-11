@@ -252,6 +252,16 @@ function mergeUniqueStrings(list) {
   return Array.from(new Set((list || []).map(item => String(item).trim()).filter(Boolean)))
 }
 
+function mergeUniqueQuotes(list) {
+  const seen = new Set()
+  return (list || []).filter((q) => {
+    const text = (typeof q === 'string' ? q : q?.text || '').trim()
+    if (!text || seen.has(text)) return false
+    seen.add(text)
+    return true
+  })
+}
+
 function mergeShelves(existing, incoming) {
   const combined = [...(existing || []), ...(incoming || [])].filter(Boolean)
   return Array.from(new Set(combined))
@@ -295,7 +305,7 @@ export function migrateExportToLibraryState(payload, currentShelves = [], curren
         isbn: existing.isbn || entry.isbn || null,
         rating: existing.rating || entry.rating || 0,
         notes: existing.notes || entry.notes || '',
-        quotes: mergeUniqueStrings([...(existing.quotes || []), ...(entry.quotes || [])]),
+        quotes: mergeUniqueQuotes([...(existing.quotes || []), ...(entry.quotes || [])]),
         tags: mergeUniqueStrings([...(existing.tags || []), ...(entry.tags || [])]),
         shelves: mergeShelves(existing.shelves, shelfIds),
         pageCount: existing.pageCount || entry.pageCount || null,
