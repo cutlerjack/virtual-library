@@ -150,9 +150,11 @@ CustomHeader.css = `
   color: var(--color-text-muted);
   text-decoration: none;
   text-transform: lowercase;
-  transition: color var(--duration-fast), background-size var(--duration-slow);
-  background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 10%, transparent) 0%, transparent 70%) no-repeat center center;
+  background: radial-gradient(circle, color-mix(in srgb, var(--color-accent) 12%, transparent) 0%, transparent 70%);
   background-size: 0% 0%;
+  background-repeat: no-repeat;
+  background-position: center;
+  transition: color var(--duration-fast), background-size var(--duration-normal) var(--ease-out);
   padding: 0.15em 0.3em;
   margin: -0.15em -0.3em;
   border-radius: var(--radius-sm);
@@ -160,7 +162,7 @@ CustomHeader.css = `
 
 .site-nav a:hover {
   color: var(--color-text);
-  background-size: 280% 280%;
+  background-size: 250% 250%;
 }
 
 .site-nav a.current {
@@ -171,8 +173,11 @@ CustomHeader.css = `
 
 @media (prefers-reduced-motion: reduce) {
   .site-nav a {
-    transition: color var(--duration-fast, 0.15s);
+    transition: none;
     background: none;
+  }
+  .site-nav a:hover {
+    background: color-mix(in srgb, var(--color-accent) 12%, transparent);
   }
 }
 
