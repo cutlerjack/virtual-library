@@ -2127,6 +2127,12 @@ body[data-slug="tags/index"] .center > .popover-hint {
   width: 42px;
 }
 
+.bookshelf-book:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm, 2px);
+}
+
 .bookshelf-book.open {
   width: 210px;
 }
@@ -2405,6 +2411,9 @@ $shelf-height: 220px;
   .bookshelf-spine,
   .bookshelf-cover {
     transition: none;
+  }
+  .bookshelf-entry-link:hover {
+    transform: none;
   }
 }
 

@@ -84,11 +84,11 @@ const Bookshelf: QuartzComponent = ({ fileData, allFiles }: QuartzComponentProps
 
       {/* 3D Bookshelf */}
       <div class="bookshelf-container">
-        <div class="bookshelf-arrow bookshelf-arrow-left" aria-label="Scroll left">
+        <button class="bookshelf-arrow bookshelf-arrow-left" aria-label="Scroll left">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M8 2L4 6L8 10" stroke="currentColor" stroke-width="1.5" />
           </svg>
-        </div>
+        </button>
         <div class="bookshelf-viewport">
           <div class="bookshelf-track">
             {books.map((book) => (
@@ -96,6 +96,7 @@ const Bookshelf: QuartzComponent = ({ fileData, allFiles }: QuartzComponentProps
                 class="bookshelf-book"
                 data-slug={book.slug}
                 data-href={book.href}
+                aria-label={`Open ${book.title} by ${book.author}`}
               >
                 <div
                   class="bookshelf-spine"
@@ -123,11 +124,11 @@ const Bookshelf: QuartzComponent = ({ fileData, allFiles }: QuartzComponentProps
             ))}
           </div>
         </div>
-        <div class="bookshelf-arrow bookshelf-arrow-right" aria-label="Scroll right">
+        <button class="bookshelf-arrow bookshelf-arrow-right" aria-label="Scroll right">
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
             <path d="M4 2L8 6L4 10" stroke="currentColor" stroke-width="1.5" />
           </svg>
-        </div>
+        </button>
       </div>
 
       {/* Book list grouped by category */}
@@ -252,9 +253,10 @@ document.addEventListener("nav", function() {
     var btn = e.currentTarget;
     var idx = Array.prototype.indexOf.call(bookEls, btn);
     if (idx === -1) return;
+    var wasOpen = (openIndex === idx);
     openBook(idx);
 
-    if (openIndex === idx) {
+    if (wasOpen) {
       var href = btn.getAttribute("data-href");
       if (href) {
         var link = document.createElement("a");
@@ -302,6 +304,8 @@ document.addEventListener("nav", function() {
   arrowRight.addEventListener(stopEvt, stopScroll);
   arrowLeft.addEventListener(startEvt, startScrollLeft);
   arrowLeft.addEventListener(stopEvt, stopScroll);
+  document.addEventListener("mouseup", stopScroll);
+  document.addEventListener("touchend", stopScroll);
 
   var currentPath = window.location.pathname.replace(/\\/$/, "");
   for (var j = 0; j < books.length; j++) {
@@ -330,6 +334,8 @@ document.addEventListener("nav", function() {
       arrowLeft.removeEventListener(startEvt, startScrollLeft);
       arrowLeft.removeEventListener(stopEvt, stopScroll);
       window.removeEventListener("resize", onResize);
+      document.removeEventListener("mouseup", stopScroll);
+      document.removeEventListener("touchend", stopScroll);
       stopScroll();
     });
   }
