@@ -54,10 +54,10 @@ Quick wins:\n
 - [x] Clean, clear import state + filters
 - [x] Consistent visuals + search behavior
 
-### 7) Polish + QA (IN PROGRESS)
+### 7) Polish + QA (COMPLETED)
 - [x] Performance + caching (reader code-splitting, thumbnail caching)
 - [x] Debounced persistence writes
-- [ ] Error handling + recovery
+- [x] Error handling + recovery
 - [x] Regression checks (build passes)
 
 ### 8) Final verification
