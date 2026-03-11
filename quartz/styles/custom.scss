@@ -1122,15 +1122,16 @@ body[data-slug="index"] .post-shelf-grid .post-shelf-item {
 }
 
 // Field-depth parallax — margin decorations drift at a different rate than text
+// Creates a three-layer depth: topo bg (0.12×), article (1×), margins (~1.02×)
 @media (min-width: 1000px) and (prefers-reduced-motion: no-preference) {
   body[data-slug^="posts/"] {
     article.popover-hint::before {
-      transform: translateY(var(--margin-shift, 0));
+      transform: translateY(var(--margin-y, 0px));
       will-change: transform;
     }
 
     article.popover-hint .footnotes {
-      transform: translateY(var(--margin-shift, 0));
+      transform: translateY(var(--margin-y, 0px));
       will-change: transform;
     }
   }

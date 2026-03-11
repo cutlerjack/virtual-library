@@ -72,7 +72,9 @@ PageTransitions.afterDOMLoaded = `
       // Field-depth parallax — margin decorations on post pages drift slightly
       var slug = document.body.getAttribute('data-slug') || '';
       if (slug.indexOf('posts/') === 0) {
-        document.body.style.setProperty('--margin-shift', (sy * 0.015) + 'px');
+        document.documentElement.style.setProperty('--margin-y', (sy * -0.015) + 'px');
+      } else {
+        document.documentElement.style.setProperty('--margin-y', '0px');
       }
       // Sticky header — switch to fixed positioning when scrolled
       var siteHeader = document.querySelector('.site-header');
