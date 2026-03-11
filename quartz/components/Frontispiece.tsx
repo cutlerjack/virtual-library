@@ -1,18 +1,17 @@
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
 import { hashTitle } from "../util/hash"
 
-// Simple seeded PRNG (Lehmer generator)
+// Seeded PRNG — Linear Congruential Generator
 function seededRandom(seed: number): () => number {
   let s = seed || 1
   return () => {
-    s = (s * 16807) % 2147483647
-    return s / 2147483647
+    s = (s * 1664525 + 1013904223) & 0xffffffff
+    return (s >>> 16) / 65536
   }
 }
 
 // Pattern 0: Branching / Dendritic
-function branchPattern(seed: number, hue: number) {
-  const rng = seededRandom(seed)
+function branchPattern(rng: () => number) {
   const paths: string[] = []
   const buds: Array<{ cx: number; cy: number; r: number }> = []
 
@@ -29,7 +28,6 @@ function branchPattern(seed: number, hue: number) {
     const shrink = 0.55 + rng() * 0.2
     branch(endX, endY, angle - spread, len * shrink, depth + 1)
     branch(endX, endY, angle + spread, len * shrink, depth + 1)
-    // Occasional third branch
     if (rng() > 0.6) {
       branch(endX, endY, angle + (rng() - 0.5) * 0.3, len * shrink * 0.7, depth + 2)
     }
@@ -44,28 +42,22 @@ function branchPattern(seed: number, hue: number) {
         <path
           key={`b${i}`}
           d={d}
-          stroke={`hsla(${hue}, 30%, 40%, 0.6)`}
+          stroke="currentColor"
           stroke-width={1.2 - (i / paths.length) * 0.4}
           fill="none"
           stroke-linecap="round"
+          opacity={0.25 + (i / paths.length) * 0.15}
         />
       ))}
       {buds.map((b, i) => (
-        <circle
-          key={`c${i}`}
-          cx={b.cx}
-          cy={b.cy}
-          r={b.r}
-          fill={`hsla(${(hue + 15) % 360}, 35%, 50%, 0.55)`}
-        />
+        <circle key={`c${i}`} cx={b.cx} cy={b.cy} r={b.r} fill="currentColor" opacity={0.35} />
       ))}
     </>
   )
 }
 
 // Pattern 1: Spiral / Shell
-function spiralPattern(seed: number, hue: number) {
-  const rng = seededRandom(seed)
+function spiralPattern(rng: () => number) {
   const points: Array<{ x: number; y: number }> = []
   const dots: Array<{ cx: number; cy: number; r: number }> = []
   const cx = 30
@@ -79,41 +71,36 @@ function spiralPattern(seed: number, hue: number) {
     const x = cx + Math.cos(t) * r
     const y = cy + Math.sin(t) * r
     points.push({ x, y })
-    // Scatter small dots along the spiral
     if (i > 10 && i % (5 + Math.floor(rng() * 4)) === 0) {
-      dots.push({ cx: x + (rng() - 0.5) * 3, cy: y + (rng() - 0.5) * 3, r: 0.8 + rng() * 1 })
+      dots.push({
+        cx: x + (rng() - 0.5) * 3,
+        cy: y + (rng() - 0.5) * 3,
+        r: 0.8 + rng() * 1,
+      })
     }
   }
 
-  const pathD =
-    "M" +
-    points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("L")
+  const pathD = "M" + points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join("L")
 
   return (
     <>
       <path
         d={pathD}
-        stroke={`hsla(${hue}, 30%, 40%, 0.5)`}
+        stroke="currentColor"
         stroke-width="1"
         fill="none"
         stroke-linecap="round"
+        opacity={0.3}
       />
       {dots.map((d, i) => (
-        <circle
-          key={`d${i}`}
-          cx={d.cx}
-          cy={d.cy}
-          r={d.r}
-          fill={`hsla(${(hue + 15) % 360}, 35%, 50%, 0.5)`}
-        />
+        <circle key={`d${i}`} cx={d.cx} cy={d.cy} r={d.r} fill="currentColor" opacity={0.35} />
       ))}
     </>
   )
 }
 
 // Pattern 2: Contour / Topographic rings
-function contourPattern(seed: number, hue: number) {
-  const rng = seededRandom(seed)
+function contourPattern(rng: () => number) {
   const rings: string[] = []
   const cx = 30
   const cy = 95
@@ -125,7 +112,6 @@ function contourPattern(seed: number, hue: number) {
     const rot = (rng() - 0.5) * 15
     const wobble = rng() * 2
 
-    // Create slightly wobbly ellipse via 8-point cubic bezier
     const pts: Array<{ x: number; y: number }> = []
     const numPts = 8
     for (let j = 0; j < numPts; j++) {
@@ -160,24 +146,19 @@ function contourPattern(seed: number, hue: number) {
         <path
           key={`r${i}`}
           d={d}
-          stroke={`hsla(${hue}, 25%, 42%, ${0.35 + (i / rings.length) * 0.25})`}
+          stroke="currentColor"
           stroke-width="0.9"
           fill="none"
+          opacity={0.2 + (i / rings.length) * 0.2}
         />
       ))}
-      <circle
-        cx={cx}
-        cy={cy}
-        r="1.5"
-        fill={`hsla(${hue}, 30%, 42%, 0.55)`}
-      />
+      <circle cx={cx} cy={cy} r="1.5" fill="currentColor" opacity={0.35} />
     </>
   )
 }
 
 // Pattern 3: Wave / Oscillation
-function wavePattern(seed: number, hue: number) {
-  const rng = seededRandom(seed)
+function wavePattern(rng: () => number) {
   const waves: string[] = []
   const numWaves = 4 + Math.floor(rng() * 3)
 
@@ -201,10 +182,11 @@ function wavePattern(seed: number, hue: number) {
         <path
           key={`w${i}`}
           d={d}
-          stroke={`hsla(${hue}, 28%, 40%, ${0.4 + (i / waves.length) * 0.25})`}
+          stroke="currentColor"
           stroke-width="1"
           fill="none"
           stroke-linecap="round"
+          opacity={0.2 + (i / waves.length) * 0.2}
         />
       ))}
     </>
@@ -212,8 +194,7 @@ function wavePattern(seed: number, hue: number) {
 }
 
 // Pattern 4: Lattice / Crystal
-function latticePattern(seed: number, hue: number) {
-  const rng = seededRandom(seed)
+function latticePattern(rng: () => number) {
   const lines: Array<{ x1: number; y1: number; x2: number; y2: number }> = []
   const nodes: Array<{ cx: number; cy: number }> = []
   const angle = (rng() * 30 - 15) * (Math.PI / 180)
@@ -225,20 +206,19 @@ function latticePattern(seed: number, hue: number) {
     for (let c = 0; c <= cols; c++) {
       const baseX = 5 + c * spacing
       const baseY = 20 + r * spacing
-      // Slight jitter
       const x = baseX + (rng() - 0.5) * 2
       const y = baseY + (rng() - 0.5) * 2
-      // Rotate around center
-      const cx = 30, cy = 95
-      const dx = x - cx, dy = y - cy
+      const cx = 30,
+        cy = 95
+      const dx = x - cx,
+        dy = y - cy
       const rx = dx * Math.cos(angle) - dy * Math.sin(angle) + cx
       const ry = dx * Math.sin(angle) + dy * Math.cos(angle) + cy
 
       if (rx > 2 && rx < 58 && ry > 10 && ry < 185) {
         nodes.push({ cx: rx, cy: ry })
-        // Connect to right neighbor
         if (c < cols) {
-          const nx = (baseX + spacing) + (rng() - 0.5) * 2
+          const nx = baseX + spacing + (rng() - 0.5) * 2
           const ny = baseY + (rng() - 0.5) * 2
           const nrx = (nx - cx) * Math.cos(angle) - (ny - cy) * Math.sin(angle) + cx
           const nry = (nx - cx) * Math.sin(angle) + (ny - cy) * Math.cos(angle) + cy
@@ -246,10 +226,9 @@ function latticePattern(seed: number, hue: number) {
             lines.push({ x1: rx, y1: ry, x2: nrx, y2: nry })
           }
         }
-        // Connect to bottom neighbor
         if (r < rows) {
           const nx = baseX + (rng() - 0.5) * 2
-          const ny = (baseY + spacing) + (rng() - 0.5) * 2
+          const ny = baseY + spacing + (rng() - 0.5) * 2
           const nrx = (nx - cx) * Math.cos(angle) - (ny - cy) * Math.sin(angle) + cx
           const nry = (nx - cx) * Math.sin(angle) + (ny - cy) * Math.cos(angle) + cy
           if (nrx > 2 && nrx < 58 && nry > 10 && nry < 185) {
@@ -269,8 +248,9 @@ function latticePattern(seed: number, hue: number) {
           y1={l.y1.toFixed(1)}
           x2={l.x2.toFixed(1)}
           y2={l.y2.toFixed(1)}
-          stroke={`hsla(${hue}, 22%, 42%, 0.35)`}
+          stroke="currentColor"
           stroke-width="0.6"
+          opacity={0.25}
         />
       ))}
       {nodes.map((n, i) => (
@@ -279,14 +259,76 @@ function latticePattern(seed: number, hue: number) {
           cx={n.cx.toFixed(1)}
           cy={n.cy.toFixed(1)}
           r="0.8"
-          fill={`hsla(${hue}, 30%, 42%, 0.45)`}
+          fill="currentColor"
+          opacity={0.35}
         />
       ))}
     </>
   )
 }
 
-const patternGenerators = [branchPattern, spiralPattern, contourPattern, wavePattern, latticePattern]
+// Pattern 5: Constellation — dots connected by thin lines
+function constellationPattern(rng: () => number) {
+  const numStars = 12 + Math.floor(rng() * 8)
+  const stars: Array<{ x: number; y: number }> = []
+
+  for (let i = 0; i < numStars; i++) {
+    stars.push({
+      x: 4 + rng() * 52,
+      y: 10 + rng() * 170,
+    })
+  }
+
+  // Connect nearby stars with edges (Delaunay-lite: connect if within threshold)
+  const edges: Array<{ x1: number; y1: number; x2: number; y2: number }> = []
+  const threshold = 35 + rng() * 20
+  for (let i = 0; i < stars.length; i++) {
+    for (let j = i + 1; j < stars.length; j++) {
+      const dx = stars[i].x - stars[j].x
+      const dy = stars[i].y - stars[j].y
+      const dist = Math.sqrt(dx * dx + dy * dy)
+      if (dist < threshold && rng() > 0.3) {
+        edges.push({ x1: stars[i].x, y1: stars[i].y, x2: stars[j].x, y2: stars[j].y })
+      }
+    }
+  }
+
+  return (
+    <>
+      {edges.map((e, i) => (
+        <line
+          key={`e${i}`}
+          x1={e.x1.toFixed(1)}
+          y1={e.y1.toFixed(1)}
+          x2={e.x2.toFixed(1)}
+          y2={e.y2.toFixed(1)}
+          stroke="currentColor"
+          stroke-width="0.5"
+          opacity={0.2}
+        />
+      ))}
+      {stars.map((s, i) => (
+        <circle
+          key={`s${i}`}
+          cx={s.x.toFixed(1)}
+          cy={s.y.toFixed(1)}
+          r={0.8 + rng() * 1.2}
+          fill="currentColor"
+          opacity={0.25 + rng() * 0.15}
+        />
+      ))}
+    </>
+  )
+}
+
+const patternGenerators = [
+  branchPattern,
+  spiralPattern,
+  contourPattern,
+  wavePattern,
+  latticePattern,
+  constellationPattern,
+]
 
 const Frontispiece: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
   const slug = fileData.slug ?? ""
@@ -306,12 +348,12 @@ const Frontispiece: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
   const title = fileData.frontmatter?.title ?? slug
   const seed = hashTitle(title)
   const patternIndex = seed % patternGenerators.length
-  const hue = 25 + (seed % 40) // Constrain to warm amber range (25°–65°)
+  const rng = seededRandom(seed)
   let pattern
   try {
-    pattern = patternGenerators[patternIndex](seed, hue)
+    pattern = patternGenerators[patternIndex](rng)
   } catch {
-    return null // Graceful fallback if pattern generation fails
+    return null
   }
 
   return (
@@ -336,7 +378,6 @@ document.addEventListener("nav", function() {
   if (!fp) return;
   var article = document.querySelector('article.popover-hint');
   if (!article) return;
-  // Only move if not already inside the article
   if (!article.contains(fp)) {
     article.insertBefore(fp, article.firstChild);
   }
@@ -344,29 +385,39 @@ document.addEventListener("nav", function() {
 `
 
 Frontispiece.css = `
+/* Narrow screens: small centered decoration above content */
 .frontispiece {
-  display: none;
+  display: block;
+  margin: 0 auto var(--space-m);
+  width: 40px;
+  height: 40px;
+  overflow: hidden;
+  opacity: 0.35;
+  pointer-events: none;
+  color: var(--color-accent);
+}
+
+.frontispiece-svg {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 
 /* Wide screens: position in the left margin */
 @media (min-width: 1000px) {
   .frontispiece {
-    display: block;
     position: absolute;
     left: -80px;
-    top: 2rem;
+    top: 0;
     width: 60px;
-    opacity: 0.5;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-  }
-
-  .frontispiece-svg {
-    display: block;
+    height: auto;
+    overflow: visible;
+    margin: 0;
+    opacity: 0.25;
   }
 
   [saved-theme="dark"] .frontispiece {
-    opacity: 0.35;
+    opacity: 0.2;
   }
 }
 
