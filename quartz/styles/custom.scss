@@ -2071,11 +2071,7 @@ body[data-slug="tags/index"] .center > .popover-hint {
 /* ── Bookshelf (3D reading shelf) ── */
 
 .bookshelf-svg-defs {
-  position: absolute;
-  inset: 0;
-  visibility: hidden;
-  width: 0;
-  height: 0;
+  display: none;
 }
 
 .bookshelf-wrap {
@@ -2085,6 +2081,21 @@ body[data-slug="tags/index"] .center > .popover-hint {
 .bookshelf-container {
   position: relative;
   padding: 0 36px;
+  background: linear-gradient(180deg, var(--light) 0%, color-mix(in srgb, var(--light) 97%, var(--secondary)) 100%);
+  border: 1px solid var(--lightgray);
+  border-radius: var(--radius-sm, 2px);
+  overflow: hidden;
+
+  &::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.08), transparent);
+    border-radius: 0 0 var(--radius-sm, 2px) var(--radius-sm, 2px);
+  }
 }
 
 .bookshelf-viewport {
@@ -2347,6 +2358,32 @@ $shelf-height: 220px;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+[saved-theme="dark"] {
+  .bookshelf-container {
+    border-color: rgba(255,255,255,0.08);
+    background: linear-gradient(180deg, var(--light) 0%, color-mix(in srgb, var(--light) 95%, var(--secondary)) 100%);
+  }
+  .bookshelf-container::after {
+    background: linear-gradient(to bottom, rgba(0,0,0,0.15), transparent);
+  }
+  .bookshelf-arrow {
+    color: var(--lightgray);
+    &:hover { color: var(--dark); }
+  }
+  .bookshelf-spine {
+    border-right-color: rgba(255,255,255,0.06);
+  }
+  .bookshelf-cover {
+    border-color: rgba(255,255,255,0.08);
+  }
+  .bookshelf-cover-edges {
+    opacity: 0.15;
+  }
+  .bookshelf-entry-link {
+    border-bottom-color: rgba(255,255,255,0.06);
+  }
 }
 
 @media (max-width: 640px) {
