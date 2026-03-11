@@ -762,6 +762,16 @@ body[data-slug="index"] .newsletter-signup {
   text-transform: lowercase;
 }
 
+// ── Accession numbers (specimen catalogue IDs) ──
+.accession-number {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  letter-spacing: var(--tracking-wide);
+  opacity: 0.6;
+  user-select: none;
+}
+
 // ============================================================
 // TAGS — Plain text at the bottom of posts, not pill badges
 // ============================================================
