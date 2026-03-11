@@ -2068,6 +2068,14 @@ body[data-slug="tags/index"] .center > .popover-hint {
   }
 }
 
+/* Hide default FolderContent on reading page — bookshelf replaces it */
+body[data-slug="reading"] .article-title,
+body[data-slug="reading"] .page-listing,
+body[data-slug="reading/index"] .article-title,
+body[data-slug="reading/index"] .page-listing {
+  display: none;
+}
+
 /* ── Bookshelf (3D reading shelf) ── */
 
 .bookshelf-svg-defs {
