@@ -55,7 +55,7 @@ const PostIndex: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponent
                   <div
                     class="post-shelf-cover-placeholder"
                     data-hash={hashTitle(title)}
-                    style={{ ["--cover-seed" as any]: hashTitle(title) % 360 }}
+                    style={{ ["--cover-hue" as any]: hashTitle(title) % 360 }}
                   />
                 )}
               </div>
@@ -179,58 +179,52 @@ PostIndex.css = `
   opacity: 0.9;
 }
 
-.post-shelf-cover-placeholder {
+.post-shelf-cover-placeholder[data-hash] {
   width: 100%;
   height: 100%;
-  --seed: var(--cover-seed, 30);
-  --hue: calc(var(--seed) * 1deg);
   background:
     repeating-linear-gradient(
-      calc(var(--seed) * 2.7deg + 30deg),
+      calc(var(--cover-hue, 30) * 0.5deg + 15deg),
       transparent 0px,
       transparent 8px,
-      hsla(calc(30 + var(--seed)), 25%, 60%, 0.07) 8px,
-      hsla(calc(30 + var(--seed)), 25%, 60%, 0.07) 9px
+      rgba(255,255,255,0.08) 8px,
+      rgba(255,255,255,0.08) 9px
     ),
     repeating-linear-gradient(
-      calc(var(--seed) * 1.3deg + 90deg),
+      calc(var(--cover-hue, 30) * 0.3deg + 45deg),
       transparent 0px,
       transparent 12px,
-      hsla(calc(30 + var(--seed)), 20%, 55%, 0.05) 12px,
-      hsla(calc(30 + var(--seed)), 20%, 55%, 0.05) 13px
+      rgba(0,0,0,0.03) 12px,
+      rgba(0,0,0,0.03) 13px
     ),
     linear-gradient(
-      calc(var(--seed) * 0.8deg + 135deg),
-      hsla(calc(35 + var(--seed)), 30%, 82%, 0.6) 0%,
-      hsla(calc(35 + var(--seed) * 0.5), 18%, 88%, 0.4) 50%,
-      hsla(calc(30 + var(--seed) * 0.3), 15%, 92%, 0.6) 100%
-    ),
-    var(--lightgray);
+      135deg,
+      hsl(var(--cover-hue, 30), 35%, 55%) 0%,
+      hsl(var(--cover-hue, 30), 25%, 40%) 100%
+    );
 }
 
-[saved-theme="dark"] .post-shelf-cover-placeholder {
+[saved-theme="dark"] .post-shelf-cover-placeholder[data-hash] {
   background:
     repeating-linear-gradient(
-      calc(var(--seed) * 2.7deg + 30deg),
+      calc(var(--cover-hue, 30) * 0.5deg + 15deg),
       transparent 0px,
       transparent 8px,
-      hsla(calc(30 + var(--seed)), 20%, 40%, 0.12) 8px,
-      hsla(calc(30 + var(--seed)), 20%, 40%, 0.12) 9px
+      rgba(255,255,255,0.05) 8px,
+      rgba(255,255,255,0.05) 9px
     ),
     repeating-linear-gradient(
-      calc(var(--seed) * 1.3deg + 90deg),
+      calc(var(--cover-hue, 30) * 0.3deg + 45deg),
       transparent 0px,
       transparent 12px,
-      hsla(calc(30 + var(--seed)), 15%, 35%, 0.08) 12px,
-      hsla(calc(30 + var(--seed)), 15%, 35%, 0.08) 13px
+      rgba(0,0,0,0.06) 12px,
+      rgba(0,0,0,0.06) 13px
     ),
     linear-gradient(
-      calc(var(--seed) * 0.8deg + 135deg),
-      hsla(calc(35 + var(--seed)), 15%, 25%, 0.6) 0%,
-      hsla(calc(35 + var(--seed) * 0.5), 10%, 22%, 0.4) 50%,
-      hsla(calc(30 + var(--seed) * 0.3), 12%, 20%, 0.6) 100%
-    ),
-    var(--darkgray);
+      135deg,
+      hsl(var(--cover-hue, 30), 25%, 35%) 0%,
+      hsl(var(--cover-hue, 30), 18%, 25%) 100%
+    );
 }
 
 .post-shelf-meta {
