@@ -19,6 +19,7 @@ const CustomHeader: QuartzComponent = ({ fileData, cfg }: QuartzComponentProps) 
         <nav class="site-nav">
           <a href={`${baseDir}/about`}>about</a>
           <a href={`${baseDir}/archive`}>archive</a>
+          <a href={`${baseDir}/reading`}>reading</a>
           <a href={`${baseDir}/tags`}>garden</a>
           <a href={`${baseDir}/random`}>random</a>
         </nav>
@@ -38,10 +39,12 @@ document.addEventListener("nav", function() {
     'about': 'basecamp',
     'archive': 'catalog',
     'random': 'drift',
+    'reading': 'library',
     '404': 'terra incognita',
   };
   let label = map[slug];
   if (!label && slug.startsWith('tags')) label = 'field notes';
+  if (!label && slug.startsWith('reading')) label = 'library';
   if (!label && slug.startsWith('posts/')) label = 'specimen';
   if (!label) label = 'survey';
   coord.textContent = label;
