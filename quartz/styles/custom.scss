@@ -1854,8 +1854,8 @@ body.topo-pulse::before {
 
 .tag-garden-tooltip {
   position: absolute;
-  background: rgba(30, 36, 51, 0.95);
-  border: 1px solid rgba(232, 228, 220, 0.1);
+  background: color-mix(in srgb, var(--dark) 95%, transparent);
+  border: 1px solid color-mix(in srgb, var(--lightgray) 15%, transparent);
   border-radius: var(--radius-md);
   padding: var(--space-xs) var(--space-s);
   pointer-events: auto;
@@ -1871,7 +1871,7 @@ body.topo-pulse::before {
 .tag-garden-tooltip-title {
   font-family: var(--font-mono);
   font-size: var(--text-sm);
-  color: rgba(232, 228, 220, 0.6);
+  color: color-mix(in srgb, var(--light) 60%, transparent);
   margin-bottom: var(--space-2xs);
   text-transform: uppercase;
   letter-spacing: var(--tracking-wide);
@@ -1881,7 +1881,7 @@ body.topo-pulse::before {
   display: block;
   font-family: var(--font-body);
   font-size: var(--text-meta);
-  color: #e8e4dd;
+  color: var(--light);
   text-decoration: none;
   padding: var(--space-3xs) 0;
   border-bottom: 1px solid transparent;
@@ -1910,7 +1910,7 @@ body.topo-pulse::before {
   justify-content: space-between;
   align-items: baseline;
   padding: 0.35rem 0;
-  border-bottom: 1px solid rgba(232, 228, 220, 0.1);
+  border-bottom: 1px solid color-mix(in srgb, var(--gray) 15%, transparent);
 }
 
 .tag-garden-mobile-list li a {

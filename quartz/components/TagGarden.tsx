@@ -137,33 +137,48 @@ document.addEventListener("nav", function() {
     };
   }
 
-  // Theme-aware colors — read from CSS and update on theme toggle
+  // Theme-aware colors — read from CSS custom properties and update on theme toggle
+  function hexToRgb(hex) {
+    hex = hex.replace("#", "");
+    if (hex.length === 3) hex = hex[0]+hex[0]+hex[1]+hex[1]+hex[2]+hex[2];
+    var n = parseInt(hex, 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  }
+
   function getThemeColors() {
     var cs = getComputedStyle(document.documentElement);
     var isDark = document.documentElement.getAttribute("saved-theme") === "dark";
-    var secondary = cs.getPropertyValue("--secondary").trim() || "#c47a45";
+    var secondary = cs.getPropertyValue("--secondary").trim() || (isDark ? "#c47a45" : "#a0522d");
     var gray = cs.getPropertyValue("--gray").trim() || "#8a7e6b";
+    var complete = cs.getPropertyValue("--color-status-complete").trim() || (isDark ? "#6fa06f" : "#5a8a5a");
     var darkgray = cs.getPropertyValue("--darkgray").trim() || "#5a5a5a";
     var bg = cs.getPropertyValue("--light").trim() || (isDark ? "#141822" : "#F8F6F3");
 
+    // Derive stem/label rgb from darkgray so everything stays in the palette
+    var dg = hexToRgb(darkgray);
+
     if (isDark) {
+      // Dark mode: use lightened text for stems/labels
+      var lt = hexToRgb(cs.getPropertyValue("--lightgray").trim() || "#e8e4dc");
       return {
-        BUD_COLORS: [secondary, gray, "#5a8a5a", "#6b7e8a"],
-        STEM_COLOR: "rgba(232, 228, 220, 0.2)",
-        STEM_HIGHLIGHT: "rgba(232, 228, 220, 0.6)",
+        BUD_COLORS: [secondary, gray, complete, darkgray],
+        STEM_COLOR: "rgba(" + lt.r + "," + lt.g + "," + lt.b + ",0.2)",
+        STEM_HIGHLIGHT: "rgba(" + lt.r + "," + lt.g + "," + lt.b + ",0.6)",
+        PARTICLE_COLOR: "rgba(" + lt.r + "," + lt.g + "," + lt.b + ",",
         PARTICLE_ALPHA_BASE: 0.03,
-        LABEL_COLOR: "rgba(232, 228, 220, 0.5)",
-        LABEL_HIGHLIGHT: "rgba(232, 228, 220, 0.85)",
+        LABEL_COLOR: "rgba(" + lt.r + "," + lt.g + "," + lt.b + ",0.5)",
+        LABEL_HIGHLIGHT: "rgba(" + lt.r + "," + lt.g + "," + lt.b + ",0.85)",
         BG: bg
       };
     } else {
       return {
-        BUD_COLORS: [secondary, gray, "#5a8a5a", "#6b7e8a"],
-        STEM_COLOR: "rgba(80, 70, 60, 0.18)",
-        STEM_HIGHLIGHT: "rgba(80, 70, 60, 0.5)",
+        BUD_COLORS: [secondary, gray, complete, darkgray],
+        STEM_COLOR: "rgba(" + dg.r + "," + dg.g + "," + dg.b + ",0.18)",
+        STEM_HIGHLIGHT: "rgba(" + dg.r + "," + dg.g + "," + dg.b + ",0.5)",
+        PARTICLE_COLOR: "rgba(" + dg.r + "," + dg.g + "," + dg.b + ",",
         PARTICLE_ALPHA_BASE: 0.04,
-        LABEL_COLOR: "rgba(80, 70, 60, 0.4)",
-        LABEL_HIGHLIGHT: "rgba(80, 70, 60, 0.75)",
+        LABEL_COLOR: "rgba(" + dg.r + "," + dg.g + "," + dg.b + ",0.4)",
+        LABEL_HIGHLIGHT: "rgba(" + dg.r + "," + dg.g + "," + dg.b + ",0.75)",
         BG: bg
       };
     }
@@ -173,6 +188,7 @@ document.addEventListener("nav", function() {
   var BUD_COLORS = theme.BUD_COLORS;
   var STEM_COLOR = theme.STEM_COLOR;
   var STEM_HIGHLIGHT = theme.STEM_HIGHLIGHT;
+  var PARTICLE_COLOR = theme.PARTICLE_COLOR;
   var BUD_HIGHLIGHT_ALPHA = 1.0;
   var LABEL_COLOR = theme.LABEL_COLOR;
   var LABEL_HIGHLIGHT = theme.LABEL_HIGHLIGHT;
@@ -324,10 +340,7 @@ document.addEventListener("nav", function() {
       var p = particles[i];
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-      var isDarkNow = document.documentElement.getAttribute("saved-theme") === "dark";
-      ctx.fillStyle = isDarkNow
-        ? "rgba(232, 228, 220, " + p.alpha + ")"
-        : "rgba(80, 70, 60, " + (p.alpha * 1.2) + ")";
+      ctx.fillStyle = PARTICLE_COLOR + p.alpha + ")";
       ctx.fill();
     }
 
@@ -529,6 +542,7 @@ document.addEventListener("nav", function() {
     BUD_COLORS = theme.BUD_COLORS;
     STEM_COLOR = theme.STEM_COLOR;
     STEM_HIGHLIGHT = theme.STEM_HIGHLIGHT;
+    PARTICLE_COLOR = theme.PARTICLE_COLOR;
     LABEL_COLOR = theme.LABEL_COLOR;
     LABEL_HIGHLIGHT = theme.LABEL_HIGHLIGHT;
     BG = theme.BG;
