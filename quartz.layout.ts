@@ -26,6 +26,7 @@ export const defaultContentPageLayout: PageLayout = {
     Component.WeatheredNote(),
     Component.PostIndex(),
     Component.Archive(),
+    Component.Bookshelf(),
     Component.ArticleTitle(),
     Component.StatusDot(),
     Component.ContentMeta(),

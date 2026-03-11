@@ -37,6 +37,7 @@ import InProgressAnimation from "./InProgressAnimation"
 import TagGarden from "./TagGarden"
 import Archive from "./Archive"
 import Frontispiece from "./Frontispiece"
+import Bookshelf from "./Bookshelf"
 
 export {
   ArticleTitle,
@@ -78,4 +79,5 @@ export {
   TagGarden,
   Archive,
   Frontispiece,
+  Bookshelf,
 }
