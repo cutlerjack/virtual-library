@@ -16,6 +16,7 @@ const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentPr
         slug !== "archive" &&
         slug !== "tags" &&
         !slug.startsWith("tags/") &&
+        !slug.startsWith("reading/") &&
         f.frontmatter?.title
       )
     })

@@ -19,7 +19,8 @@ const TagGarden: QuartzComponent = ({ fileData, allFiles }: QuartzComponentProps
       slug !== "index" &&
       slug !== "about" &&
       slug !== "random" &&
-      !slug.startsWith("tags/")
+      !slug.startsWith("tags/") &&
+      !slug.startsWith("reading/")
     )
   })
 

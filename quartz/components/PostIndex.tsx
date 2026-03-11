@@ -18,6 +18,7 @@ const PostIndex: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponent
         slug !== "archive" &&
         slug !== "tags" &&
         !slug.startsWith("tags/") &&
+        !slug.startsWith("reading/") &&
         f.frontmatter?.title
       )
     })
