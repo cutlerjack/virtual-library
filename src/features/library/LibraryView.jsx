@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react'
 import Bookshelf from '../../components/Bookshelf'
 import ShelfTabs from '../../components/ShelfTabs'
 import TagFilter from '../../components/TagFilter'
@@ -8,50 +9,89 @@ import TodayPanel from '../../components/TodayPanel'
 import MemoryResurface from '../../components/MemoryResurface'
 import SpineLibraryPanel from '../../components/SpineLibraryPanel'
 import AnnotationsHub from '../../components/AnnotationsHub'
+import {
+  selectAllTags,
+  selectBooksFinishedThisYear,
+  selectQuoteCount,
+  selectContinueReadingDocs,
+  selectFilteredBooks,
+  selectSortedBooks,
+  selectAllAnnotations,
+} from '../../store/librarySelectors'
+import { exportLibrary } from '../../utils/exportLibrary'
+import { resolveShelfFont } from '../../utils/fonts'
+import { generateId } from '../../utils/storage'
 
 function LibraryView({
   books,
+  documents,
   shelves,
   userData,
-  activeShelf,
-  setActiveShelf,
-  selectedTags,
-  setSelectedTags,
-  sortedBooks,
-  filteredBooks,
-  allTags,
-  sortMode,
-  setSortMode,
+  spineLibraryEntries,
   viewMode,
-  setShowAddModal,
+  icons,
   showCustomizer,
   showDailyRitual,
-  handleUpdateUserData,
-  handleExportLibrary,
-  spineLibraryEntries,
+  actions,
+  updateUserState,
+  updateLibraryState,
+  onSelectBook,
+  onReadDocument,
+  onOpenAnnotation,
+  onRequestAddBook,
+  onNavigateToDocuments,
   handleUpdateSpineLibraryEntry,
   handleRemoveSpineLibraryEntry,
-  handleLogPages,
-  handleAddQuoteQuick,
-  handleAddReflection,
-  handleSelectBook,
-  handleCreateExhibit,
-  handleAddShelf,
-  handleDeleteShelf,
-  handleAddToExhibit,
-  icons,
-  booksFinishedThisYear,
-  quoteCount,
-  continueReadingDocs,
-  handleReadDocument,
-  setActiveView,
-  shelfFontValue,
-  nameplateText,
-  showInsights,
-  setShowInsights,
-  annotations,
-  onOpenAnnotation,
 }) {
+  // View-local state (previously in App.jsx)
+  const [activeShelf, setActiveShelf] = useState('all')
+  const [selectedTags, setSelectedTags] = useState([])
+  const [sortMode, setSortMode] = useState('recent')
+  const [showInsights, setShowInsights] = useState(false)
+
+  // Derived state (previously memoized in App.jsx)
+  const allTags = useMemo(() => selectAllTags(books), [books])
+  const booksFinishedThisYear = useMemo(() => selectBooksFinishedThisYear(books), [books])
+  const quoteCount = useMemo(() => selectQuoteCount(books), [books])
+  const continueReadingDocs = useMemo(() => selectContinueReadingDocs(documents), [documents])
+  const annotations = useMemo(() => selectAllAnnotations(books, documents), [books, documents])
+  const filteredBooks = useMemo(() => selectFilteredBooks(books, activeShelf, selectedTags), [books, activeShelf, selectedTags])
+  const sortedBooks = useMemo(() => selectSortedBooks(filteredBooks, sortMode), [filteredBooks, sortMode])
+
+  const shelfFontValue = resolveShelfFont(userData.shelfFont)
+  const nameplateText = userData.displayName
+
+  const handleUpdateUserData = (updates) => updateUserState(updates)
+  const handleExportLibrary = () => exportLibrary(books, shelves)
+
+  const handleDeleteShelf = (shelfId) => {
+    actions.deleteShelf(shelfId)
+    if (activeShelf === shelfId) setActiveShelf('all')
+  }
+
+  const handleCreateExhibit = () => {
+    const name = prompt('Name your exhibit')
+    if (!name) return
+    const description = prompt('Optional exhibit description') || ''
+    updateUserState({
+      exhibits: [
+        ...(userData.exhibits || []),
+        { id: generateId(), name, description, bookIds: [] },
+      ],
+    })
+  }
+
+  const handleAddToExhibit = (bookId, exhibitId) => {
+    updateUserState({
+      exhibits: (userData.exhibits || []).map((exhibit) => {
+        if (exhibit.id !== exhibitId) return exhibit
+        const current = exhibit.bookIds || []
+        if (current.includes(bookId)) return exhibit
+        return { ...exhibit, bookIds: [...current, bookId] }
+      }),
+    })
+  }
+
   return (
     <div>
       <section className="press-hero">
@@ -89,7 +129,7 @@ function LibraryView({
             <button
               type="button"
               className="btn-secondary text-xs px-3 py-2"
-              onClick={() => setActiveView('documents')}
+              onClick={onNavigateToDocuments}
             >
               View Reading Room
             </button>
@@ -130,7 +170,7 @@ function LibraryView({
                 <button
                   type="button"
                   className="btn-secondary text-xs px-3 py-2"
-                  onClick={() => handleReadDocument(doc, { resume: true })}
+                  onClick={() => onReadDocument(doc, { resume: true })}
                 >
                   Resume
                 </button>
@@ -225,9 +265,9 @@ function LibraryView({
         <TodayPanel
           books={books}
           streak={userData.readingStreak || { current: 0, best: 0 }}
-          onLogPages={handleLogPages}
-          onAddQuote={handleAddQuoteQuick}
-          onAddReflection={handleAddReflection}
+          onLogPages={actions.logPages}
+          onAddQuote={actions.addQuote}
+          onAddReflection={actions.addReflection}
         />
       )}
       <div className="library-insights">
@@ -248,7 +288,7 @@ function LibraryView({
           <div className="library-insights-body">
             <MemoryResurface
               books={books}
-              onOpenBook={handleSelectBook}
+              onOpenBook={onSelectBook}
             />
             <RecommendationsPanel books={books} />
             <TimelineShelf books={books} />
@@ -260,7 +300,7 @@ function LibraryView({
         exhibits={userData.exhibits || []}
         books={books}
         onCreateExhibit={handleCreateExhibit}
-        onSelectBook={handleSelectBook}
+        onSelectBook={onSelectBook}
         shelfFont={shelfFontValue}
       />
 
@@ -268,7 +308,7 @@ function LibraryView({
         shelves={shelves}
         activeShelf={activeShelf}
         onSelectShelf={setActiveShelf}
-        onAddShelf={handleAddShelf}
+        onAddShelf={actions.addShelf}
         onDeleteShelf={handleDeleteShelf}
       />
 
@@ -306,7 +346,7 @@ function LibraryView({
               </p>
               {books.length === 0 && (
                 <button
-                  onClick={() => setShowAddModal(true)}
+                  onClick={onRequestAddBook}
                   className="btn-primary"
                 >
                   Add Your First Book
@@ -336,7 +376,7 @@ function LibraryView({
               </div>
               <Bookshelf
                 books={sortedBooks}
-                onSelectBook={handleSelectBook}
+                onSelectBook={onSelectBook}
                 viewMode={viewMode}
                 nameplateText={nameplateText}
               />

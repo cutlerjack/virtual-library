@@ -5,5 +5,5 @@ dist/
 .tmp-bookshelf/
 .tmp-bookshelf-ts-site/
 PDFs/
-Library/
+/Library/
 Test Images/
