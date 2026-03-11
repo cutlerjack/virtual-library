@@ -10,6 +10,7 @@ const EpubReaderModal = lazy(() => import('./components/EpubReaderModal'))
 const ArticleReaderModal = lazy(() => import('./components/ArticleReaderModal'))
 const BookPage = lazy(() => import('./pages/BookPage'))
 import GlobalSearch from './components/GlobalSearch'
+import ErrorBoundary from './components/ErrorBoundary'
 import LibraryView from './features/library/LibraryView'
 import ReadingRoomView from './features/reading-room/ReadingRoomView'
 import { useLibraryStore } from './store/useLibraryStore'
@@ -381,7 +382,8 @@ function App() {
       </header>
 
       <div className="library-content relative z-10 max-w-6xl mx-auto px-6 py-8">
-        <Suspense fallback={null}>
+        <ErrorBoundary>
+        <Suspense fallback={<div className="loading-placeholder" />}>
           <Routes>
             <Route
               path="/"
@@ -445,6 +447,7 @@ function App() {
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
+        </ErrorBoundary>
       </div>
 
       {/* Modals */}
@@ -528,7 +531,16 @@ function App() {
         )}
       </AnimatePresence>
 
-      <Suspense fallback={null}>
+      <ErrorBoundary fallback={({ error, reset }) => (
+        <div className="reader-error-overlay">
+          <div className="reader-error-content">
+            <h3>Reader Error</h3>
+            <p>{error?.message || 'The reader encountered an error.'}</p>
+            <button type="button" onClick={reset} className="btn-primary">Close</button>
+          </div>
+        </div>
+      )}>
+      <Suspense fallback={<div className="loading-placeholder" />}>
         <AnimatePresence>
         {activePdf && (
           <PdfReaderModal
@@ -648,6 +660,7 @@ function App() {
         )}
         </AnimatePresence>
       </Suspense>
+      </ErrorBoundary>
 
     </div>
   )

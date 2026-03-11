@@ -52,8 +52,8 @@ export function useIngestionController({
       await pruneIngestJobs(libraryPath, { retentionDays, maxRows: 10000 })
     }
 
-    tick().catch(() => {})
-    prune().catch(() => {})
+    tick().catch((err) => console.warn('[ingest] Tick failed:', err?.message || err))
+    prune().catch((err) => console.warn('[ingest] Prune failed:', err?.message || err))
     pollTimerRef.current = setInterval(tick, 4000)
     const pruneTimer = setInterval(prune, 5 * 60 * 1000)
 
@@ -76,7 +76,7 @@ export function useIngestionController({
         itemId: doc.id,
         sourcePath: doc.filePath,
         targetPath: doc.filePath,
-      }).catch(() => {})
+      }).catch((err) => console.warn('[ingest] Enqueue failed:', err?.message || err))
     })
   }, [documents, ingestJobs, libraryPath, libraryReady])
 

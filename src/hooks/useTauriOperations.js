@@ -83,7 +83,7 @@ export function useTauriOperations({
         await refreshLibraryState()
         updateUserState({ lastRescanAt: new Date().toISOString() })
       })
-      .catch(() => {})
+      .catch((err) => console.warn('[rescan] Initial rescan failed:', err?.message || err))
   }, [libraryPath, libraryReady, refreshLibraryState, updateUserState])
 
   // File scanner / watcher
@@ -122,10 +122,10 @@ export function useTauriOperations({
           })
         }
       }
-      await addFileEntries('library')
-      await addFileEntries('articles')
+      await addFileEntries('library').catch((err) => console.warn('[watcher] Scan library/ failed:', err?.message || err))
+      await addFileEntries('articles').catch((err) => console.warn('[watcher] Scan articles/ failed:', err?.message || err))
     }
-    scanFolders()
+    scanFolders().catch((err) => console.warn('[watcher] Initial scan failed:', err?.message || err))
     fileWatchRef.current = setInterval(scanFolders, 60000)
     return () => {
       if (fileWatchRef.current) clearInterval(fileWatchRef.current)
@@ -230,8 +230,8 @@ export function useTauriOperations({
           if (!cancelled) {
             await actions.updateDocumentMeta(doc.id, { thumbnail: thumb })
           }
-        } catch {
-          // ignore thumbnail failures
+        } catch (err) {
+          console.warn(`[thumbnails] Failed for ${doc.title}:`, err?.message || err)
         } finally {
           thumbnailJobs.current.delete(doc.id)
         }
@@ -247,7 +247,7 @@ export function useTauriOperations({
   useEffect(() => {
     if (!libraryReady || !libraryDirty || ingestBusy) return
     const timer = setTimeout(() => {
-      flushLibraryState().catch(() => {})
+      flushLibraryState().catch((err) => console.warn('[flush] Auto-flush failed:', err?.message || err))
     }, 5000)
     return () => clearTimeout(timer)
   }, [libraryReady, libraryDirty, flushLibraryState, ingestBusy])

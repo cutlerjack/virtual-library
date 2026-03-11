@@ -25,7 +25,8 @@ export function useSearchController({ libraryPath }) {
           setSearchResults(results)
           setSearchStatus('success')
         }
-      } catch {
+      } catch (err) {
+        console.warn('[search] Search failed:', err?.message || err)
         if (!cancelled) {
           setSearchResults([])
           setSearchStatus('error')
