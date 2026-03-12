@@ -228,11 +228,11 @@ PageTransitions.afterDOMLoaded = `
   // === EASTER EGGS ===
 
   // 1. Konami code — topo background pulses to full opacity
-  (function() {
-    var seq = [38,38,40,40,37,39,37,39,66,65]; // up up down down left right left right B A
+  document.addEventListener('nav', function() {
+    var seq = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
     var pos = 0;
     function onKey(e) {
-      if (e.keyCode === seq[pos]) {
+      if (e.key === seq[pos]) {
         pos++;
         if (pos === seq.length) {
           pos = 0;
@@ -251,13 +251,14 @@ PageTransitions.afterDOMLoaded = `
     window.addCleanup(function() {
       document.removeEventListener('keydown', onKey);
     });
-  })();
+  });
 
   // 2. Triple-click site title — coordinate label cycles rapidly
-  (function() {
+  document.addEventListener('nav', function() {
     var titleEl = document.querySelector('.site-title');
     if (!titleEl) return;
-    function onTriple(e) {
+    function onClick(e) {
+      if (e.detail !== 3) return;
       e.preventDefault();
       var coord = document.querySelector('.site-coordinates');
       if (!coord) return;
@@ -275,10 +276,11 @@ PageTransitions.afterDOMLoaded = `
         }
       }, 80);
     }
-    titleEl.addEventListener('click', function(e) {
-      if (e.detail === 3) onTriple(e);
+    titleEl.addEventListener('click', onClick);
+    window.addCleanup(function() {
+      titleEl.removeEventListener('click', onClick);
     });
-  })();
+  });
 
   // 3. Bottom-drawer message — appears after lingering at the very bottom
   document.addEventListener('nav', function() {
