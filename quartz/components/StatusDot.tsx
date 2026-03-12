@@ -12,7 +12,7 @@ const StatusDot: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
     <div class="post-meta-cluster">
       {status && (
         <span class="status-indicator">
-          {dotColor && <span class="status-dot" style={{ backgroundColor: dotColor }} />}
+          {dotColor && <span class="status-dot" role="img" aria-label={`Status: ${status}`} style={{ backgroundColor: dotColor }} />}
           <span class="status-label">{status}</span>
         </span>
       )}

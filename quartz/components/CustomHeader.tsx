@@ -53,16 +53,19 @@ document.addEventListener("nav", function() {
   var navLinks = document.querySelectorAll('.site-nav a');
   navLinks.forEach(function(link) {
     link.classList.remove('current');
+    link.removeAttribute('aria-current');
     var href = link.getAttribute('href') || '';
     // Normalize: strip leading ./ or trailing /
     href = href.replace(/^\\.\\//,'').replace(/\\/$/,'');
     // Match exact slug or slug prefix
     if (slug === href || (href !== '' && slug.startsWith(href + '/'))) {
       link.classList.add('current');
+      link.setAttribute('aria-current', 'page');
     }
     // Edge case: tags link should match tags index and all tag pages
     if (href.endsWith('tags') && (slug === 'tags' || slug.startsWith('tags/'))) {
       link.classList.add('current');
+      link.setAttribute('aria-current', 'page');
     }
   });
 });

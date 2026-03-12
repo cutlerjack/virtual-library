@@ -21,9 +21,13 @@ document.addEventListener("nav", function() {
     }
     link.addEventListener('mouseenter', onEnter);
     link.addEventListener('mouseleave', onLeave);
+    link.addEventListener('focusin', onEnter);
+    link.addEventListener('focusout', onLeave);
     window.addCleanup(function() {
       link.removeEventListener('mouseenter', onEnter);
       link.removeEventListener('mouseleave', onLeave);
+      link.removeEventListener('focusin', onEnter);
+      link.removeEventListener('focusout', onLeave);
     });
   });
 });
