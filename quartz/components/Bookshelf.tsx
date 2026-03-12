@@ -259,13 +259,8 @@ document.addEventListener("nav", function() {
     if (wasOpen) {
       var href = btn.getAttribute("data-href");
       if (href) {
-        var link = document.createElement("a");
-        link.href = href;
-        link.classList.add("internal");
-        link.style.display = "none";
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        // Use SPA navigation directly instead of faking an <a> click
+        window.spaNavigate(new URL(href, window.location.origin));
       }
     }
   }
@@ -324,21 +319,19 @@ document.addEventListener("nav", function() {
 
   applyScroll();
 
-  if (window.addCleanup) {
-    window.addCleanup(function() {
-      for (var k = 0; k < bookEls.length; k++) {
-        bookEls[k].removeEventListener("click", onBookClick);
-      }
-      arrowRight.removeEventListener(startEvt, startScrollRight);
-      arrowRight.removeEventListener(stopEvt, stopScroll);
-      arrowLeft.removeEventListener(startEvt, startScrollLeft);
-      arrowLeft.removeEventListener(stopEvt, stopScroll);
-      window.removeEventListener("resize", onResize);
-      document.removeEventListener("mouseup", stopScroll);
-      document.removeEventListener("touchend", stopScroll);
-      stopScroll();
-    });
-  }
+  window.addCleanup(function() {
+    for (var k = 0; k < bookEls.length; k++) {
+      bookEls[k].removeEventListener("click", onBookClick);
+    }
+    arrowRight.removeEventListener(startEvt, startScrollRight);
+    arrowRight.removeEventListener(stopEvt, stopScroll);
+    arrowLeft.removeEventListener(startEvt, startScrollLeft);
+    arrowLeft.removeEventListener(stopEvt, stopScroll);
+    window.removeEventListener("resize", onResize);
+    document.removeEventListener("mouseup", stopScroll);
+    document.removeEventListener("touchend", stopScroll);
+    stopScroll();
+  });
 });
 `
 

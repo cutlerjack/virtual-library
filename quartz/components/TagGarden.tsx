@@ -569,8 +569,7 @@ document.addEventListener("nav", function() {
   themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["saved-theme"] });
 
   // SPA cleanup
-  if (window.addCleanup) {
-    window.addCleanup(function() {
+  window.addCleanup(function() {
       if (animFrame) cancelAnimationFrame(animFrame);
       canvas.removeEventListener("mousemove", onMouseMove);
       canvas.removeEventListener("mouseleave", onMouseLeave);
@@ -580,8 +579,7 @@ document.addEventListener("nav", function() {
       hoveredPlantIdx = -1;
       plants = [];
       particles = [];
-    });
-  }
+  });
 });
 `
 

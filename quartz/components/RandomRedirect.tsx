@@ -87,6 +87,9 @@ const RandomRedirect: QuartzComponent = ({ fileData, allFiles }: QuartzComponent
                 }
               }, 1600);
               setTimeout(function() {
+                // location.replace() is intentional: prevents the /random page
+                // from appearing in browser history so Back goes to the page
+                // the user came from, not back to /random in a redirect loop.
                 window.location.replace(chosen.slug);
               }, 2200);
             })();
