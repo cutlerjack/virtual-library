@@ -2,11 +2,7 @@ import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } fro
 import { isContentPost } from "../util/posts"
 import style from "./styles/footer.scss"
 
-interface Options {
-  links: Record<string, string>
-}
-
-export default ((opts?: Options) => {
+export default (() => {
   const Footer: QuartzComponent = ({ displayClass, allFiles }: QuartzComponentProps) => {
     // Count total words across all posts
     const totalWords = (allFiles ?? [])

@@ -56,9 +56,9 @@ NotFound.css = `
   position: relative;
   max-width: 400px;
   width: 100%;
-  padding: 2.5rem 2rem 2rem;
-  border: 1px solid var(--lightgray);
-  background: var(--light);
+  padding: var(--space-xl) var(--space-xl) var(--space-xl);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
   overflow: hidden;
 }
 
@@ -73,8 +73,8 @@ NotFound.css = `
     to bottom,
     transparent,
     transparent calc(1.4rem - 1px),
-    var(--lightgray) calc(1.4rem - 1px),
-    var(--lightgray) 1.4rem
+    var(--color-border) calc(1.4rem - 1px),
+    var(--color-border) 1.4rem
   );
   opacity: 0.35;
   pointer-events: none;
@@ -112,18 +112,18 @@ NotFound.css = `
   font-family: var(--font-body);
   font-size: 4.5rem;
   font-weight: 400;
-  color: var(--lightgray);
-  margin: 0 0 0.5rem 0;
+  color: var(--color-border);
+  margin: 0 0 var(--space-xs) 0;
   line-height: 1;
-  letter-spacing: -0.02em;
+  letter-spacing: var(--tracking-tight);
 }
 
 .not-found-watermark {
   font-family: var(--font-body);
   font-style: italic;
-  font-size: 1.4rem;
-  color: var(--lightgray);
-  margin: 0 0 1.5rem 0;
+  font-size: var(--text-md);
+  color: var(--color-border);
+  margin: 0 0 var(--space-l) 0;
   opacity: 0.5;
   letter-spacing: 0.04em;
 }
@@ -131,38 +131,38 @@ NotFound.css = `
 .not-found-message {
   font-family: var(--font-body);
   font-style: italic;
-  font-size: 1.05rem;
-  line-height: 1.7;
-  color: var(--darkgray);
-  margin: 0 0 1.5rem 0;
+  font-size: var(--text-body);
+  line-height: var(--line-body);
+  color: var(--color-text-secondary);
+  margin: 0 0 var(--space-l) 0;
 }
 
 .not-found-prompt {
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: var(--text-sm);
   font-weight: 500;
   letter-spacing: 0.02em;
-  color: var(--gray);
+  color: var(--color-text-muted);
   margin: 0;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: var(--space-xs);
 }
 
 .not-found-sep {
-  color: var(--lightgray);
+  color: var(--color-border);
 }
 
 .not-found-prompt a {
-  color: var(--gray);
+  color: var(--color-text-muted);
   text-decoration: none;
   border-bottom: 1px solid transparent;
   transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 
 .not-found-prompt a:hover {
-  color: var(--secondary);
-  border-bottom-color: var(--secondary);
+  color: var(--color-accent);
+  border-bottom-color: var(--color-accent);
 }
 
 .not-found-compass {
@@ -188,25 +188,25 @@ NotFound.css = `
 
 .not-found-compass-label {
   font-family: var(--font-mono);
-  font-size: 0.55rem;
+  font-size: var(--text-2xs);
   font-weight: 500;
-  color: var(--gray);
+  color: var(--color-text-muted);
   letter-spacing: 0.03em;
 }
 
 [saved-theme="dark"] .not-found-card {
-  background: var(--light);
-  border-color: var(--lightgray);
+  background: var(--color-surface);
+  border-color: var(--color-border);
 }
 
 @media (max-width: 640px) {
   .not-found-card {
-    padding: 2rem 1.5rem 1.5rem;
+    padding: var(--space-xl) var(--space-l) var(--space-l);
   }
 
   .not-found-card-lines {
-    left: 1.5rem;
-    right: 1.5rem;
+    left: var(--space-l);
+    right: var(--space-l);
   }
 
   .not-found-card::before {
