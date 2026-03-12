@@ -20,6 +20,12 @@ import NewsletterSignup from "./NewsletterSignup"
 import PostIndex from "./PostIndex"
 import ReadingProgress from "./ReadingProgress"
 import PageTransitions from "./PageTransitions"
+import ConsoleGreeting from "./ConsoleGreeting"
+import SeasonalPalette from "./SeasonalPalette"
+import TerrainParallax from "./TerrainParallax"
+import ScrollReveal from "./ScrollReveal"
+import PageSound from "./PageSound"
+import EasterEggs from "./EasterEggs"
 import CursorTrail from "./CursorTrail"
 import FootnoteLink from "./FootnoteLink"
 import InProgressAnimation from "./InProgressAnimation"
@@ -51,6 +57,12 @@ export {
   PostIndex,
   ReadingProgress,
   PageTransitions,
+  ConsoleGreeting,
+  SeasonalPalette,
+  TerrainParallax,
+  ScrollReveal,
+  PageSound,
+  EasterEggs,
   CursorTrail,
   FootnoteLink,
   InProgressAnimation,

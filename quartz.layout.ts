@@ -19,7 +19,13 @@ export const sharedPageComponents: SharedLayout = {
 export const defaultContentPageLayout: PageLayout = {
   beforeBody: [
     Component.ReadingProgress(),
+    Component.ConsoleGreeting(),
+    Component.SeasonalPalette(),
     Component.PageTransitions(),
+    Component.TerrainParallax(),
+    Component.ScrollReveal(),
+    Component.PageSound(),
+    Component.EasterEggs(),
     Component.CursorTrail(),
     Component.FootnoteLink(),
     Component.InProgressAnimation(),
@@ -45,7 +51,13 @@ export const defaultContentPageLayout: PageLayout = {
 // components for pages that display lists of pages (e.g. tags or folders)
 export const defaultListPageLayout: PageLayout = {
   beforeBody: [
+    Component.ConsoleGreeting(),
+    Component.SeasonalPalette(),
     Component.PageTransitions(),
+    Component.TerrainParallax(),
+    Component.ScrollReveal(),
+    Component.PageSound(),
+    Component.EasterEggs(),
     Component.CursorTrail(),
     Component.FootnoteLink(),
     Component.InProgressAnimation(),

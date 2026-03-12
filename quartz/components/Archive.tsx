@@ -3,6 +3,8 @@ import { isContentPost } from "../util/posts"
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
 import { getDate } from "./Date"
 import archiveStyle from "./styles/archive.scss"
+import { accessionNumber } from "../util/accession"
+import { tagHue } from "../util/hash"
 
 const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentProps) => {
   if (fileData.slug !== "archive") return null
@@ -60,18 +62,16 @@ const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentPr
     return text
   }
 
-  // Compute accession numbers: SC-{year}-{day-of-year} (matches ContentMeta.tsx)
+  // Compute accession numbers: SC-{year}-{day-of-year} (shared with ContentMeta)
   const accessionMap = new Map<string, string>()
   for (const [year, yearPosts] of byYear.entries()) {
     yearPosts.forEach((post) => {
       const slug = post.slug ?? ""
-      const yr = year === 0 ? "XXXX" : String(year)
       const postDate = post.dates ? getDate(cfg, post) : null
       if (postDate) {
-        const startOfYear = new Date(postDate.getFullYear(), 0, 1)
-        const dayOfYear = Math.floor((postDate.getTime() - startOfYear.getTime()) / 86400000) + 1
-        accessionMap.set(slug, `SC-${yr}-${String(dayOfYear).padStart(3, "0")}`)
+        accessionMap.set(slug, accessionNumber(postDate))
       } else {
+        const yr = year === 0 ? "XXXX" : String(year)
         accessionMap.set(slug, `SC-${yr}-001`)
       }
     })
@@ -90,12 +90,7 @@ const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentPr
   const minStem = 30
   const maxStem = 95
 
-  // Deterministic hue from tag name (warm range 25°–75°)
-  function tagHue(tag: string): number {
-    let h = 0
-    for (let i = 0; i < tag.length; i++) h = ((h << 5) - h + tag.charCodeAt(i)) | 0
-    return 25 + (Math.abs(h) % 50)
-  }
+  // tagHue imported from ../util/hash
 
   return (
     <div class="archive">

@@ -5,6 +5,7 @@ import { classNames } from "../util/lang"
 import { i18n } from "../i18n"
 import { JSX } from "preact"
 import style from "./styles/contentMeta.scss"
+import { accessionNumber } from "../util/accession"
 
 interface ContentMetaOptions {
   /**
@@ -35,11 +36,7 @@ export default ((opts?: Partial<ContentMetaOptions>) => {
 
         // Accession number: SC-{year}-{day-of-year}
         if (postDate) {
-          const year = postDate.getFullYear()
-          const startOfYear = new globalThis.Date(year, 0, 1)
-          const dayOfYear = Math.floor((postDate.getTime() - startOfYear.getTime()) / 86400000) + 1
-          const accession = `SC-${year}-${String(dayOfYear).padStart(3, "0")}`
-          segments.push(<span class="accession-number">{accession}</span>)
+          segments.push(<span class="accession-number">{accessionNumber(postDate)}</span>)
         }
       }
 
