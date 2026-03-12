@@ -72,10 +72,18 @@
   border-bottom-color: var(--color-status-active);
 }
 
-// Mobile fallback
+// Mobile fallback — visually hidden on desktop but available to screen readers
+// so the canvas-only tag garden has an accessible text equivalent.
 .tag-garden-mobile {
-  display: none;
-  padding: 2rem 1.5rem;
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .tag-garden-mobile-list {
@@ -117,7 +125,15 @@
     display: none;
   }
   .tag-garden-mobile {
-    display: block;
+    // Undo sr-only and show visually on mobile
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 2rem 1.5rem;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
   }
   // Hide the main count label on mobile — the mobile fallback has its own
   .tag-garden-container > .tag-garden-count {

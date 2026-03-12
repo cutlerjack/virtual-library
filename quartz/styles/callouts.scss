@@ -185,3 +185,17 @@
     font-weight: $semiBoldWeight;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .callout > .callout-content {
+    transition: none;
+  }
+
+  .callout.is-collapsed .callout-content > * {
+    transition: none;
+  }
+
+  .callout-title .fold-callout-icon {
+    transition: none;
+  }
+}
