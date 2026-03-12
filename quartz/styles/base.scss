@@ -156,7 +156,7 @@ a {
   margin: 0 auto;
   & article {
     & > h1 {
-      font-size: 2rem;
+      // font-size removed: custom.scss sets h1 { font-size: var(--text-xl); }
     }
 
     & li:has(> input[type="checkbox"]) {
@@ -210,55 +210,7 @@ a {
       margin: 0 auto;
     }
 
-    & .sidebar {
-      gap: 1.2rem;
-      top: 0;
-      box-sizing: border-box;
-      padding: $topSpacing 2rem 2rem 2rem;
-      display: flex;
-      height: 100vh;
-      position: sticky;
-    }
-
-    & .sidebar.left {
-      z-index: 1;
-      grid-area: grid-sidebar-left;
-      flex-direction: column;
-      @media all and ($mobile) {
-        gap: 0;
-        align-items: center;
-        position: initial;
-        display: flex;
-        height: unset;
-        flex-direction: row;
-        padding: 0;
-        padding-top: 2rem;
-      }
-    }
-
-    & .sidebar.right {
-      grid-area: grid-sidebar-right;
-      margin-right: 0;
-      flex-direction: column;
-      @media all and ($mobile) {
-        margin-left: inherit;
-        margin-right: inherit;
-      }
-      @media all and not ($desktop) {
-        position: initial;
-        height: unset;
-        width: 100%;
-        flex-direction: row;
-        padding: 0;
-        & > * {
-          flex: 1;
-          max-height: 24rem;
-        }
-        & > .toc {
-          display: none;
-        }
-      }
-    }
+    // .sidebar, .sidebar.left, .sidebar.right removed: custom.scss overrides these with !important
     & .page-header,
     & .page-footer {
       margin-top: 1rem;
@@ -281,23 +233,7 @@ a {
       grid-area: grid-footer;
     }
 
-    & .center,
-    & footer {
-      max-width: 100%;
-      min-width: 100%;
-      margin-left: auto;
-      margin-right: auto;
-      @media all and ($tablet) {
-        margin-right: 0;
-      }
-      @media all and ($mobile) {
-        margin-right: 0;
-        margin-left: 0;
-      }
-    }
-    & footer {
-      margin-left: 0;
-    }
+    // .center, footer max-width/margin rules removed: custom.scss overrides .center with !important
   }
 }
 
@@ -340,7 +276,6 @@ input[type="checkbox"] {
 
 blockquote {
   margin: 1rem 0;
-  transition: border-color 0.2s ease;
 }
 
 h1,
@@ -474,11 +409,7 @@ code {
   background: var(--lightgray);
 }
 
-tbody,
-li,
-p {
-  line-height: 1.6rem;
-}
+// tbody, li, p { line-height } removed: custom.scss sets body, p, li, blockquote { line-height: var(--line-body); }
 
 .table-container {
   overflow-x: auto;
@@ -598,4 +529,10 @@ iframe.pdf {
   background: var(--secondary);
   transition: width 0.2s ease;
   z-index: 9999;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
