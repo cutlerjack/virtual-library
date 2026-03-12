@@ -232,7 +232,7 @@ PageTransitions.afterDOMLoaded = `
     var seq = ['ArrowUp','ArrowUp','ArrowDown','ArrowDown','ArrowLeft','ArrowRight','ArrowLeft','ArrowRight','b','a'];
     var pos = 0;
     function onKey(e) {
-      if (e.key === seq[pos]) {
+      if (e.key.toLowerCase() === seq[pos]) {
         pos++;
         if (pos === seq.length) {
           pos = 0;
@@ -257,6 +257,7 @@ PageTransitions.afterDOMLoaded = `
   document.addEventListener('nav', function() {
     var titleEl = document.querySelector('.site-title');
     if (!titleEl) return;
+    var cycleTimer = null;
     function onClick(e) {
       if (e.detail !== 3) return;
       e.preventDefault();
@@ -265,12 +266,14 @@ PageTransitions.afterDOMLoaded = `
       var labels = ['48\\u00b052\\u2032N','basecamp','catalog','drift','terra incognita','field notes','specimen','survey','here','elsewhere','lost'];
       var i = 0;
       var orig = coord.textContent;
-      var timer = setInterval(function() {
+      if (cycleTimer) clearInterval(cycleTimer);
+      cycleTimer = setInterval(function() {
         coord.textContent = labels[i % labels.length];
         coord.style.opacity = '0.9';
         i++;
         if (i > 18) {
-          clearInterval(timer);
+          clearInterval(cycleTimer);
+          cycleTimer = null;
           coord.textContent = orig;
           coord.style.opacity = '';
         }
@@ -279,6 +282,7 @@ PageTransitions.afterDOMLoaded = `
     titleEl.addEventListener('click', onClick);
     window.addCleanup(function() {
       titleEl.removeEventListener('click', onClick);
+      if (cycleTimer) { clearInterval(cycleTimer); cycleTimer = null; }
     });
   });
 
