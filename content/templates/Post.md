@@ -5,7 +5,6 @@ status: in-progress
 confidence: possible
 tags:
   -
-cover:
+cover: /static/covers/{{title}}.webp
 featured: false
 ---
-

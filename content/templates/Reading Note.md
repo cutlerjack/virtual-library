@@ -1,8 +1,11 @@
 ---
 title: "{{title}}"
-date: {{date}}
+author: ""
+rating:
+category: ""
+cover: /static/covers/books/{{title}}.jpg
+spineColor: ""
+textColor: ""
 tags:
   - reading
-author:
 ---
-
