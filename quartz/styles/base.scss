@@ -28,10 +28,6 @@ body {
   padding: 0 0.1rem;
   border-radius: 5px;
 }
-::selection {
-  background: color-mix(in srgb, var(--tertiary) 60%, rgba(255, 255, 255, 0));
-  color: var(--darkgray);
-}
 
 p,
 ul,
@@ -389,32 +385,6 @@ h6 {
   }
 }
 
-// typography improvements
-h1 {
-  font-size: 1.75rem;
-  margin-top: 2.25rem;
-  margin-bottom: 1rem;
-}
-
-h2 {
-  font-size: 1.4rem;
-  margin-top: 1.9rem;
-  margin-bottom: 1rem;
-}
-
-h3 {
-  font-size: 1.12rem;
-  margin-top: 1.62rem;
-  margin-bottom: 1rem;
-}
-
-h4,
-h5,
-h6 {
-  font-size: 1rem;
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
-}
 
 figure[data-rehype-pretty-code-figure] {
   margin: 0;
@@ -443,7 +413,6 @@ pre {
   padding: 0 0.5rem;
   border-radius: 5px;
   overflow-x: auto;
-  border: 1px solid var(--lightgray);
   position: relative;
 
   &:has(> code.mermaid) {
@@ -562,9 +531,6 @@ p > img + em {
 hr {
   width: 100%;
   margin: 2rem auto;
-  height: 1px;
-  border: none;
-  background-color: var(--lightgray);
 }
 
 audio,
