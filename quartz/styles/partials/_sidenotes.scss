@@ -15,6 +15,12 @@
     column-gap: 2.5rem;
   }
 
+  // When there are no footnotes, let the article text use the full width
+  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint:not(:has(.footnotes)) {
+    grid-template-columns: 1fr;
+    max-width: 75ch;
+  }
+
   body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint > * {
     grid-column: 1;
   }
