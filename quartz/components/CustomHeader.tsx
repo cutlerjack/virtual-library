@@ -84,7 +84,7 @@ CustomHeader.css = `
   font-size: var(--text-sm);
   color: var(--dark);
   text-decoration: none;
-  transition: top 0.15s ease;
+  transition: top var(--duration-fast) ease;
 }
 
 .skip-link:focus-visible {
@@ -128,7 +128,7 @@ CustomHeader.css = `
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 400;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   color: var(--color-text-muted);
   opacity: 0.5;
   text-transform: lowercase;
@@ -201,7 +201,7 @@ header:has(.site-header) {
     display: none;
   }
   .site-nav {
-    gap: 1rem;
+    gap: var(--space-m);
   }
   .site-nav a {
     font-size: 0.72rem;

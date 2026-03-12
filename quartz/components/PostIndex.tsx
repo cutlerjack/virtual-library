@@ -106,7 +106,7 @@ PostIndex.css = `
 @media (max-width: 640px) {
   .post-shelf-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 1rem;
+    gap: var(--space-m);
   }
 }
 
@@ -176,8 +176,8 @@ PostIndex.css = `
       calc(var(--cover-hue, 30) * 0.5deg + 15deg),
       transparent 0px,
       transparent 8px,
-      rgba(255,255,255,0.08) 8px,
-      rgba(255,255,255,0.08) 9px
+      color-mix(in srgb, var(--light) 8%, transparent) 8px,
+      color-mix(in srgb, var(--light) 8%, transparent) 9px
     ),
     repeating-linear-gradient(
       calc(var(--cover-hue, 30) * 0.3deg + 45deg),
@@ -199,8 +199,8 @@ PostIndex.css = `
       calc(var(--cover-hue, 30) * 0.5deg + 15deg),
       transparent 0px,
       transparent 8px,
-      rgba(255,255,255,0.05) 8px,
-      rgba(255,255,255,0.05) 9px
+      color-mix(in srgb, var(--light) 5%, transparent) 8px,
+      color-mix(in srgb, var(--light) 5%, transparent) 9px
     ),
     repeating-linear-gradient(
       calc(var(--cover-hue, 30) * 0.3deg + 45deg),

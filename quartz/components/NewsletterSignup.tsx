@@ -50,12 +50,12 @@ NewsletterSignup.css = `
       to bottom,
       transparent 0px,
       transparent 27px,
-      rgba(255,255,255,0.04) 27px,
-      rgba(255,255,255,0.04) 28px
+      color-mix(in srgb, var(--light) 4%, transparent) 27px,
+      color-mix(in srgb, var(--light) 4%, transparent) 28px
     ),
     var(--light, #1a1a1a);
   background-position: 0 0.4rem;
-  border-color: rgba(255,255,255,0.08);
+  border-color: color-mix(in srgb, var(--light) 8%, transparent);
   box-shadow: var(--shadow-md);
 }
 
@@ -80,7 +80,7 @@ NewsletterSignup.css = `
   height: 36px;
   border-radius: 50%;
   background: var(--color-accent);
-  color: #fff;
+  color: var(--light);
   font-family: var(--font-body);
   font-size: var(--text-xs);
   font-weight: 700;

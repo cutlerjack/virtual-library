@@ -283,7 +283,7 @@ Archive.css = `
    ARCHIVE — Shared
    ═══════════════════════════════════════════ */
 .archive {
-  margin-top: 1rem;
+  margin-top: var(--space-m);
 }
 
 /* ── Top row: header + view toggle ── */
@@ -291,7 +291,7 @@ Archive.css = `
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 1rem;
+  gap: var(--space-m);
   margin-bottom: 0;
 }
 
@@ -361,7 +361,7 @@ Archive.css = `
 }
 
 [saved-theme="dark"] .archive-view-btn.active {
-  background-color: rgba(255, 255, 255, 0.06);
+  background-color: color-mix(in srgb, var(--light) 6%, transparent);
   color: var(--light);
 }
 
@@ -376,7 +376,7 @@ Archive.css = `
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--color-text-muted);
   margin: 0 0 var(--space-s) 0;
@@ -420,7 +420,7 @@ Archive.css = `
   );
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--duration-fast) ease;
 }
 
 .archive-entry:hover::before {
@@ -447,7 +447,7 @@ Archive.css = `
   width: 3px;
   background: var(--secondary);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--duration-fast) ease;
 }
 
 .archive-entry:hover::after {
@@ -564,7 +564,7 @@ Archive.css = `
 }
 
 [saved-theme="dark"] .archive-entry:hover {
-  background-color: rgba(255, 255, 255, 0.03);
+  background-color: color-mix(in srgb, var(--light) 3%, transparent);
 }
 
 @media (max-width: 640px) {
@@ -607,7 +607,7 @@ Archive.css = `
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 600;
-  letter-spacing: 0.08em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--color-text-muted);
   margin-bottom: var(--space-2xs);
@@ -652,7 +652,7 @@ Archive.css = `
   font-family: var(--font-mono);
   font-size: var(--text-sm);
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--gray);
   margin: 0 0 0.3rem 0;
@@ -684,7 +684,7 @@ Archive.css = `
   font-family: var(--font-mono);
   font-size: var(--text-2xs);
   font-weight: 500;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-wide);
   text-transform: uppercase;
   color: var(--gray);
   opacity: 0.5;
@@ -763,7 +763,7 @@ Archive.css = `
   font-family: var(--font-mono);
   font-size: var(--text-xs);
   font-weight: 600;
-  letter-spacing: 0.06em;
+  letter-spacing: var(--tracking-wide);
   color: var(--gray);
   padding-top: 0.25rem;
   white-space: nowrap;
@@ -795,7 +795,7 @@ Archive.css = `
   transform: rotate(-55deg);
   transform-origin: bottom center;
   margin-bottom: 0.4rem;
-  transition: color 0.15s ease;
+  transition: color var(--duration-fast) ease;
   max-width: 120px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -812,7 +812,7 @@ Archive.css = `
   height: 8px;
   border-radius: 50%;
   flex-shrink: 0;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform var(--duration-fast) ease, box-shadow var(--duration-fast) ease;
   position: relative;
   z-index: 2;
 }
@@ -840,7 +840,7 @@ Archive.css = `
   /* height set inline */
   background: var(--lightgray);
   flex-shrink: 0;
-  transition: background-color 0.15s ease;
+  transition: background-color var(--duration-fast) ease;
 }
 
 .timeline-point:hover .timeline-point-stem,
@@ -863,19 +863,19 @@ Archive.css = `
 
 /* ── Dark mode ── */
 [saved-theme="dark"] .timeline-track::before {
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--light) 8%, transparent);
 }
 
 [saved-theme="dark"] .timeline-marker-line {
-  background: rgba(255, 255, 255, 0.08);
+  background: color-mix(in srgb, var(--light) 8%, transparent);
 }
 
 [saved-theme="dark"] .timeline-point-stem {
-  background: rgba(255, 255, 255, 0.1);
+  background: color-mix(in srgb, var(--light) 10%, transparent);
 }
 
 [saved-theme="dark"] .timeline-point:hover .timeline-point-bud {
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.08);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--light) 8%, transparent);
 }
 
 /* ── Mobile: vertical timeline ── */

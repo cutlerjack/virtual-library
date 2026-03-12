@@ -157,7 +157,7 @@ NotFound.css = `
   color: var(--gray);
   text-decoration: none;
   border-bottom: 1px solid transparent;
-  transition: color 0.15s ease, border-color 0.15s ease;
+  transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease;
 }
 
 .not-found-prompt a:hover {
