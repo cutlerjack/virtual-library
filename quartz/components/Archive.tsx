@@ -70,14 +70,20 @@ const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentPr
     return text
   }
 
-  // Compute accession numbers: SC-{year}-{padded index within year}
+  // Compute accession numbers: SC-{year}-{day-of-year} (matches ContentMeta.tsx)
   const accessionMap = new Map<string, string>()
   for (const [year, yearPosts] of byYear.entries()) {
-    yearPosts.forEach((post, idx) => {
+    yearPosts.forEach((post) => {
       const slug = post.slug ?? ""
       const yr = year === 0 ? "XXXX" : String(year)
-      const num = String(idx + 1).padStart(3, "0")
-      accessionMap.set(slug, `SC-${yr}-${num}`)
+      const postDate = post.dates ? getDate(cfg, post) : null
+      if (postDate) {
+        const startOfYear = new Date(postDate.getFullYear(), 0, 1)
+        const dayOfYear = Math.floor((postDate.getTime() - startOfYear.getTime()) / 86400000) + 1
+        accessionMap.set(slug, `SC-${yr}-${String(dayOfYear).padStart(3, "0")}`)
+      } else {
+        accessionMap.set(slug, `SC-${yr}-001`)
+      }
     })
   }
 
