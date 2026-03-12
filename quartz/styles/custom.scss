@@ -2163,7 +2163,7 @@ body[data-slug="reading/index"] .page-listing {
   perspective: 1000px;
   -webkit-perspective: 1000px;
   gap: 0;
-  transition: all 500ms ease;
+  transition: width 500ms ease;
   will-change: auto;
   width: 42px;
 }
@@ -2192,7 +2192,7 @@ $shelf-height: 220px;
   transform-origin: right;
   transform-style: preserve-3d;
   transform: rotateY(0deg);
-  transition: all 500ms ease;
+  transition: transform 500ms ease, filter 500ms ease;
   will-change: auto;
   filter: brightness(0.8) contrast(2);
   position: relative;
@@ -2234,7 +2234,7 @@ $shelf-height: 220px;
   transform-origin: left;
   transform-style: preserve-3d;
   transform: rotateY(88.8deg);
-  transition: all 500ms ease;
+  transition: transform 500ms ease, filter 500ms ease;
   will-change: auto;
   filter: brightness(0.8) contrast(2);
   width: $shelf-cover-width;

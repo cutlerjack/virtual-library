@@ -23,6 +23,14 @@ CursorTrail.afterDOMLoaded = `
     return getComputedStyle(document.documentElement).getPropertyValue('--secondary').trim() || '#c47a45';
   }
 
+  var cachedColor = getColor();
+
+  // Refresh color on theme change
+  var themeObs = new MutationObserver(function() {
+    cachedColor = getColor();
+  });
+  themeObs.observe(document.documentElement, { attributes: true, attributeFilter: ['saved-theme'] });
+
   function resize() {
     if (!canvas) return;
     canvas.width = window.innerWidth;
@@ -38,7 +46,7 @@ CursorTrail.afterDOMLoaded = `
       return;
     }
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    var color = getColor();
+    var color = cachedColor;
 
     // Draw connecting lines between recent dots (pen trail)
     if (dots.length > 1) {

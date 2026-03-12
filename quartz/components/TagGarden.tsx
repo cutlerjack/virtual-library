@@ -503,9 +503,18 @@ document.addEventListener("nav", function() {
   canvas.addEventListener("mousemove", onMouseMove);
   canvas.addEventListener("mouseleave", onMouseLeave);
 
+  // Pause animation when canvas is off-screen
+  var isVisible = true;
+  var visObs = new IntersectionObserver(function(entries) {
+    isVisible = entries[0].isIntersecting;
+    if (isVisible && !animFrame) animate();
+  }, { threshold: 0 });
+  visObs.observe(canvas);
+
   // Animation loop for particles
   function animate() {
     if (reducedMotion) return;
+    if (!isVisible) { animFrame = null; return; }
     var w = parseFloat(canvas.style.width) || 800;
     updateParticles(w, 500);
     draw();
@@ -567,6 +576,7 @@ document.addEventListener("nav", function() {
       canvas.removeEventListener("mouseleave", onMouseLeave);
       window.removeEventListener("resize", onResize);
       themeObserver.disconnect();
+      visObs.disconnect();
       hoveredPlantIdx = -1;
       plants = [];
       particles = [];
