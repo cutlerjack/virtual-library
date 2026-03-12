@@ -6,7 +6,7 @@ confidence: likely
 tags:
   - systems
   - ecology
-cover: /static/covers/on-tides.jpg
+cover: /static/covers/on-tides.webp
 ---
 
 The tide is the most reliable system on Earth. Twice a day, every day, the ocean rises and falls in response to the gravitational pull of a rock a quarter of a million miles away. This has been happening for four billion years and will continue long after we are gone. There is comfort in that.

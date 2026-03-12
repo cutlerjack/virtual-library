@@ -6,7 +6,7 @@ confidence: likely
 tags:
   - craft
   - systems
-cover: /static/covers/on-fermentation.jpg
+cover: /static/covers/on-fermentation.webp
 featured: true
 ---
 

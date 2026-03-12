@@ -6,7 +6,7 @@ confidence: likely
 tags:
   - animals
   - evolution
-cover: /static/covers/on-armadillos.jpg
+cover: /static/covers/on-armadillos.webp
 featured: true
 ---
 

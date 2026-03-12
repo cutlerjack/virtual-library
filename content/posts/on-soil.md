@@ -6,7 +6,7 @@ confidence: likely
 tags:
   - systems
   - ecology
-cover: /static/covers/on-soil.jpg
+cover: /static/covers/on-soil.webp
 featured: true
 ---
 

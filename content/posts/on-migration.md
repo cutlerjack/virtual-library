@@ -6,7 +6,7 @@ confidence: likely
 tags:
   - animals
   - systems
-cover: /static/covers/on-migration.jpg
+cover: /static/covers/on-migration.webp
 featured: true
 ---
 

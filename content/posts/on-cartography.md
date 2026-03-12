@@ -6,7 +6,7 @@ confidence: likely
 tags:
   - history
   - craft
-cover: /static/covers/on-cartography.jpg
+cover: /static/covers/on-cartography.webp
 featured: true
 ---
 

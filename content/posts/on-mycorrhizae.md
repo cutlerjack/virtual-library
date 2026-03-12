@@ -6,7 +6,7 @@ confidence: likely
 tags:
   - ecology
   - systems
-cover: /static/covers/on-mycorrhizae.jpg
+cover: /static/covers/on-mycorrhizae.webp
 ---
 
 Beneath any forest floor there is a second forest -- a network of fungal threads connecting root to root, tree to tree. Mycorrhizal fungi trade phosphorus for carbon, broker nutrients between species, and send chemical warnings when one member of the network is under attack. They have been doing this for four hundred million years, long before anything with a spine walked on land.

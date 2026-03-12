@@ -6,7 +6,7 @@ confidence: likely
 tags:
   - craft
   - engineering
-cover: /static/covers/on-typewriters.jpg
+cover: /static/covers/on-typewriters.webp
 featured: true
 ---
 

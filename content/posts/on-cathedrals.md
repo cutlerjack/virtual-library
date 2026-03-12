@@ -6,7 +6,7 @@ confidence: likely
 tags:
   - engineering
   - history
-cover: /static/covers/on-cathedrals.jpg
+cover: /static/covers/on-cathedrals.webp
 featured: true
 ---
 

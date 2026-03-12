@@ -6,7 +6,7 @@ confidence: likely
 tags:
   - engineering
   - history
-cover: /static/covers/on-lighthouses.jpg
+cover: /static/covers/on-lighthouses.webp
 featured: true
 ---
 

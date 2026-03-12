@@ -6,7 +6,7 @@ confidence: likely
 tags:
   - engineering
   - craft
-cover: /static/covers/on-clocks.jpg
+cover: /static/covers/on-clocks.webp
 ---
 
 Before the mechanical clock, time was local and approximate. You rose with the sun, ate when hungry, slept when dark. The monastery bell marked the hours, but loosely. A clock changed everything -- not because it measured time more accurately, but because it made us believe time was something that could be measured at all.
