@@ -1736,14 +1736,6 @@ body[data-slug^="posts/"] .center.settle-in {
   transform: translateY(0);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .scroll-reveal {
-    opacity: 1;
-    transform: none;
-    transition: none;
-  }
-}
-
 // ============================================================
 // STICKY HEADER — condenses on scroll
 // ============================================================
