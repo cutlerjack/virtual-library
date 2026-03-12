@@ -1,5 +1,6 @@
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
 import { pathToRoot } from "../util/path"
+import { isContentPost } from "../util/posts"
 
 const RandomRedirect: QuartzComponent = ({ fileData, allFiles }: QuartzComponentProps) => {
   if (fileData.slug !== "random") return null
@@ -7,17 +8,7 @@ const RandomRedirect: QuartzComponent = ({ fileData, allFiles }: QuartzComponent
   const baseDir = pathToRoot(fileData.slug!)
 
   const posts = (allFiles ?? [])
-    .filter(
-      (f) =>
-        f.slug &&
-        f.slug !== "index" &&
-        f.slug !== "about" &&
-        f.slug !== "random" &&
-        f.slug !== "archive" &&
-        f.slug !== "tags" &&
-        !String(f.slug).startsWith("tags/"),
-    )
-    .filter((f) => f.frontmatter?.title)
+    .filter((f) => isContentPost(f) && f.frontmatter?.title)
     .map((f) => ({ slug: `${baseDir}/${f.slug}`, title: f.frontmatter?.title ?? "" }))
 
   const fallback = baseDir || "/"

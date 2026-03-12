@@ -1,4 +1,5 @@
 import { resolveRelative } from "../util/path"
+import { isContentPost } from "../util/posts"
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
 import { getDate } from "./Date"
 
@@ -7,19 +8,7 @@ const Archive: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponentPr
 
   // Filter to real content posts
   const posts = allFiles
-    .filter((f) => {
-      const slug = f.slug ?? ""
-      return (
-        slug !== "index" &&
-        slug !== "about" &&
-        slug !== "random" &&
-        slug !== "archive" &&
-        slug !== "tags" &&
-        !slug.startsWith("tags/") &&
-        !slug.startsWith("reading/") &&
-        f.frontmatter?.title
-      )
-    })
+    .filter((f) => isContentPost(f) && f.frontmatter?.title)
     .sort((a, b) => {
       if (a.dates && b.dates) {
         return getDate(cfg, b)!.getTime() - getDate(cfg, a)!.getTime()

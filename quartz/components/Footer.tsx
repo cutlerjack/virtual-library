@@ -1,4 +1,5 @@
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
+import { isContentPost } from "../util/posts"
 import style from "./styles/footer.scss"
 
 interface Options {
@@ -9,16 +10,7 @@ export default ((opts?: Options) => {
   const Footer: QuartzComponent = ({ displayClass, allFiles }: QuartzComponentProps) => {
     // Count total words across all posts
     const totalWords = (allFiles ?? [])
-      .filter(
-        (f) =>
-          f.slug &&
-          f.slug !== "index" &&
-          f.slug !== "about" &&
-          f.slug !== "random" &&
-          f.slug !== "archive" &&
-          f.slug !== "tags" &&
-          !String(f.slug).startsWith("tags/"),
-      )
+      .filter(isContentPost)
       .reduce((sum, f) => {
         // Use full text content, not the truncated description excerpt
         const text = (f as any).text ?? f.description ?? ""

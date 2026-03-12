@@ -1,5 +1,6 @@
 import { resolveRelative } from "../util/path"
 import { hashTitle } from "../util/hash"
+import { isContentPost } from "../util/posts"
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
 import { getDate } from "./Date"
 
@@ -9,19 +10,7 @@ const PostIndex: QuartzComponent = ({ cfg, fileData, allFiles }: QuartzComponent
 
   // Filter out non-content pages
   const allPosts = allFiles
-    .filter((f) => {
-      const slug = f.slug ?? ""
-      return (
-        slug !== "index" &&
-        slug !== "about" &&
-        slug !== "random" &&
-        slug !== "archive" &&
-        slug !== "tags" &&
-        !slug.startsWith("tags/") &&
-        !slug.startsWith("reading/") &&
-        f.frontmatter?.title
-      )
-    })
+    .filter((f) => isContentPost(f) && f.frontmatter?.title)
     .sort((a, b) => {
       if (a.dates && b.dates) {
         return getDate(cfg, b)!.getTime() - getDate(cfg, a)!.getTime()

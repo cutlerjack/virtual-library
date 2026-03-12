@@ -1,5 +1,6 @@
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
 import { resolveRelative } from "../util/path"
+import { isContentPost } from "../util/posts"
 
 interface TagData {
   tagName: string
@@ -12,17 +13,7 @@ const TagGarden: QuartzComponent = ({ fileData, allFiles }: QuartzComponentProps
   if (!isTagsIndex) return null
 
   // Filter to real content posts
-  const contentFiles = allFiles.filter((f) => {
-    const slug = f.slug ?? ""
-    return (
-      slug &&
-      slug !== "index" &&
-      slug !== "about" &&
-      slug !== "random" &&
-      !slug.startsWith("tags/") &&
-      !slug.startsWith("reading/")
-    )
-  })
+  const contentFiles = allFiles.filter(isContentPost)
 
   // Build tag -> posts map
   const tagMap = new Map<string, TagData["posts"]>()

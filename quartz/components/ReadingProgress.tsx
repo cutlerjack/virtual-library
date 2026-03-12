@@ -1,11 +1,10 @@
 import { QuartzComponent, QuartzComponentConstructor, QuartzComponentProps } from "./types"
+import { isContentSlug } from "../util/posts"
 
 const ReadingProgress: QuartzComponent = ({ fileData }: QuartzComponentProps) => {
   const slug = fileData.slug ?? ""
   // Only show on post pages
-  if (slug === "index" || slug === "about" || slug === "random" || slug === "archive" || slug === "tags" || slug.startsWith("tags/")) {
-    return null
-  }
+  if (!isContentSlug(slug)) return null
 
   return <div class="reading-progress" id="reading-progress" />
 }
