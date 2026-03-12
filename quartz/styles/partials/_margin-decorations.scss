@@ -1,0 +1,97 @@
+// ============================================================
+// MARGIN DECORATIONS — Vertical rule & heading tick marks
+// ============================================================
+
+@media (min-width: 1000px) {
+  // Post pages only
+  body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]):not([data-slug="archive"]) {
+    article.popover-hint {
+      position: relative;
+    }
+
+    // Vertical rule in the left margin — fills as you scroll (vine growth)
+    article.popover-hint::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: -1.5rem;
+      width: 1px;
+      // Two-tone: read portion is brighter, unread is faint
+      background: linear-gradient(
+        to bottom,
+        var(--secondary) 0%,
+        var(--secondary) calc(var(--read-progress, 0) * 100%),
+        var(--secondary) calc(var(--read-progress, 0) * 100%)
+      );
+      opacity: 0.12;
+      pointer-events: none;
+      // The read portion glows brighter via a mask
+      -webkit-mask-image: linear-gradient(
+        to bottom,
+        rgba(0,0,0,1) 0%,
+        rgba(0,0,0,1) calc(var(--read-progress, 0) * 100%),
+        rgba(0,0,0,0.3) calc(var(--read-progress, 0) * 100%),
+        rgba(0,0,0,0.3) 100%
+      );
+      mask-image: linear-gradient(
+        to bottom,
+        rgba(0,0,0,1) 0%,
+        rgba(0,0,0,1) calc(var(--read-progress, 0) * 100%),
+        rgba(0,0,0,0.3) calc(var(--read-progress, 0) * 100%),
+        rgba(0,0,0,0.3) 100%
+      );
+      opacity: 0.35;
+      transition: none;
+    }
+
+    // Tick marks at h2 and h3 headings
+    article.popover-hint h2,
+    article.popover-hint h3 {
+      position: relative;
+    }
+
+    article.popover-hint h2::before,
+    article.popover-hint h3::before {
+      content: "";
+      position: absolute;
+      left: calc(-1.5rem - 2px);
+      top: 0.45em;
+      width: 10px;
+      height: 6px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 5 C3 4 5 2 9 1 C5 3 3 3 1 5Z' fill='%238b3a1f' opacity='0.4'/%3E%3C/svg%3E");
+      background-size: contain;
+      background-repeat: no-repeat;
+      opacity: 0.7;
+      pointer-events: none;
+    }
+  }
+
+  [saved-theme="dark"] body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]):not([data-slug="archive"]) {
+    article.popover-hint::before {
+      opacity: 0.25;
+    }
+
+    article.popover-hint h2::before,
+    article.popover-hint h3::before {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 5 C3 4 5 2 9 1 C5 3 3 3 1 5Z' fill='%23c47a45' opacity='0.3'/%3E%3C/svg%3E");
+      opacity: 0.5;
+    }
+  }
+}
+
+// Field-depth parallax — margin decorations drift at a different rate than text
+// Creates a three-layer depth: topo bg (0.12×), article (1×), margins (~1.02×)
+@media (min-width: 1000px) and (prefers-reduced-motion: no-preference) {
+  body[data-slug^="posts/"] {
+    article.popover-hint::before {
+      transform: translateY(var(--margin-y, 0px));
+      will-change: transform;
+    }
+
+    article.popover-hint .footnotes {
+      transform: translateY(var(--margin-y, 0px));
+      will-change: transform;
+    }
+  }
+}

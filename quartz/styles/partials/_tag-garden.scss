@@ -1,0 +1,133 @@
+// ============================================================
+// TAG GARDEN — Full-bleed dark canvas
+// ============================================================
+
+.tag-garden-container {
+  position: relative;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  background: var(--color-surface);
+  min-height: 500px;
+  border-radius: var(--radius-none);
+  transition: background-color var(--duration-slow) ease;
+}
+
+.tag-garden-canvas {
+  display: block;
+  width: 100%;
+  height: 500px;
+  cursor: crosshair;
+}
+
+.tag-garden-count {
+  position: absolute;
+  top: var(--space-l);
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  opacity: 0.5;
+}
+
+.tag-garden-tooltip {
+  position: absolute;
+  background: color-mix(in srgb, var(--dark) 95%, transparent);
+  border: 1px solid color-mix(in srgb, var(--lightgray) 15%, transparent);
+  border-radius: var(--radius-md);
+  padding: var(--space-xs) var(--space-s);
+  pointer-events: auto;
+  z-index: 10;
+  max-width: 220px;
+  display: none;
+}
+
+.tag-garden-tooltip.visible {
+  display: block;
+}
+
+.tag-garden-tooltip-title {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  color: color-mix(in srgb, var(--light) 60%, transparent);
+  margin-bottom: var(--space-2xs);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-wide);
+}
+
+.tag-garden-tooltip a {
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--text-meta);
+  color: var(--light);
+  text-decoration: none;
+  padding: var(--space-3xs) 0;
+  border-bottom: 1px solid transparent;
+  transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease;
+}
+
+.tag-garden-tooltip a:hover {
+  color: var(--color-status-active);
+  border-bottom-color: var(--color-status-active);
+}
+
+// Mobile fallback
+.tag-garden-mobile {
+  display: none;
+  padding: 2rem 1.5rem;
+}
+
+.tag-garden-mobile-list {
+  list-style: none;
+  padding: 0;
+  margin: 1rem 0 0;
+}
+
+.tag-garden-mobile-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--gray) 15%, transparent);
+}
+
+.tag-garden-mobile-list li a {
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--color-text);
+  text-decoration: none;
+  transition: color var(--duration-fast);
+}
+
+.tag-garden-mobile-list li a:hover {
+  color: var(--color-accent);
+}
+
+.tag-garden-mobile-count {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+}
+
+@media (max-width: 768px) {
+  .tag-garden-canvas {
+    display: none;
+  }
+  .tag-garden-mobile {
+    display: block;
+  }
+  // Hide the main count label on mobile — the mobile fallback has its own
+  .tag-garden-container > .tag-garden-count {
+    display: none;
+  }
+}
+
+// Hide default tag content on tags index when garden is active
+// Target only the direct-child popover-hint (TagContent output),
+// not the one inside .page-header (which wraps TagGarden)
+body[data-slug="tags/index"] .center > .popover-hint {
+  display: none;
+}

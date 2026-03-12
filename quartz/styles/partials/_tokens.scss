@@ -1,0 +1,101 @@
+// ============================================================
+// DESIGN TOKENS — Single source of truth for the visual system
+// ============================================================
+
+:root {
+  // --- Typography scale (minor third, ratio 1.2, base 1.15rem) ---
+  //   0.56 → 0.67 → 0.80 → 0.96 → 1.15 → 1.38 → 1.66 → 1.99 → 2.39
+  --font-body: "EB Garamond", Georgia, serif;
+  --font-mono: "IBM Plex Mono", monospace;
+  --text-2xs: 0.56rem;     // micro-labels, accession numbers
+  --text-xs: 0.67rem;      // specimen labels, nav coordinates
+  --text-sm: 0.8rem;       // meta, dates, tag counts
+  --text-meta: 0.8rem;     // alias for readability
+  --text-base: 0.96rem;    // shelf titles, card body, UI text
+  --text-body: 1.15rem;    // article body text (the anchor)
+  --text-md: 1.38rem;      // h3, blockquotes
+  --text-lg: 1.66rem;      // h2
+  --text-xl: 1.99rem;      // h1, article-title
+  --text-2xl: 2.39rem;     // pull quotes, display text
+  --line-body: 1.75;
+  --line-heading: 1.25;
+  --line-tight: 1.35;
+  --tracking-tight: -0.015em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.06em;
+  --tracking-wider: 0.1em;
+
+  // --- Sizes ---
+  --size-status-dot: 5px;
+  --size-seal: 28px;
+
+  // --- Spacing scale ---
+  --space-3xs: 0.125rem;
+  --space-2xs: 0.25rem;
+  --space-xs: 0.5rem;
+  --space-s: 0.75rem;
+  --space-m: 1rem;
+  --space-l: 1.5rem;
+  --space-xl: 2.5rem;
+  --space-2xl: 4rem;
+
+  // --- Semantic colors ---
+  --color-surface: var(--light);
+  --color-surface-raised: var(--light);
+  --color-border: var(--lightgray);
+  --color-text: var(--dark);
+  --color-text-secondary: var(--darkgray);
+  --color-text-muted: var(--gray);
+  --color-accent: var(--secondary);
+  --color-accent-warm: var(--tertiary);
+  --color-highlight: var(--highlight);
+  --color-status-active: #b86830;
+  --color-status-complete: #5a8a5a;
+
+  // --- Shadows (warm tint — lamplight, not fluorescent) ---
+  --shadow-sm: 0 1px 3px rgba(120, 80, 40, 0.07);
+  --shadow-md: 1px 2px 6px rgba(120, 80, 40, 0.09);
+  --shadow-lg: 0 4px 14px rgba(120, 80, 40, 0.12);
+
+  // --- Radii ---
+  --radius-none: 0;
+  --radius-sm: 2px;
+  --radius-md: 4px;
+  --radius-lg: 8px;
+
+  // --- Motion ---
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.45, 0, 0.55, 1);
+  --duration-instant: 0.1s;
+  --duration-fast: 0.15s;
+  --duration-normal: 0.3s;
+  --duration-slow: 0.5s;
+}
+
+[saved-theme="dark"] {
+  --color-status-active: #d4895a;
+  --color-status-complete: #6fa06f;
+  --shadow-sm: 0 1px 3px rgba(15, 20, 35, 0.2);
+  --shadow-md: 1px 2px 6px rgba(15, 20, 35, 0.3);
+  --shadow-lg: 0 4px 14px rgba(15, 20, 35, 0.4);
+}
+
+// --- Seasonal palette shifts ---
+// Accent color subtly reflects the season. Summer uses baseline (no override).
+:root[data-season="spring"]  { --secondary: #8a5028; --tertiary: #b07a40; }
+:root[data-season="autumn"]  { --secondary: #8b2e18; --tertiary: #b05a2a; }
+:root[data-season="winter"]  { --secondary: #7a4a35; --tertiary: #907058; }
+
+[saved-theme="dark"][data-season="spring"]  { --secondary: #c88b50; --tertiary: #d4a060; }
+[saved-theme="dark"][data-season="autumn"]  { --secondary: #c47040; --tertiary: #d47a4a; }
+[saved-theme="dark"][data-season="winter"]  { --secondary: #b07a58; --tertiary: #a89078; }
+
+// Smooth theme transition — background and text ease between light/dark
+body {
+  transition: background-color var(--duration-normal) var(--ease-in-out),
+              color var(--duration-normal) var(--ease-in-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body { transition: none; }
+}

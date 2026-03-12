@@ -1,0 +1,130 @@
+// ============================================================
+// TYPOGRAPHY — Bringhurst-level care
+// ============================================================
+
+body, p, li, blockquote {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--line-body);
+  font-feature-settings: "liga" 1, "kern" 1, "onum" 1;
+  font-variant-numeric: oldstyle-nums;
+  hanging-punctuation: first last;
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+// Optimal reading measure
+article p,
+article li,
+article blockquote {
+  max-width: 65ch;
+}
+
+// Tight coupling — first paragraph after heading hugs it
+article h2 + p,
+article h3 + p,
+article h4 + p {
+  margin-top: 0.25em;
+}
+
+// Breathing room — paragraph after full-bleed image needs extra space
+article .full-bleed + p,
+article figure + p {
+  margin-top: 1.5em;
+}
+
+// Full-bleed images — break out of the 65ch column
+article .full-bleed {
+  max-width: none;
+  width: calc(100% + 4rem);
+  margin-left: -2rem;
+  margin-right: -2rem;
+
+  img {
+    width: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+}
+
+// Full-bleed edge — extends to viewport edges
+article .full-bleed-edge {
+  max-width: none;
+  width: 100vw;
+  margin-left: calc(-50vw + 50%);
+  margin-right: 0;
+
+  img {
+    width: 100%;
+    border-radius: 0;
+    margin: 0;
+  }
+}
+
+// Figure captions
+article figure {
+  margin: var(--space-l) 0;
+  max-width: none;
+
+  img {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+  }
+
+  figcaption {
+    text-align: center;
+    font-family: var(--font-mono);
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
+    margin-top: var(--space-xs);
+    font-style: normal;
+  }
+}
+
+@media (max-width: 640px) {
+  article .full-bleed {
+    width: calc(100% + 2.5rem);
+    margin-left: -1.25rem;
+    margin-right: -1.25rem;
+  }
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  line-height: var(--line-heading);
+  letter-spacing: var(--tracking-tight);
+  text-wrap: balance;
+}
+
+h1 { font-size: var(--text-xl); }
+h2 { font-size: var(--text-lg); }
+h3 { font-size: var(--text-md); }
+h4, h5, h6 { font-size: var(--text-body); }
+
+code, pre, kbd {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: 0.85em;
+}
+
+// Drop cap on the first paragraph of post articles — illuminated manuscript feel
+body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]):not([data-slug="archive"]) {
+  article.popover-hint > p:first-of-type::first-letter {
+    font-family: var(--font-body);
+    float: left;
+    font-size: 4.2em;
+    line-height: 0.72;
+    padding-right: 0.1em;
+    margin-top: 0.05em;
+    font-weight: 600;
+    color: var(--secondary);
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.04);
+  }
+}
+
+[saved-theme="dark"] body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]):not([data-slug="archive"]) {
+  article.popover-hint > p:first-of-type::first-letter {
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.15);
+  }
+}

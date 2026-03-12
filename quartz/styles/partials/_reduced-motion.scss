@@ -1,0 +1,34 @@
+// ============================================================
+// REDUCED MOTION — Comprehensive audit (Phase 7)
+// ============================================================
+// All transitions, animations, and transforms must have fallbacks.
+// The main blocks are: page transitions, scroll-reveal, note sway,
+// cursor trail, status dot breathe, ink-blot nav hover, link lift,
+// book-pull shelf hover, topo parallax, header condense.
+// Each is gated behind checks in either CSS or JS.
+
+@media (prefers-reduced-motion: reduce) {
+  // Ensure no transforms on hover for links
+  article a.internal:hover,
+  article a[href^="http"]:hover {
+    transform: none;
+  }
+
+  // Kill all scroll-reveal transitions (JS also skips for reduced motion)
+  .scroll-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  // Kill book-pull hover on shelf items
+  .post-shelf-item:hover {
+    transform: none;
+  }
+
+  // Kill ink-blot on nav links
+  .site-nav a {
+    background: none !important;
+    transition: color var(--duration-fast) ease;
+  }
+}

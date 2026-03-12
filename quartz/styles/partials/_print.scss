@@ -1,0 +1,80 @@
+// ============================================================
+// PRINT STYLESHEET — Clean reading surface
+// ============================================================
+
+@media print {
+  @page {
+    margin: 2cm;
+  }
+
+  // Hide everything except article content
+  .site-header,
+  .header-spacer,
+  .search-container,
+  .darkmode,
+  .sound-toggle,
+  .site-nav,
+  #cursor-trail-canvas,
+  .reading-progress,
+  .margin-vine,
+  .newsletter-signup,
+  .newsletter-card,
+  .colophon-card,
+  footer ul,
+  .tags,
+  .backlinks,
+  .toc,
+  .right.sidebar,
+  .skip-link,
+  .post-shelf,
+  .weathered-note-wrap,
+  .bottom-drawer-msg,
+  .tag-garden-container {
+    display: none !important;
+  }
+
+  body,
+  body::before {
+    background: none !important;
+    background-image: none !important;
+  }
+
+  article {
+    max-width: none;
+    font-size: 11pt;
+    line-height: 1.6;
+    color: #000;
+  }
+
+  article a {
+    color: #000;
+    text-decoration: underline;
+    background: none !important;
+    background-image: none !important;
+  }
+
+  // Show link URLs after text
+  article a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+    color: #666;
+  }
+
+  article a.internal::after {
+    content: none;
+  }
+
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+
+  img, figure {
+    page-break-inside: avoid;
+    max-width: 100%;
+  }
+
+  pre {
+    border: 1px solid #ccc;
+    page-break-inside: avoid;
+  }
+}

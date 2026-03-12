@@ -1,0 +1,28 @@
+// Links — ink-well underline that draws on hover
+// Note: base.scss a.internal is now unstyled (no bg/padding/radius)
+// so we don't need !important overrides in components anymore.
+article a.internal,
+article a[href^="http"] {
+  color: var(--dark);
+  text-decoration: none;
+  border-bottom: none;
+  background-color: var(--highlight);
+  padding: 0 0.1rem;
+  border-radius: var(--radius-sm);
+  // Two-layer underline: a faint always-visible hint + a bold draw-on-hover
+  background-image:
+    linear-gradient(var(--secondary), var(--secondary)),
+    linear-gradient(var(--secondary), var(--secondary));
+  background-size: 100% 0.5px, 0% 1.5px;
+  background-position: 0 100%, 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 0.25s var(--ease-out), color var(--duration-fast) ease, transform var(--duration-fast) var(--ease-out);
+  padding-bottom: 1.5px;
+}
+
+article a.internal:hover,
+article a[href^="http"]:hover {
+  background-size: 100% 0.5px, 100% 1.5px;
+  color: var(--secondary);
+  transform: translateY(-0.5px);
+}

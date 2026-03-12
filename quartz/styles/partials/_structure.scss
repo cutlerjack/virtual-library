@@ -1,0 +1,131 @@
+// ============================================================
+// STRUCTURAL OVERRIDE — Kill the Quartz three-column skeleton
+// ============================================================
+
+// Force single-column editorial layout everywhere
+.page > #quartz-body {
+  display: block !important;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+// Left sidebar: collapse visually, keep in DOM for search/darkmode JS
+.page > #quartz-body > .left.sidebar {
+  position: fixed !important;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  width: auto !important;
+  height: auto !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 0.6rem;
+  z-index: 100;
+  background: none;
+
+  // Search button — small floating icon
+  & > .search {
+    max-width: none;
+    min-width: 0;
+  }
+  & > .search > .search-button {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--light);
+    border: 1px solid var(--lightgray);
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.2s;
+    &:hover { opacity: 0.85; }
+    &:focus-visible { opacity: 0.85; outline: 2px solid var(--secondary); outline-offset: 2px; }
+    & > p { display: none; }
+    & > svg { width: 13px; height: 13px; }
+  }
+
+  // Darkmode button — small floating icon
+  & > .darkmode {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--light);
+    border: 1px solid var(--lightgray);
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.2s;
+    &:hover { opacity: 0.85; }
+    &:focus-visible { opacity: 0.85; outline: 2px solid var(--secondary); outline-offset: 2px; }
+  }
+
+  // Sound toggle button — small floating icon
+  & > .sound-toggle {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--light);
+    border: 1px solid var(--lightgray);
+    box-shadow: var(--shadow-sm);
+    padding: 0;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.2s;
+    color: var(--dark);
+    &:hover { opacity: 0.85; }
+    &:focus-visible { opacity: 0.85; outline: 2px solid var(--secondary); outline-offset: 2px; }
+    &[aria-pressed="true"] { opacity: 0.65; }
+  }
+}
+
+// Right sidebar: render below content as a section, not a sidebar column
+.page > #quartz-body > .right.sidebar {
+  position: static !important;
+  height: auto !important;
+  width: 100% !important;
+  padding: 0 !important;
+  margin-top: 3rem;
+  border-top: 1px solid var(--lightgray);
+  padding-top: 1.5rem !important;
+  flex-direction: column !important;
+  display: flex !important;
+  gap: 1.5rem;
+}
+
+// On index, about, tags: hide the right sidebar entirely
+body[data-slug="index"] .page > #quartz-body > .right.sidebar,
+body[data-slug="about"] .page > #quartz-body > .right.sidebar,
+body[data-slug^="tags"] .page > #quartz-body > .right.sidebar,
+body[data-slug="archive"] .page > #quartz-body > .right.sidebar,
+body[data-slug="404"] .page > #quartz-body > .right.sidebar {
+  display: none !important;
+}
+
+// Remove the top spacing Quartz adds
+.page > #quartz-body .page-header {
+  margin-top: 0;
+}
+
+// Center area should be full width within our container
+.page > #quartz-body > .center {
+  max-width: 100%;
+  min-width: 0;
+}
+
+// Remove default page max-width — our container handles it
+.page {
+  max-width: none;
+}

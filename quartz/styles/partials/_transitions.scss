@@ -1,0 +1,196 @@
+// ============================================================
+// PAGE TRANSITIONS — Puff (exit) & Settle (enter)
+// ============================================================
+
+.center {
+  transition: opacity var(--duration-normal) var(--ease-out),
+              transform var(--duration-normal) var(--ease-out),
+              filter var(--duration-fast) var(--ease-out);
+}
+
+.center.puff-out {
+  opacity: 0;
+  transform: scale(0.98);
+  filter: blur(1px);
+  transition: opacity var(--duration-fast) ease-in,
+              transform var(--duration-fast) ease-in,
+              filter var(--duration-fast) ease-in;
+}
+
+.center.settle-in {
+  animation: settle var(--duration-normal) var(--ease-out) forwards;
+}
+
+@keyframes settle {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Specimen drawer slide — post pages enter from the right
+@keyframes specimen-slide {
+  from {
+    opacity: 0;
+    transform: translateX(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+// Apply specimen slide to post pages only
+body[data-slug^="posts/"] .center.settle-in {
+  animation-name: specimen-slide;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .center.puff-out {
+    filter: none;
+    transform: none;
+    transition: opacity var(--duration-fast) ease;
+  }
+  .center.settle-in {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+// ============================================================
+// SCROLL-TRIGGERED ENTRY ANIMATIONS
+// ============================================================
+
+@keyframes content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.scroll-reveal {
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity var(--duration-slow) var(--ease-out),
+              transform var(--duration-slow) var(--ease-out);
+}
+
+.scroll-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+// ============================================================
+// STICKY HEADER — condenses on scroll
+// ============================================================
+
+// Sticky header — JS applies .header-fixed when scrolled past threshold
+.site-header {
+  transition: padding var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
+}
+
+.site-header.header-fixed {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  max-width: none;
+  background: var(--color-surface);
+  padding: 0.6rem max(2rem, calc((100vw - 780px) / 2 + 2rem)) 0.5rem;
+  box-shadow: var(--shadow-sm);
+  border-bottom: 1px solid var(--color-border);
+  margin-bottom: 0;
+}
+
+// Spacer prevents content jump when header goes fixed
+.header-spacer {
+  display: none;
+}
+
+.header-spacer.active {
+  display: block;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-header {
+    transition: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-header.header-fixed {
+    padding: 0.5rem 1.25rem 0.4rem;
+  }
+}
+
+// ============================================================
+// KONAMI CODE — topo background pulses
+// ============================================================
+
+@keyframes topo-flash {
+  0% { opacity: 0.07; }
+  30% { opacity: 0.35; }
+  100% { opacity: 0.07; }
+}
+
+body.topo-pulse::before {
+  animation: topo-flash 1.5s ease-out forwards;
+}
+
+// ============================================================
+// BOTTOM-DRAWER EASTER EGG
+// ============================================================
+
+.bottom-drawer-msg {
+  text-align: center;
+  font-family: var(--font-body);
+  font-style: italic;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+  opacity: 0;
+  padding: var(--space-l) 0 var(--space-m);
+  transition: opacity 2s var(--ease-out);
+  pointer-events: none;
+}
+
+.bottom-drawer-msg.visible {
+  opacity: 0.4;
+}
+
+// ============================================================
+// FOOTNOTE HOVER CONNECTION
+// ============================================================
+
+.sidenote-highlight {
+  background-color: color-mix(in srgb, var(--color-accent) 10%, transparent);
+  transition: background-color var(--duration-slow) ease;
+  border-radius: var(--radius-sm);
+}
+
+[saved-theme="dark"] .sidenote-highlight {
+  background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+}
+
+@media (max-width: 480px) {
+  .newsletter-form {
+    flex-direction: column;
+  }
+  .newsletter-input {
+    min-width: unset;
+    width: 100%;
+  }
+  .newsletter-btn {
+    width: 100%;
+    text-align: center;
+  }
+}

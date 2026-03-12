@@ -1,0 +1,110 @@
+// ============================================================
+// INDEX PAGE — Editorial broadsheet
+// ============================================================
+
+body[data-slug="index"] .center {
+  max-width: 680px;
+}
+
+// Widen the post shelf grid beyond the 680px column
+body[data-slug="index"] .post-shelf-grid {
+  width: calc(100vw - 4rem);
+  max-width: 1100px;
+  margin-left: 50%;
+  transform: translateX(-50%);
+  grid-template-columns: repeat(4, 1fr);
+  perspective: 1200px;
+}
+
+// Subtle 3D tilt — books sit on a real shelf
+body[data-slug="index"] .post-shelf-grid .post-shelf-item {
+  transform: rotateX(1.5deg);
+  transform-origin: bottom center;
+}
+
+@media (max-width: 900px) {
+  body[data-slug="index"] .post-shelf-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  body[data-slug="index"] .post-shelf-grid {
+    width: 100%;
+    max-width: none;
+    margin-left: 0;
+    transform: none;
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+// Page listing with dot leaders
+.page-listing {
+  margin-top: 0.5rem;
+}
+
+.page-listing h3,
+.section-header {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: var(--tracking-wider);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border-bottom: 1px solid var(--color-border);
+  padding-bottom: var(--space-2xs);
+  margin-bottom: var(--space-s);
+  margin-top: var(--space-xl);
+  font-family: var(--font-mono);
+}
+
+.page-listing h3:first-child {
+  margin-top: 0;
+}
+
+.page-listing ul {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 0.5rem;
+}
+
+.page-listing li {
+  padding: 0.2rem 0;
+  display: flex;
+  align-items: baseline;
+  line-height: 1.4;
+}
+
+// Dot leaders between title and date
+.page-listing li::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px dotted var(--lightgray);
+  margin: 0 0.6rem;
+  position: relative;
+  bottom: 0.25em;
+}
+
+.page-listing li a.internal {
+  font-size: var(--text-base);
+  font-family: var(--font-body);
+  color: var(--color-text);
+  text-decoration: none;
+  border-bottom: none;
+  transition: color var(--duration-fast);
+  flex-shrink: 0;
+  order: 0;
+}
+
+.page-listing li a.internal:hover {
+  color: var(--color-accent);
+}
+
+// Date/meta in the listing
+.page-listing .meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  flex-shrink: 0;
+  order: 2;
+}

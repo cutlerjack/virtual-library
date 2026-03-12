@@ -1,0 +1,178 @@
+// ============================================================
+// ARTICLE TITLE — Post pages, styled as specimen labels
+// ============================================================
+
+.article-title {
+  margin: 0 0 var(--space-3xs) 0;
+  font-size: var(--text-xl);
+  font-weight: 600;
+  letter-spacing: var(--tracking-tight);
+  line-height: var(--line-heading);
+  text-wrap: balance;
+}
+
+// Specimen label wrapper: groups title + status + meta into a structured card
+body:not([data-slug="index"]):not([data-slug="about"]):not([data-slug^="tags"]):not([data-slug="random"]):not([data-slug="archive"]):not([data-slug="404"]) {
+  .popover-hint ~ .popover-hint,
+  .page-header > .popover-hint:first-of-type {
+    // Target the wrapper div that contains article-title, post-meta, content-meta
+  }
+
+  .article-title {
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: var(--space-2xs);
+  }
+
+  .post-meta-cluster {
+    padding-bottom: var(--space-xs);
+    border-bottom: 1px solid var(--color-border);
+    margin-bottom: 0;
+  }
+
+  .content-meta {
+    margin-bottom: 2.5rem;
+    padding-top: 0.35rem;
+  }
+}
+
+// On index, hide the h1 entirely — the weathered note IS the introduction
+body[data-slug="index"] .article-title {
+  display: none;
+}
+
+// On the tags garden page, hide the default "Tag Index" title
+body[data-slug="tags/index"] .article-title {
+  display: none;
+}
+
+// On the archive page, hide the default title — the component has its own header
+body[data-slug="archive"] .article-title {
+  display: none;
+}
+
+// ============================================================
+// CONTENT META — Date and reading time, restrained
+// ============================================================
+
+.content-meta {
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+  margin-top: 0;
+  margin-bottom: var(--space-xl);
+  text-transform: lowercase;
+}
+
+// On index, hide content meta and collapse empty article
+body[data-slug="index"] .content-meta,
+body[data-slug="archive"] .content-meta {
+  display: none;
+}
+
+body[data-slug="index"] article.popover-hint:empty,
+body[data-slug="index"] article.popover-hint {
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+
+body[data-slug="archive"] article.popover-hint:empty,
+body[data-slug="archive"] article.popover-hint {
+  margin: 0;
+  padding: 0;
+  min-height: 0;
+}
+
+// Remove the double-rule between content and newsletter on index/tags pages
+body[data-slug="index"] .center > hr,
+body[data-slug^="tags"] .center > hr,
+body[data-slug="archive"] .center > hr,
+body[data-slug="404"] .center > hr {
+  display: none;
+}
+
+// Hide newsletter on 404 page
+body[data-slug="404"] .newsletter-signup {
+  display: none;
+}
+
+// Random page: minimal chrome
+body[data-slug="random"] article.popover-hint,
+body[data-slug="random"] .center > hr,
+body[data-slug="random"] .newsletter-signup {
+  display: none;
+}
+
+// Tighten newsletter spacing on the homepage
+body[data-slug="index"] .newsletter-signup {
+  margin-top: 2rem;
+}
+
+// ============================================================
+// STATUS DOT — Inline with title area
+// ============================================================
+
+.post-meta-cluster {
+  display: flex;
+  align-items: center;
+  gap: var(--space-m);
+  margin-bottom: var(--space-2xs);
+  font-family: var(--font-mono);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2xs);
+}
+
+.status-dot {
+  display: inline-block;
+  width: var(--size-status-dot);
+  height: var(--size-status-dot);
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+// Breathing pulse on in-progress dots — signals the piece is alive
+.status-dot[style*="status-active"],
+.post-shelf-dot[style*="status-active"],
+.archive-entry-dot[style*="status-active"] {
+  animation: status-breathe 4s ease-in-out infinite;
+}
+
+@keyframes status-breathe {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .status-dot[style*="status-active"],
+  .post-shelf-dot[style*="status-active"],
+  .archive-entry-dot[style*="status-active"] {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+.status-label,
+.confidence-tag {
+  text-transform: lowercase;
+}
+
+// ── Accession numbers (specimen catalogue IDs) ──
+.accession-number {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  letter-spacing: var(--tracking-wide);
+  opacity: 0.6;
+  user-select: none;
+}

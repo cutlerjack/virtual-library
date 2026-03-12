@@ -1,0 +1,81 @@
+// ============================================================
+// CODE BLOCKS — Warm theme, accent left border
+// ============================================================
+
+pre {
+  border-left: 3px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface) 97%, var(--color-accent) 3%);
+}
+
+code {
+  font-size: 0.88em;
+  padding: 0.15em 0.35em;
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-surface) 94%, var(--color-accent) 6%);
+}
+
+pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+// Code title / language indicator
+figure[data-rehype-pretty-code-figure] > [data-rehype-pretty-code-title] {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: var(--tracking-wide);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0;
+  padding: var(--space-3xs) 0;
+  margin-bottom: var(--space-2xs);
+}
+
+// ============================================================
+// SEARCH + DARKMODE — Floating corner controls
+// ============================================================
+
+// The search container/modal needs to be visible when activated
+.search-container {
+  z-index: 999;
+}
+
+// ============================================================
+// DARK MODE REFINEMENTS
+// ============================================================
+
+[saved-theme="dark"] {
+  pre {
+    background: #1a2030;
+    border-left-color: var(--color-accent);
+  }
+
+  code {
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  pre code {
+    background: none;
+  }
+
+  img {
+    opacity: 0.9;
+  }
+
+  hr {
+    border-color: rgba(255,255,255,0.08);
+  }
+}
+
+// Desk-lamp glow — warm radial light falling from above in dark mode
+[saved-theme="dark"] body {
+  background-image: radial-gradient(
+    ellipse 80% 50% at 50% 0%,
+    rgba(140, 100, 60, 0.03) 0%,
+    transparent 70%
+  );
+}

@@ -1,0 +1,105 @@
+// ============================================================
+// ============================================================
+// LIST MARKERS — Accent-colored dots and styled numerals
+// ============================================================
+
+article ul:not(.tags):not(.page-listing ul):not(.overflow) {
+  list-style: none;
+  padding-left: 1.2em;
+}
+
+article ul:not(.tags):not(.page-listing ul):not(.overflow) > li {
+  position: relative;
+}
+
+article ul:not(.tags):not(.page-listing ul):not(.overflow) > li::before {
+  content: "";
+  position: absolute;
+  left: -1.05em;
+  top: 0.65em;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-accent);
+  opacity: 0.6;
+}
+
+article ol:not(.footnotes ol) {
+  padding-left: 1.5em;
+  list-style: none;
+  counter-reset: article-ol;
+}
+
+article ol:not(.footnotes ol) > li {
+  counter-increment: article-ol;
+  position: relative;
+}
+
+article ol:not(.footnotes ol) > li::before {
+  content: counter(article-ol);
+  position: absolute;
+  left: -1.5em;
+  width: 1.2em;
+  text-align: right;
+  font-family: var(--font-body);
+  font-size: 1.1em;
+  font-weight: 600;
+  color: var(--color-accent);
+  opacity: 0.7;
+}
+
+// ============================================================
+// HORIZONTAL RULE — Editorial divider
+// ============================================================
+
+hr {
+  border: none;
+  border-top: 1px solid var(--lightgray);
+  margin: 2.5rem 0;
+}
+
+// Article-internal hr — centered fleuron ornament
+article hr {
+  border: none;
+  background: none;
+  height: auto;
+  margin: 2rem auto;
+  text-align: center;
+  overflow: visible;
+}
+
+article hr::after {
+  content: "⁂";
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  opacity: 0.4;
+  line-height: 1;
+  letter-spacing: 0.2em;
+}
+
+// The hr between article and page-footer — botanical fleuron
+.center > hr {
+  border: none;
+  background: none;
+  height: auto;
+  margin: 2.5rem auto 1.5rem;
+  text-align: center;
+  overflow: visible;
+}
+
+.center > hr::after {
+  content: "❧";
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  color: var(--color-text-muted);
+  opacity: 0.5;
+  line-height: 1;
+}
+
+[saved-theme="dark"] .center > hr::after,
+[saved-theme="dark"] article hr::after {
+  opacity: 0.35;
+}

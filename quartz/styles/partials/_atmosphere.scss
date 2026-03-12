@@ -1,0 +1,70 @@
+// ============================================================
+// ATMOSPHERE — The page should feel like a living object
+// ============================================================
+
+// Warm amber selection — bold enough to feel intentional, like ink on parchment
+::selection {
+  background: rgba(180, 100, 40, 0.25);
+  color: inherit;
+}
+
+[saved-theme="dark"] ::selection {
+  background: rgba(196, 122, 69, 0.35);
+}
+
+// Global focus ring — keyboard users see amber outline + warm glow; mouse clicks do not
+*:focus-visible {
+  outline: 2px solid var(--secondary);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--secondary) 8%, transparent);
+}
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+// Element-specific transitions — no universal * rule (causes paint thrashing)
+// Note: body transition is defined above (line ~94) using design tokens.
+a, button, input {
+  transition: color var(--duration-fast) ease, border-color var(--duration-fast) ease, opacity var(--duration-fast) ease, background-color var(--duration-fast) ease;
+}
+
+hr, .lightgray, footer, .right.sidebar, .colophon-card, .archive-entry, pre, code {
+  transition: background-color var(--duration-normal) ease, color var(--duration-normal) ease, border-color var(--duration-normal) ease;
+}
+
+// Custom scrollbar — thin, editorial, not a chunky browser default
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: var(--radius-sm);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+[saved-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+[saved-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+// Firefox
+html {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+}
+
+[saved-theme="dark"] {
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}

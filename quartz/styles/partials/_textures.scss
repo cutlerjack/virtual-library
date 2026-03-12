@@ -1,0 +1,78 @@
+// ============================================================
+// SUBTLE BACKGROUND GRAIN — Paper texture on the whole page
+// ============================================================
+
+@keyframes grain-drift {
+  0% { background-position: 0 0; }
+  50% { background-position: 15px -15px; }
+  100% { background-position: 0 0; }
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.045;
+  // Two grain layers at different frequencies for organic paper feel
+  background-image:
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n2'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.5' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n2)'/%3E%3C/svg%3E");
+  background-size: 256px 256px, 192px 192px;
+  mix-blend-mode: multiply;
+  animation: grain-drift 20s linear infinite;
+}
+
+[saved-theme="dark"] body::after {
+  opacity: 0.06;
+  mix-blend-mode: screen;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body::after {
+    animation: none;
+  }
+}
+
+// ============================================================
+// TOPOGRAPHIC BACKGROUND — Subtle contour lines behind the page
+// ============================================================
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.07;
+  background-image: url("/static/topography-light.svg");
+  background-size: 600px 600px;
+  background-repeat: repeat;
+  background-position: 0 var(--topo-y, 0);
+
+  // Wider mask — topo lines visible across more of the page, subtly present even in content area
+  -webkit-mask-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.5) 18%,
+    rgba(0, 0, 0, 0.15) 35%,
+    rgba(0, 0, 0, 0.15) 65%,
+    rgba(0, 0, 0, 0.5) 82%,
+    rgba(0, 0, 0, 1) 100%
+  );
+  mask-image: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 1) 0%,
+    rgba(0, 0, 0, 0.5) 18%,
+    rgba(0, 0, 0, 0.15) 35%,
+    rgba(0, 0, 0, 0.15) 65%,
+    rgba(0, 0, 0, 0.5) 82%,
+    rgba(0, 0, 0, 1) 100%
+  );
+}
+
+[saved-theme="dark"] body::before {
+  opacity: 0.05;
+  background-image: url("/static/topography-dark.svg");
+}

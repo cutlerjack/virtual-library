@@ -1,0 +1,45 @@
+// ============================================================
+// MOBILE
+// ============================================================
+
+@media (max-width: 640px) {
+  .page > #quartz-body {
+    padding: 0 1.25rem;
+  }
+
+  body {
+    font-size: var(--text-base);
+  }
+
+  h1 { font-size: var(--text-lg); }
+  h2 { font-size: var(--text-md); }
+
+  .article-title {
+    font-size: var(--text-lg);
+  }
+
+  .weathered-note {
+    transform: rotate(-0.4deg);
+    margin: 0 0 var(--space-l);
+    padding: var(--space-s) var(--space-l);
+    max-width: 100%;
+  }
+
+  .page-listing li {
+    flex-direction: column;
+    gap: 0.1rem;
+  }
+
+  .page-listing li::after {
+    display: none;
+  }
+
+  .post-meta-cluster {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .right.sidebar {
+    margin-top: 2rem;
+  }
+}

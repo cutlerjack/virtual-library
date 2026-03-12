@@ -1,0 +1,103 @@
+// ============================================================
+// SIDENOTES — Tufte-style margin footnotes
+// ============================================================
+
+// Hide the "Footnotes" heading — the sidenotes speak for themselves
+.footnotes h2 {
+  display: none;
+}
+
+@media (min-width: 1000px) {
+  // On post pages, use grid to place sidenotes in the margin
+  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint {
+    display: grid;
+    grid-template-columns: min(65ch, 100%) 1fr;
+    column-gap: 2.5rem;
+  }
+
+  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint > * {
+    grid-column: 1;
+  }
+
+  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint .footnotes {
+    grid-column: 2;
+    grid-row: 1 / 999;
+    align-self: start;
+    padding-left: 0;
+    border-top: none;
+    margin-top: 0;
+  }
+
+  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint .footnotes ol {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint .footnotes li {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: var(--text-meta);
+    line-height: 1.55;
+    color: var(--color-text-secondary);
+    border-left: 2px solid var(--color-accent);
+    padding-left: 0.65rem;
+    margin-bottom: var(--space-m);
+    opacity: 0.85;
+  }
+
+  sup a[href^="#user-content-fn"] {
+    font-size: 0.7em;
+    color: var(--color-accent);
+    text-decoration: none;
+    vertical-align: super;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    padding: 0.05em 0.2em;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
+
+    &:hover {
+      background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    }
+  }
+}
+
+@media (max-width: 999px) {
+  .footnotes {
+    border-top: 1px solid var(--lightgray);
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+  }
+
+  .footnotes ol {
+    padding-left: 1rem;
+  }
+
+  .footnotes li {
+    font-family: var(--font-body);
+    font-style: italic;
+    font-size: var(--text-base);
+    line-height: 1.55;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-s);
+    border-left: 2px solid var(--color-accent);
+    padding-left: 0.65rem;
+  }
+
+  sup a[href^="#user-content-fn"] {
+    font-size: 0.7em;
+    color: var(--color-accent);
+    text-decoration: none;
+    vertical-align: super;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    padding: 0.05em 0.2em;
+    border-radius: var(--radius-sm);
+    transition: background-color var(--duration-fast) ease;
+
+    &:hover {
+      background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    }
+  }
+}
