@@ -89,9 +89,6 @@
       will-change: transform;
     }
 
-    article.popover-hint .footnotes {
-      transform: translateY(var(--margin-y, 0px));
-      will-change: transform;
-    }
+    // Footnotes no longer in margin — no parallax needed
   }
 }

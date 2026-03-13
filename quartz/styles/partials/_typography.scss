@@ -13,11 +13,11 @@ body, p, li, blockquote {
   -webkit-hyphens: auto;
 }
 
-// Optimal reading measure
+// Optimal reading measure — wide enough to fill the center column comfortably
 article p,
 article li,
 article blockquote {
-  max-width: 65ch;
+  max-width: none;
 }
 
 // Tight coupling — first paragraph after heading hugs it

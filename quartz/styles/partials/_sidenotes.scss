@@ -1,46 +1,78 @@
 // ============================================================
-// SIDENOTES — Tufte-style margin footnotes
+// FOOTNOTES — Weathered-note style at article bottom
 // ============================================================
 
-// Hide the "Footnotes" heading — the sidenotes speak for themselves
+// Hide the "Footnotes" heading
 .footnotes h2 {
   display: none;
 }
 
-@media (min-width: 1000px) {
-  // On post pages, use grid to place sidenotes in the margin
-  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint {
-    display: grid;
-    grid-template-columns: min(65ch, 100%) 1fr;
-    column-gap: 2.5rem;
+// Footnote reference numbers in body text
+sup a[href^="#user-content-fn"] {
+  font-size: 0.7em;
+  color: var(--color-accent);
+  text-decoration: none;
+  vertical-align: super;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  padding: 0.05em 0.2em;
+  border-radius: var(--radius-sm);
+  transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
+
+  &:hover {
+    background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+  }
+}
+
+// ── Weathered-note footnote card ──────────────────────────────
+// Reuses the torn-edge aesthetic from the homepage WeatheredNote
+
+:root {
+  --note-bg: #f3ede4;
+}
+[saved-theme="dark"] {
+  --note-bg: #1e2433;
+}
+
+.footnotes {
+  position: relative;
+  max-width: 56ch;
+  margin: var(--space-xl) auto var(--space-m);
+  padding: var(--space-l) 2rem;
+  background: var(--note-bg);
+  border: none;
+
+  // Torn / rough edges
+  clip-path: polygon(
+    0% 1.2%, 2% 0%, 5% 0.6%, 10% 0%, 14% 0.3%, 20% 0%,
+    25% 0.5%, 32% 0%, 38% 0.2%, 44% 0%, 50% 0.4%, 56% 0%,
+    62% 0.3%, 68% 0%, 74% 0.5%, 80% 0%, 86% 0.2%, 92% 0%,
+    96% 0.4%, 100% 0%,
+    100% 98.8%, 97% 100%, 94% 99.4%, 88% 100%, 82% 99.6%,
+    76% 100%, 70% 99.3%, 64% 100%, 58% 99.5%, 52% 100%,
+    46% 99.7%, 40% 100%, 34% 99.4%, 28% 100%, 22% 99.6%,
+    16% 100%, 10% 99.3%, 6% 100%, 3% 99.5%, 0% 100%
+  );
+
+  // Paper grain texture
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0.04;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 128px 128px;
+    mix-blend-mode: multiply;
   }
 
-  // When there are no footnotes, let the article text use the full width
-  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint:not(:has(.footnotes)) {
-    grid-template-columns: 1fr;
-    max-width: 75ch;
-  }
-
-  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint > * {
-    grid-column: 1;
-  }
-
-  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint .footnotes {
-    grid-column: 2;
-    grid-row: 1 / 999;
-    align-self: start;
-    padding-left: 0;
-    border-top: none;
-    margin-top: 0;
-  }
-
-  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint .footnotes ol {
+  ol {
     list-style: none;
     padding: 0;
     margin: 0;
   }
 
-  body:not([data-slug="index"]):not([data-slug="about"]) article.popover-hint .footnotes li {
+  li {
     font-family: var(--font-body);
     font-style: italic;
     font-size: var(--text-meta);
@@ -48,62 +80,24 @@
     color: var(--color-text-secondary);
     border-left: 2px solid var(--color-accent);
     padding-left: 0.65rem;
-    margin-bottom: var(--space-m);
+    margin-bottom: var(--space-s);
     opacity: 0.85;
-  }
 
-  sup a[href^="#user-content-fn"] {
-    font-size: 0.7em;
-    color: var(--color-accent);
-    text-decoration: none;
-    vertical-align: super;
-    font-family: var(--font-mono);
-    font-weight: 600;
-    padding: 0.05em 0.2em;
-    border-radius: var(--radius-sm);
-    transition: background-color var(--duration-fast) ease, color var(--duration-fast) ease;
-
-    &:hover {
-      background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
+    &:last-child {
+      margin-bottom: 0;
     }
   }
 }
 
-@media (max-width: 999px) {
+[saved-theme="dark"] .footnotes::before {
+  opacity: 0.06;
+  mix-blend-mode: screen;
+}
+
+@media (max-width: 640px) {
   .footnotes {
-    border-top: 1px solid var(--lightgray);
-    margin-top: 2.5rem;
-    padding-top: 1rem;
-  }
-
-  .footnotes ol {
-    padding-left: 1rem;
-  }
-
-  .footnotes li {
-    font-family: var(--font-body);
-    font-style: italic;
+    max-width: 100%;
+    padding: var(--space-s) var(--space-l);
     font-size: var(--text-base);
-    line-height: 1.55;
-    color: var(--color-text-muted);
-    margin-bottom: var(--space-s);
-    border-left: 2px solid var(--color-accent);
-    padding-left: 0.65rem;
-  }
-
-  sup a[href^="#user-content-fn"] {
-    font-size: 0.7em;
-    color: var(--color-accent);
-    text-decoration: none;
-    vertical-align: super;
-    font-family: var(--font-mono);
-    font-weight: 600;
-    padding: 0.05em 0.2em;
-    border-radius: var(--radius-sm);
-    transition: background-color var(--duration-fast) ease;
-
-    &:hover {
-      background-color: color-mix(in srgb, var(--color-accent) 12%, transparent);
-    }
   }
 }
