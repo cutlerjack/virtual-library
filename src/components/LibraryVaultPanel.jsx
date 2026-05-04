@@ -1,12 +1,36 @@
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { isTauri } from '../utils/tauri'
+import { suggestBooksForDocument } from '../utils/libraryRelations'
+import ReadingRoomOverview from './reading-room/ReadingRoomOverview'
+import ReadingRoomToolbar from './reading-room/ReadingRoomToolbar'
+import ReadingRoomOrganizationPanel from './reading-room/ReadingRoomOrganizationPanel'
+import ReadingRoomRecentSection from './reading-room/ReadingRoomRecentSection'
+import ReadingRoomDocumentResults from './reading-room/ReadingRoomDocumentResults'
 
-function LibraryVaultPanel({ libraryPath, documents, onImport, onReadDocument, vaultError, lastRescanAt }) {
+function LibraryVaultPanel({
+  libraryPath,
+  books = [],
+  documents,
+  shelves = [],
+  allLibraryTags = [],
+  onImport,
+  onReadDocument,
+  onUpdateDocument,
+  onNavigateToLibrary,
+  onOpenBook,
+  vaultError,
+  lastRescanAt,
+}) {
+  const isDesktop = isTauri()
   const [busy, setBusy] = useState(false)
   const [query, setQuery] = useState('')
   const [filter, setFilter] = useState('all')
   const [viewMode, setViewMode] = useState('grid')
   const [sortMode, setSortMode] = useState('recent')
+  const [activeShelf, setActiveShelf] = useState('all')
+  const [selectedTags, setSelectedTags] = useState([])
+  const [editingDocId, setEditingDocId] = useState(null)
+  const [draftTag, setDraftTag] = useState('')
 
   const handleImport = async () => {
     setBusy(true)
@@ -21,10 +45,12 @@ function LibraryVaultPanel({ libraryPath, documents, onImport, onReadDocument, v
         || doc.title?.toLowerCase().includes(normalizedQuery)
         || doc.originalName?.toLowerCase().includes(normalizedQuery)
       if (!matchesQuery) return false
-      if (filter === 'all') return true
-      return doc.type === filter
+      if (filter !== 'all' && doc.type !== filter) return false
+      if (activeShelf !== 'all' && !doc.shelves?.includes(activeShelf)) return false
+      if (selectedTags.length > 0 && !selectedTags.every((tag) => doc.tags?.includes(tag))) return false
+      return true
     })
-  ), [documents, filter, normalizedQuery])
+  ), [activeShelf, documents, filter, normalizedQuery, selectedTags])
 
   const sortedDocuments = useMemo(() => {
     const list = [...filteredDocuments]
@@ -57,6 +83,25 @@ function LibraryVaultPanel({ libraryPath, documents, onImport, onReadDocument, v
 
   const canRead = (doc) => doc.fileStatus !== 'missing'
     && (doc.type === 'pdf' || doc.type === 'epub' || doc.type === 'article')
+
+  const sharedShelves = shelves.filter((shelf) => shelf.id === 'all' || shelf.id)
+  const sortedBooks = useMemo(() => (
+    [...books].sort((a, b) => (a.title || '').localeCompare(b.title || ''))
+  ), [books])
+  const relationSuggestionsByDocId = useMemo(() => {
+    const entries = documents
+      .filter((doc) => !doc.linkedBookId)
+      .map((doc) => {
+        const allMatches = suggestBooksForDocument(doc, books, { limit: 4, includeDismissed: true })
+        const dismissedBookIds = new Set(doc.dismissedBookIds || [])
+        return [doc.id, {
+          active: allMatches.find((match) => !dismissedBookIds.has(match.book.id)) || null,
+          dismissed: allMatches.find((match) => dismissedBookIds.has(match.book.id)) || null,
+        }]
+      })
+    return new Map(entries)
+  }, [books, documents])
+
   const statusInfo = (doc) => {
     if (doc.fileStatus === 'missing') {
       return { label: 'Missing', className: 'reading-room-status reading-room-status-missing' }
@@ -69,6 +114,7 @@ function LibraryVaultPanel({ libraryPath, documents, onImport, onReadDocument, v
     }
     return null
   }
+
   const getProgressValue = (doc) => {
     if (doc.type === 'pdf' && doc.pageCount) {
       return Math.min(100, Math.round(((doc.lastPage || 0) / doc.pageCount) * 100))
@@ -79,256 +125,158 @@ function LibraryVaultPanel({ libraryPath, documents, onImport, onReadDocument, v
     return null
   }
 
+  const toggleDocumentShelf = (doc, shelfId) => {
+    const currentShelves = doc.shelves || []
+    const nextShelves = currentShelves.includes(shelfId)
+      ? currentShelves.filter((id) => id !== shelfId)
+      : [...currentShelves, shelfId]
+    onUpdateDocument?.(doc.id, { shelves: nextShelves })
+  }
+
+  const addDocumentTag = (doc) => {
+    const nextTag = draftTag.trim()
+    if (!nextTag) return
+    if (doc.tags?.includes(nextTag)) {
+      setDraftTag('')
+      return
+    }
+    onUpdateDocument?.(doc.id, { tags: [...(doc.tags || []), nextTag] })
+    setDraftTag('')
+  }
+
+  const removeDocumentTag = (doc, tag) => {
+    onUpdateDocument?.(doc.id, {
+      tags: (doc.tags || []).filter((entry) => entry !== tag),
+    })
+  }
+
+  const acceptSuggestedBook = (doc, bookId) => {
+    onUpdateDocument?.(doc.id, {
+      linkedBookId: bookId,
+      dismissedBookIds: (doc.dismissedBookIds || []).filter((id) => id !== bookId),
+    })
+  }
+
+  const dismissSuggestedBook = (doc, bookId) => {
+    onUpdateDocument?.(doc.id, {
+      dismissedBookIds: [...new Set([...(doc.dismissedBookIds || []), bookId])],
+    })
+  }
+
+  const restoreDismissedBook = (doc, bookId) => {
+    onUpdateDocument?.(doc.id, {
+      dismissedBookIds: (doc.dismissedBookIds || []).filter((id) => id !== bookId),
+    })
+  }
+
+  const handleToggleEditing = (docId) => {
+    setEditingDocId((prev) => (prev === docId ? null : docId))
+    setDraftTag('')
+  }
+
+  const hasActiveFilters = normalizedQuery.length > 0 || filter !== 'all' || activeShelf !== 'all' || selectedTags.length > 0
+  const emptyStateMessage = documents.length === 0
+    ? (isDesktop
+        ? 'No documents yet. Import files from the desktop app to start the Reading Room.'
+        : 'No documents yet. Open the desktop app to import files into the Reading Room.')
+    : hasActiveFilters
+      ? 'No documents match the current filters.'
+      : 'No documents are available right now.'
+
   return (
     <section className="reading-room">
-      <div className="reading-room-header">
-        <div>
-          <div className="reading-room-eyebrow">Reading Room</div>
-          <h3 className="reading-room-title">Your offline desk for PDFs and articles.</h3>
-          <p className="reading-room-subtitle">
-            Import documents to read them inside the library without interrupting your shelves.
-          </p>
-        </div>
-        <div className="reading-room-actions">
-          <button className="btn-primary text-xs px-3 py-2" onClick={handleImport} disabled={busy || !isTauri()}>
-            {busy ? 'Importing...' : 'Import Files'}
-          </button>
-        </div>
-      </div>
+      <ReadingRoomOverview
+        isDesktop={isDesktop}
+        busy={busy}
+        booksCount={books.length}
+        documentsCount={documents.length}
+        libraryPath={libraryPath}
+        lastRescanAt={lastRescanAt}
+        vaultError={vaultError}
+        onImport={handleImport}
+        onNavigateToLibrary={onNavigateToLibrary}
+      />
 
-      {!isTauri() && (
-        <div className="reading-room-alert">
-          The desktop vault is available in the Tauri app. Run the desktop build to import files.
+      {!isDesktop && (
+        <div className="preferences-hint">
+          Browse, tag, and open items here. Importing, OCR, backups, restores, and other file-level actions stay in the desktop app.
         </div>
       )}
 
-      {vaultError && (
-        <div className="reading-room-alert">
-          {vaultError}
-        </div>
-      )}
+      <ReadingRoomToolbar
+        query={query}
+        sortMode={sortMode}
+        filter={filter}
+        viewMode={viewMode}
+        onQueryChange={setQuery}
+        onSortModeChange={setSortMode}
+        onFilterChange={setFilter}
+        onViewModeChange={setViewMode}
+      />
 
-      {libraryPath && (
-        <div className="reading-room-path">
-          <span>Library folder</span>
-          <span className="reading-room-path-value">{libraryPath}</span>
-        </div>
-      )}
-      <div className="reading-room-path">
-        <span>Last scan</span>
-        <span className="reading-room-path-value">
-          {lastRescanAt ? new Date(lastRescanAt).toLocaleString() : 'Never'}
-        </span>
-      </div>
+      <ReadingRoomOrganizationPanel
+        sharedShelves={sharedShelves}
+        allLibraryTags={allLibraryTags}
+        activeShelf={activeShelf}
+        selectedTags={selectedTags}
+        onShelfChange={setActiveShelf}
+        onToggleTag={(tag) => setSelectedTags((prev) => (
+          prev.includes(tag)
+            ? prev.filter((entry) => entry !== tag)
+            : [...prev, tag]
+        ))}
+        onClearTags={() => setSelectedTags([])}
+      />
 
-      <div className="reading-room-toolbar">
-        <div className="reading-room-search">
-          <span>Search</span>
-          <input
-            type="search"
-            placeholder="Search titles or filenames"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </div>
-        <div className="reading-room-sort">
-          <span>Sort</span>
-          <select value={sortMode} onChange={(event) => setSortMode(event.target.value)}>
-            <option value="recent">Recent</option>
-            <option value="title">Title</option>
-            <option value="progress">Progress</option>
-          </select>
-        </div>
-        <div className="reading-room-filters">
-          {[
-            { id: 'all', label: 'All' },
-            { id: 'pdf', label: 'PDFs' },
-            { id: 'epub', label: 'EPUBs' },
-            { id: 'article', label: 'Articles' },
-            { id: 'file', label: 'Other' },
-          ].map((option) => (
-            <button
-              key={option.id}
-              type="button"
-              className={`reading-room-filter ${filter === option.id ? 'active' : ''}`}
-              onClick={() => setFilter(option.id)}
-            >
-              {option.label}
-            </button>
-          ))}
-        </div>
-        <div className="reading-room-view-toggle">
-          <button
-            type="button"
-            className={`reading-room-filter ${viewMode === 'grid' ? 'active' : ''}`}
-            onClick={() => setViewMode('grid')}
-          >
-            Grid
-          </button>
-          <button
-            type="button"
-            className={`reading-room-filter ${viewMode === 'list' ? 'active' : ''}`}
-            onClick={() => setViewMode('list')}
-          >
-            List
-          </button>
-        </div>
-      </div>
       <div className="reading-room-results">
         Showing {sortedDocuments.length} of {documents.length} documents
-      </div>
-
-      {recentDocuments.length > 0 && (
-        <div className="reading-room-recent">
-          <div className="reading-room-section-title">Recently read</div>
-          <div className="reading-room-recent-grid">
-            {recentDocuments.map((doc) => {
-              const status = statusInfo(doc)
-              return (
-                <div key={doc.id} className="reading-room-recent-card">
-                  <div className="reading-room-recent-title">{doc.title}</div>
-                  <div className="reading-room-recent-meta">
-                    {doc.type.toUpperCase()}
-                    {status && (
-                      <span className={status.className}>{status.label}</span>
-                    )}
-                  </div>
-                  {getProgressValue(doc) !== null && (
-                    <div className="reading-room-progress">
-                      <div className="reading-room-progress-track">
-                        <div className="reading-room-progress-fill" style={{ width: `${getProgressValue(doc)}%` }} />
-                      </div>
-                      <span>{getProgressValue(doc)}%</span>
-                    </div>
-                  )}
-                  {canRead(doc) && (
-                    <button
-                      type="button"
-                      className="btn-secondary text-xs px-3 py-2"
-                      onClick={() => onReadDocument?.(doc, { resume: true })}
-                    >
-                      Resume
-                    </button>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {viewMode === 'grid' ? (
-        <div className="reading-room-grid">
-          {sortedDocuments.length === 0 ? (
-            <div className="reading-room-empty">No documents imported yet.</div>
-          ) : (
-            sortedDocuments.map((doc) => {
-              const status = statusInfo(doc)
-              return (
-                <div key={doc.id} className="reading-room-card">
-                  <div className="reading-room-card-cover">
-                    {doc.thumbnail ? (
-                      <img src={doc.thumbnail} alt={doc.title} />
-                    ) : (
-                      <div className="reading-room-card-placeholder">{doc.type.toUpperCase()}</div>
-                    )}
-                  </div>
-                  <div className="reading-room-card-title">{doc.title}</div>
-                  <div className="reading-room-card-meta">
-                    {doc.type.toUpperCase()}
-                    {status && (
-                      <span className={status.className}>{status.label}</span>
-                    )}
-                  </div>
-                  {getProgressValue(doc) !== null && (
-                    <div className="reading-room-progress">
-                      <div className="reading-room-progress-track">
-                        <div className="reading-room-progress-fill" style={{ width: `${getProgressValue(doc)}%` }} />
-                      </div>
-                      <span>{getProgressValue(doc)}%</span>
-                    </div>
-                  )}
-                  <div className="reading-room-card-actions">
-                    {canRead(doc) && (
-                      <>
-                        <button
-                          type="button"
-                          className="btn-secondary text-xs px-3 py-2"
-                          onClick={() => onReadDocument?.(doc)}
-                        >
-                          Read
-                        </button>
-                        {doc.lastOpened && (
-                          <button
-                            type="button"
-                            className="btn-secondary text-xs px-3 py-2"
-                            onClick={() => onReadDocument?.(doc, { resume: true })}
-                          >
-                            Resume
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )
-            })
-          )}
-        </div>
-      ) : (
-        <div className="reading-room-list">
-          {sortedDocuments.length === 0 ? (
-            <div className="reading-room-empty">No documents imported yet.</div>
-          ) : (
-            sortedDocuments.map((doc) => {
-              const status = statusInfo(doc)
-              return (
-                <div key={doc.id} className="reading-room-item">
-                  <div>
-                    <div className="reading-room-item-title">{doc.title}</div>
-                    <div className="reading-room-item-meta">
-                      {doc.type.toUpperCase()}
-                      {status && (
-                        <span className={status.className}>{status.label}</span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="reading-room-item-actions">
-                    {getProgressValue(doc) !== null && (
-                      <div className="reading-room-progress small">
-                        <div className="reading-room-progress-track">
-                          <div className="reading-room-progress-fill" style={{ width: `${getProgressValue(doc)}%` }} />
-                        </div>
-                        <span>{getProgressValue(doc)}%</span>
-                      </div>
-                    )}
-                    {canRead(doc) && (
-                      <>
-                        <button
-                          type="button"
-                          className="btn-secondary text-xs px-3 py-2"
-                          onClick={() => onReadDocument?.(doc)}
-                        >
-                          Read
-                        </button>
-                        {doc.lastOpened && (
-                          <button
-                            type="button"
-                            className="btn-secondary text-xs px-3 py-2"
-                            onClick={() => onReadDocument?.(doc, { resume: true })}
-                          >
-                            Resume
-                          </button>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </div>
-              )
-            })
+        {activeShelf !== 'all' && (
+          <span className="reading-room-results-detail">
+            · Shelf: {shelves.find((shelf) => shelf.id === activeShelf)?.name || activeShelf}
+          </span>
+        )}
+        {selectedTags.length > 0 && (
+          <span className="reading-room-results-detail">
+            · Tags: {selectedTags.join(', ')}
+          </span>
         )}
       </div>
-      )}
+
+      <ReadingRoomRecentSection
+        recentDocuments={recentDocuments}
+        books={books}
+        shelves={shelves}
+        canRead={canRead}
+        getProgressValue={getProgressValue}
+        statusInfo={statusInfo}
+        onReadDocument={onReadDocument}
+      />
+
+      <ReadingRoomDocumentResults
+        viewMode={viewMode}
+        documents={sortedDocuments}
+        emptyStateMessage={emptyStateMessage}
+        books={books}
+        shelves={shelves}
+        sortedBooks={sortedBooks}
+        editingDocId={editingDocId}
+        draftTag={draftTag}
+        relationSuggestionsByDocId={relationSuggestionsByDocId}
+        canRead={canRead}
+        getProgressValue={getProgressValue}
+        statusInfo={statusInfo}
+        onToggleEditing={handleToggleEditing}
+        onDraftTagChange={setDraftTag}
+        onReadDocument={onReadDocument}
+        onUpdateDocument={onUpdateDocument}
+        onOpenBook={onOpenBook}
+        onToggleShelf={toggleDocumentShelf}
+        onAddTag={addDocumentTag}
+        onRemoveTag={removeDocumentTag}
+        onAcceptSuggestedBook={acceptSuggestedBook}
+        onDismissSuggestedBook={dismissSuggestedBook}
+        onRestoreDismissedBook={restoreDismissedBook}
+      />
     </section>
   )
 }

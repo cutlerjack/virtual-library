@@ -1,5 +1,7 @@
 # Virtual Library Roadmap
 
+> Archived implementation roadmap. This file reflects an earlier migration phase and is intentionally preserved as history, not as the current plan of record. See [README.md](/Users/jack/projects/virtual-library/README.md) and [PRODUCT_DECISIONS.md](/Users/jack/projects/virtual-library/PRODUCT_DECISIONS.md) for the current state.
+
 ## Vision
 A calm, editorial library that makes reading the center of the experience. A unified, durable data model supports books + documents, with a world‑class reader, clean surfaces, and dependable offline storage.
 

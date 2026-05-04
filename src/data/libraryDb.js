@@ -1,7 +1,15 @@
 // Barrel re-export — libraryDb.js was split into domain modules.
 // Existing consumers can continue importing from this file unchanged.
 
+export { closeLibraryDb } from './dbConnection'
+
 export { loadLibraryStateFromDb, saveLibraryStateToDb } from './dbLibrary'
+
+export { saveBookItemToDb, saveDocumentItemToDb, deleteItemFromDb } from './dbCatalog'
+
+export { saveUserSettingsToDb } from './dbPreferences'
+
+export { saveShelvesToDb, saveSpineLibraryToDb } from './dbLibraryMeta'
 
 export {
   searchLibrary,

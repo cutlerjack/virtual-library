@@ -2,6 +2,9 @@ node_modules/
 dist/
 .DS_Store
 .vite/
+playwright-report/
+test-results/
+.playwright-mcp/
 .tmp-bookshelf/
 .tmp-bookshelf-ts-site/
 PDFs/

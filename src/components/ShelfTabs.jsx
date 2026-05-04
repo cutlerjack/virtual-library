@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 
 function ShelfTabs({ shelves, activeShelf, onSelectShelf, onAddShelf, onDeleteShelf }) {
@@ -16,16 +16,21 @@ function ShelfTabs({ shelves, activeShelf, onSelectShelf, onAddShelf, onDeleteSh
   }
 
   return (
-    <div className="flex items-center gap-3 overflow-x-auto pb-2">
-      <div className="shelf-tabs flex-shrink-0">
+    <div className="flex items-center gap-3 overflow-x-auto pb-2" aria-label="Shelf tabs">
+      <div className="shelf-tabs flex-shrink-0" role="tablist" aria-label="Library shelves">
         {shelves.map((shelf) => (
           <div key={shelf.id} className="relative">
             <button
+              type="button"
+              role="tab"
+              aria-selected={activeShelf === shelf.id}
               onClick={() => onSelectShelf(shelf.id)}
               onContextMenu={(e) => {
                 e.preventDefault()
                 if (shelf.id !== 'all') setMenuOpenFor(shelf.id)
               }}
+              aria-haspopup={shelf.id === 'all' ? undefined : 'menu'}
+              aria-expanded={menuOpenFor === shelf.id}
               className={`shelf-tab ${activeShelf === shelf.id ? 'active' : ''}`}
             >
               {shelf.name}
@@ -70,17 +75,23 @@ function ShelfTabs({ shelves, activeShelf, onSelectShelf, onAddShelf, onDeleteSh
 
       {/* Add Shelf */}
       {showAddForm ? (
-        <form onSubmit={handleAddShelf} className="flex gap-2 flex-shrink-0">
-          <input
-            type="text"
-            value={newShelfName}
-            onChange={(e) => setNewShelfName(e.target.value)}
-            placeholder="Shelf name..."
-            className="input-field text-sm py-2 w-36"
-            autoFocus
-          />
+        <form onSubmit={handleAddShelf} className="flex items-end gap-2 flex-shrink-0" aria-label="Create a new shelf">
+          <div className="grid gap-1">
+            <label htmlFor="new-shelf-name" className="text-[0.65rem] uppercase tracking-[0.18em] text-muted">
+              Shelf name
+            </label>
+            <input
+              id="new-shelf-name"
+              type="text"
+              value={newShelfName}
+              onChange={(e) => setNewShelfName(e.target.value)}
+              placeholder="Favorites"
+              className="input-field text-sm py-2 w-36"
+              autoFocus
+            />
+          </div>
           <button type="submit" className="btn-primary text-sm py-2">
-            Add
+            Create
           </button>
           <button
             type="button"
@@ -95,6 +106,7 @@ function ShelfTabs({ shelves, activeShelf, onSelectShelf, onAddShelf, onDeleteSh
         </form>
       ) : (
         <button
+          type="button"
           onClick={() => setShowAddForm(true)}
           className="flex items-center gap-1.5 px-3 py-2 text-sm text-muted hover:text-[#201819] transition-colors flex-shrink-0"
         >

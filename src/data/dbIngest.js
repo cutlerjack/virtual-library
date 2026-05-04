@@ -1,6 +1,8 @@
 import { withDb, withWriteDb, withTransaction } from './dbConnection'
 import { parseMetaJson } from './dbTransform'
 
+const STALE_PROCESSING_JOB_MS = 15 * 60 * 1000
+
 function mapQueuedRowToDocument(row) {
   const meta = parseMetaJson(row.item_meta_json)
   const kind = row.item_kind || null
@@ -8,15 +10,20 @@ function mapQueuedRowToDocument(row) {
     || (kind === 'article' ? 'article' : (kind === 'document' ? 'document' : null))
     || 'document'
   return {
-    id: row.item_id || null,
+    id: row.item_id && kind ? row.item_id : null,
     title: row.item_title || meta.title || null,
+    author: row.item_author || null,
     type,
     filePath: row.target_path || row.source_path || meta.filePath || row.file_path || null,
     mime: meta.mime || row.file_mime || null,
+    fileName: meta.fileName || null,
+    originalName: meta.originalName || meta.fileName || null,
     pageCount: meta.pageCount ?? null,
     fileHash: meta.fileHash || null,
     fileSize: meta.fileSize ?? null,
     fileMtime: meta.fileMtime ?? null,
+    linkedBookId: meta.linkedBookId ?? null,
+    dismissedBookIds: Array.isArray(meta.dismissedBookIds) ? meta.dismissedBookIds : [],
   }
 }
 
@@ -121,16 +128,18 @@ export async function getIngestJobs(libraryPath, status) {
 export async function claimNextIngestJob(libraryPath) {
   return withWriteDb(libraryPath, async (db) => {
     return withTransaction(db, async () => {
+      const staleProcessingCutoff = new Date(Date.now() - STALE_PROCESSING_JOB_MS).toISOString()
       const rows = await db.select(
-        `SELECT j.*, i.kind AS item_kind, i.title AS item_title, i.meta_json AS item_meta_json,
+        `SELECT j.*, i.kind AS item_kind, i.title AS item_title, i.author AS item_author, i.meta_json AS item_meta_json,
                 f.path AS file_path, f.mime AS file_mime
          FROM ingest_jobs j
          LEFT JOIN items i ON i.id = j.item_id
          LEFT JOIN files f ON f.item_id = j.item_id
          WHERE j.status = ?
+            OR (j.status = ? AND COALESCE(j.updated_at, j.created_at) < ?)
          ORDER BY j.created_at ASC
          LIMIT 1`,
-        ['queued']
+        ['queued', 'processing', staleProcessingCutoff]
       )
       const job = rows?.[0]
       if (!job) return null

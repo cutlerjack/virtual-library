@@ -1,5 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { readBinaryFile } from '@tauri-apps/api/fs'
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf'
 import workerSrc from 'pdfjs-dist/legacy/build/pdf.worker?url'
@@ -9,6 +8,7 @@ import { toCloneSafeArrayBuffer } from '../utils/binary'
 import { usePdfLayoutIndex } from '../reader/pdf/usePdfLayoutIndex'
 import { usePdfViewportWindow } from '../reader/pdf/usePdfViewportWindow'
 import { usePdfRenderScheduler } from '../reader/pdf/usePdfRenderScheduler'
+import ReaderDialogShell from './ReaderDialogShell'
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
 
@@ -43,6 +43,7 @@ function PdfReaderModal({
   cachePages = 2,
   maxMemoryMb = 512,
   overscanPages = 8,
+  sessionPanel = null,
 }) {
   const scrollContainerRef = useRef(null)
   const pageRefs = useRef([])
@@ -258,45 +259,21 @@ function PdfReaderModal({
   const totalVirtualHeight = Math.max(layoutIndex.totalHeight || 0, scrollMetrics.height || 0)
 
   return (
-    <motion.div
-      className="modal-overlay pdf-reader-overlay kindle-reader"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={() => onClose?.(page)}
+    <ReaderDialogShell
+      title={title || 'Untitled PDF'}
+      eyebrow="Reader"
+      onClose={() => onClose?.(page)}
+      focusMode={focusMode}
+      sidebarOpen={sidebarOpen}
+      onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
+      onToggleFocusMode={() => setFocusMode((prev) => !prev)}
+      overlayClassName="pdf-reader-overlay kindle-reader"
+      panelClassName={`pdf-reader-modal kindle-reader-shell ${focusMode ? 'focus-mode' : ''}`}
+      headerClassName="pdf-reader-header kindle-reader-header"
+      eyebrowClassName="pdf-reader-eyebrow"
+      titleClassName="pdf-reader-title"
+      sessionPanel={sessionPanel}
     >
-      <motion.div
-        className={`pdf-reader-modal kindle-reader-shell ${focusMode ? 'focus-mode' : ''}`}
-        initial={{ scale: 0.98, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.98, opacity: 0, y: 20 }}
-        transition={{ duration: 0.2 }}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="pdf-reader-header kindle-reader-header">
-          <div>
-            <div className="pdf-reader-eyebrow">Reader</div>
-            <div className="pdf-reader-title">{title || 'Untitled PDF'}</div>
-          </div>
-          <div className="kindle-reader-actions">
-            <button
-              className="btn-secondary text-xs px-3 py-2"
-              onClick={() => setSidebarOpen((prev) => !prev)}
-            >
-              {sidebarOpen ? 'Hide Notes' : 'Show Notes'}
-            </button>
-            <button
-              className="btn-secondary text-xs px-3 py-2"
-              onClick={() => setFocusMode((prev) => !prev)}
-            >
-              {focusMode ? 'Exit Focus' : 'Focus Mode'}
-            </button>
-            <button className="btn-secondary text-xs px-3 py-2" onClick={() => onClose?.(page)}>
-              Close
-            </button>
-          </div>
-        </div>
-
         <div className="pdf-reader-toolbar kindle-reader-toolbar">
           <div className="pdf-reader-controls">
             <button
@@ -511,8 +488,7 @@ function PdfReaderModal({
             </button>
           )}
         </div>
-      </motion.div>
-    </motion.div>
+    </ReaderDialogShell>
   )
 }
 

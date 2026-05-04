@@ -18,7 +18,6 @@ export const defaultUserData = {
   lightingPreset: 'golden',
   woodTone: 'walnut',
   shelfFont: 'cinzel',
-  soundEnabled: false,
   ratingScale: 10,
   ratingMigrated: false,
   exhibits: [],
@@ -33,52 +32,63 @@ export const defaultUserData = {
   lastRescanAt: null,
   readerMaxMemoryMb: 800,
   readerCachePages: 8,
-  semanticSearchEnabled: false,
   autoSnapshotIntervalHours: 24,
-  backupVerifyEnabled: true,
   lastSnapshotAt: null,
   pdfRenderMemoryMb: 512,
   pdfVirtualOverscanPages: 8,
   ingestJobRetentionDays: 14,
 }
 
-export function getBooks() {
+function readJsonStorage(key, fallbackValue) {
   try {
-    const data = localStorage.getItem(STORAGE_KEYS.BOOKS)
-    return data ? JSON.parse(data) : []
+    const data = localStorage.getItem(key)
+    return data ? JSON.parse(data) : fallbackValue
   } catch {
-    return []
+    return fallbackValue
   }
+}
+
+function writeJsonStorage(key, value) {
+  try {
+    localStorage.setItem(key, JSON.stringify(value))
+    return true
+  } catch (error) {
+    console.warn('[storage] Unable to persist browser storage:', error?.message || error)
+    return false
+  }
+}
+
+export function getBooks() {
+  const books = readJsonStorage(STORAGE_KEYS.BOOKS, [])
+  return Array.isArray(books) ? books : []
 }
 
 export function saveBooks(books) {
-  localStorage.setItem(STORAGE_KEYS.BOOKS, JSON.stringify(books))
+  return writeJsonStorage(STORAGE_KEYS.BOOKS, books)
 }
 
 export function getShelves() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.SHELVES)
-    return data ? JSON.parse(data) : defaultShelves
-  } catch {
-    return defaultShelves
-  }
+  const shelves = readJsonStorage(STORAGE_KEYS.SHELVES, defaultShelves)
+  return Array.isArray(shelves) ? shelves : defaultShelves
 }
 
 export function saveShelves(shelves) {
-  localStorage.setItem(STORAGE_KEYS.SHELVES, JSON.stringify(shelves))
+  return writeJsonStorage(STORAGE_KEYS.SHELVES, shelves)
 }
 
 export function getUserData() {
   try {
-    const data = localStorage.getItem(STORAGE_KEYS.USER_DATA)
-    return data ? { ...defaultUserData, ...JSON.parse(data) } : defaultUserData
+    const data = readJsonStorage(STORAGE_KEYS.USER_DATA, null)
+    return data && typeof data === 'object' && !Array.isArray(data)
+      ? { ...defaultUserData, ...data }
+      : defaultUserData
   } catch {
     return defaultUserData
   }
 }
 
 export function saveUserData(userData) {
-  localStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(userData))
+  return writeJsonStorage(STORAGE_KEYS.USER_DATA, userData)
 }
 
 export function generateId() {
@@ -133,12 +143,8 @@ function getIsbnVariants(isbn) {
 }
 
 export function getSpineLibrary() {
-  try {
-    const data = localStorage.getItem(STORAGE_KEYS.SPINE_LIBRARY)
-    return data ? JSON.parse(data) : {}
-  } catch {
-    return {}
-  }
+  const library = readJsonStorage(STORAGE_KEYS.SPINE_LIBRARY, {})
+  return library && typeof library === 'object' && !Array.isArray(library) ? library : {}
 }
 
 export function getSpineLibraryEntries() {
@@ -221,7 +227,7 @@ export function removeSpineFromLibraryMap(library, isbn) {
 }
 
 export function saveSpineLibrary(library) {
-  localStorage.setItem(STORAGE_KEYS.SPINE_LIBRARY, JSON.stringify(library))
+  return writeJsonStorage(STORAGE_KEYS.SPINE_LIBRARY, library)
 }
 
 export function addSpineToLibrary({ isbn, spineImage, title, author, crop }) {
@@ -241,8 +247,7 @@ export function addSpineToLibrary({ isbn, spineImage, title, author, crop }) {
   variants.forEach((key) => {
     library[key] = entry
   })
-  saveSpineLibrary(library)
-  return entry
+  return saveSpineLibrary(library) ? entry : null
 }
 
 export function findSpineInLibrary(isbn) {
@@ -270,8 +275,7 @@ export function updateSpineInLibrary({ isbn, spineImage, crop }) {
   variants.forEach((key) => {
     library[key] = entry
   })
-  saveSpineLibrary(library)
-  return entry
+  return saveSpineLibrary(library) ? entry : null
 }
 
 export function removeSpineFromLibrary(isbn) {
@@ -281,6 +285,5 @@ export function removeSpineFromLibrary(isbn) {
   variants.forEach((key) => {
     delete library[key]
   })
-  saveSpineLibrary(library)
-  return true
+  return saveSpineLibrary(library)
 }

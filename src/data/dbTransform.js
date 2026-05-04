@@ -153,16 +153,22 @@ export function buildDocumentAnnotations(item) {
   return annotations
 }
 
-export function buildSearchText(item) {
+export function buildSearchText(item, relationContext = {}) {
   if (item.kind === 'book') {
     const chunks = [item.title, item.author, ...(item.tags || [])]
+    const studyStack = item.studyStack || item.bookMeta?.studyStack || []
     if (item.notes) chunks.push(item.notes)
     if (item.quotes?.length) chunks.push(item.quotes.map((q) => typeof q === 'string' ? q : q?.text || '').join('\n'))
+    if (studyStack.length) {
+      chunks.push(studyStack.map((entry) => entry?.text).filter(Boolean).join('\n'))
+      chunks.push(studyStack.map((entry) => entry?.note).filter(Boolean).join('\n'))
+    }
     return chunks.filter(Boolean).join('\n')
   }
 
   const meta = item.docMeta || {}
   const annotations = item.annotations || {}
+  const linkedBook = relationContext.linkedBook || null
   const notes = (annotations.notes || [])
     .map((note) => (note?.text ?? note))
     .filter(Boolean)
@@ -172,7 +178,13 @@ export function buildSearchText(item) {
     .filter(Boolean)
     .join('\n')
   const tags = (item.tags || []).filter(Boolean).join('\n')
-  return [item.title, item.author, tags, meta.searchText, notes, highlights]
+  const relationLines = linkedBook
+    ? [
+        `Attached to ${linkedBook.title}`,
+        linkedBook.author || null,
+      ]
+    : []
+  return [item.title, item.author, tags, ...relationLines, meta.searchText, notes, highlights]
     .filter(Boolean)
     .join('\n')
 }

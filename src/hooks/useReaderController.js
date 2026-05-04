@@ -1,17 +1,21 @@
 import { readBinaryFile, readTextFile } from '@tauri-apps/api/fs'
 import { isTauri } from '../utils/tauri'
 import { generateEpubThumbnail } from '../utils/epubThumbnail'
-import { startReadingSession, endReadingSession } from '../data/libraryDb'
+import { prepareCapturedHtml } from '../utils/htmlSanitizer'
+import {
+  endReaderSessionBestEffort,
+  startReaderSessionBestEffort,
+} from '../reader/readerSessionLifecycle'
 
 export function useReaderController({
   libraryPath,
   books,
   documents,
   actions,
+  onOpenBook,
   setActivePdf,
   setActiveEpub,
   setActiveArticle,
-  setSelectedBook,
   setVaultError,
   setActiveView,
   setSearchOpen,
@@ -30,18 +34,35 @@ export function useReaderController({
     if (doc.fileStatus === 'missing') return
     const resume = Boolean(options.resume)
     const location = options.location || null
+    const studySession = options.studySession || null
     const lastLocationJson = doc.lastLocationJson || null
     const openedAt = new Date().toISOString()
-    await updateDocumentMeta(doc.id, { lastOpened: openedAt })
-    const sessionId = await startReadingSession(libraryPath, {
-      itemId: doc.id,
-      mode: doc.type,
-      device: 'desktop',
-    })
+    let sessionId = null
     try {
       setVaultError('')
+      await updateDocumentMeta(doc.id, { lastOpened: openedAt })
+      sessionId = await startReaderSessionBestEffort(libraryPath, {
+        itemId: doc.id,
+        mode: doc.type,
+      })
       if (doc.type === 'article') {
-        const html = await readTextFile(doc.filePath)
+        let sanitizedHtml = doc.sanitizedHtml || null
+        let plainText = doc.plainText || null
+        let quarantined = Boolean(doc.quarantined)
+        if (!sanitizedHtml && !plainText) {
+          const raw = await readTextFile(doc.filePath)
+          const prepared = prepareCapturedHtml(raw)
+          sanitizedHtml = prepared.sanitizedHtml || null
+          plainText = prepared.plainText || null
+          quarantined = prepared.quarantined
+          updateDocumentMeta(doc.id, {
+            sanitizedHtml,
+            plainText,
+            quarantined,
+            fileStatus: quarantined ? 'quarantined' : (doc.fileStatus || 'ok'),
+            searchText: plainText || doc.searchText || null,
+          })
+        }
         const initialScrollOffset = typeof location?.scrollOffset === 'number'
           ? location.scrollOffset
           : (resume && typeof lastLocationJson?.scrollOffset === 'number'
@@ -49,9 +70,12 @@ export function useReaderController({
             : 0)
         setActiveArticle({
           doc,
-          html,
+          html: sanitizedHtml,
+          plainText: plainText || doc.searchText || '',
+          quarantined,
           initialScrollOffset,
           sessionId,
+          studySession,
         })
         return
       }
@@ -72,6 +96,7 @@ export function useReaderController({
           initialMode: doc.mode || 'scroll',
           initialLayout: doc.layout || 'single',
           sessionId,
+          studySession,
         })
         return
       }
@@ -92,15 +117,14 @@ export function useReaderController({
           initialLayout: doc.layout || 'single',
           initialFontSize: doc.fontSize || 100,
           sessionId,
+          studySession,
         })
         return
       }
     } catch (error) {
       const detail = error?.message ? ` ${error.message}` : ''
       setVaultError(`Unable to open document.${detail}`)
-      if (sessionId) {
-        await endReadingSession(libraryPath, sessionId)
-      }
+      await endReaderSessionBestEffort(libraryPath, sessionId)
       setActivePdf(null)
       setActiveEpub(null)
       setActiveArticle(null)
@@ -108,20 +132,27 @@ export function useReaderController({
   }
 
   const addDocumentNote = async (docId, note) => {
-    const nextNotes = await actions.addDocumentNote(docId, note)
-    if (!nextNotes) return
-    setActivePdf((prev) => {
-      if (!prev?.doc || prev.doc.id !== docId) return prev
-      return { ...prev, doc: { ...prev.doc, notes: nextNotes } }
-    })
-    setActiveEpub((prev) => {
-      if (!prev?.doc || prev.doc.id !== docId) return prev
-      return { ...prev, doc: { ...prev.doc, notes: nextNotes } }
-    })
-    setActiveArticle((prev) => {
-      if (!prev?.doc || prev.doc.id !== docId) return prev
-      return { ...prev, doc: { ...prev.doc, notes: nextNotes } }
-    })
+    try {
+      const nextNotes = await actions.addDocumentNote(docId, note)
+      if (!nextNotes) return false
+      setActivePdf((prev) => {
+        if (!prev?.doc || prev.doc.id !== docId) return prev
+        return { ...prev, doc: { ...prev.doc, notes: nextNotes } }
+      })
+      setActiveEpub((prev) => {
+        if (!prev?.doc || prev.doc.id !== docId) return prev
+        return { ...prev, doc: { ...prev.doc, notes: nextNotes } }
+      })
+      setActiveArticle((prev) => {
+        if (!prev?.doc || prev.doc.id !== docId) return prev
+        return { ...prev, doc: { ...prev.doc, notes: nextNotes } }
+      })
+      return true
+    } catch (error) {
+      const detail = error?.message ? ` ${error.message}` : ''
+      setVaultError(`Unable to save note.${detail}`)
+      return false
+    }
   }
 
   const handleOpenAnnotation = (annotation) => {
@@ -129,7 +160,7 @@ export function useReaderController({
     if (annotation.format === 'book') {
       const book = books.find((entry) => entry.id === annotation.itemId)
       if (book) {
-        setSelectedBook(book)
+        onOpenBook?.(book.id)
         setActiveView('library')
       }
       return
@@ -141,11 +172,40 @@ export function useReaderController({
     }
   }
 
+  const openStudyEntry = async (bookId, studyEntryId) => {
+    if (!bookId || !studyEntryId) return
+    const book = books.find((entry) => entry.id === bookId)
+    const studyEntry = (book?.studyStack || []).find((entry) => entry.id === studyEntryId)
+    if (!book || !studyEntry) return
+
+    actions.reviewStudyEntry(bookId, studyEntryId)
+
+    if (studyEntry.format === 'book') {
+      onOpenBook?.(bookId)
+      setActiveView('library')
+      return
+    }
+
+    const sourceItemId = studyEntry.sourceItemId || studyEntry.itemId
+    const doc = documents.find((entry) => entry.id === sourceItemId)
+    if (!doc) return
+
+    await handleReadDocument(doc, {
+      resume: true,
+      location: studyEntry.location,
+      studySession: {
+        bookId,
+        entryId: studyEntryId,
+      },
+    })
+    setActiveView('documents')
+  }
+
   const openSearchResult = (result) => {
     if (!result?.itemId) return
     const book = books.find((entry) => entry.id === result.itemId)
     if (book) {
-      setSelectedBook(book)
+      onOpenBook?.(book.id)
       setActiveView('library')
       setSearchOpen(false)
       return
@@ -164,6 +224,7 @@ export function useReaderController({
     updateDocumentMeta,
     scheduleDocumentMetaUpdate,
     handleOpenAnnotation,
+    openStudyEntry,
     openSearchResult,
   }
 }

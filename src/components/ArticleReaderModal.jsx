@@ -1,35 +1,42 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { buildArticleLocation, findRelatedNotes } from '../reader/readerCore'
-
-function sanitizeHtml(html) {
-  try {
-    const parser = new DOMParser()
-    const doc = parser.parseFromString(html, 'text/html')
-    doc.querySelectorAll('script,style,noscript').forEach((node) => node.remove())
-    return doc.body?.innerHTML || ''
-  } catch {
-    return html
-  }
-}
+import { prepareCapturedHtml } from '../utils/htmlSanitizer'
+import ReaderDialogShell from './ReaderDialogShell'
 
 function ArticleReaderModal({
   title,
   html,
+  plainText,
+  quarantined = false,
   notes = [],
   onAddNote,
   onProgressChange,
   onLocationChange,
   onClose,
   initialScrollOffset = 0,
+  sessionPanel = null,
 }) {
   const containerRef = useRef(null)
   const [noteText, setNoteText] = useState('')
   const [sidebarOpen, setSidebarOpen] = useState(true)
   const [focusMode, setFocusMode] = useState(false)
   const [scrollOffset, setScrollOffset] = useState(initialScrollOffset || 0)
+  const readerContent = useMemo(() => {
+    if (!html || quarantined) {
+      return {
+        html: '',
+        plainText: plainText || '',
+        quarantined: Boolean(quarantined),
+      }
+    }
 
-  const content = useMemo(() => sanitizeHtml(html || ''), [html])
+    const prepared = prepareCapturedHtml(html)
+    return {
+      html: prepared.sanitizedHtml || '',
+      plainText: prepared.plainText || plainText || '',
+      quarantined: prepared.quarantined,
+    }
+  }, [html, plainText, quarantined])
   const relatedNotes = useMemo(() => (
     findRelatedNotes(notes, buildArticleLocation(scrollOffset))
   ), [notes, scrollOffset])
@@ -52,7 +59,7 @@ function ArticleReaderModal({
   useEffect(() => {
     if (!containerRef.current) return
     containerRef.current.scrollTop = initialScrollOffset || 0
-  }, [initialScrollOffset, content])
+  }, [initialScrollOffset, html, plainText])
 
   const handleAddNote = () => {
     if (!noteText.trim()) return
@@ -68,48 +75,40 @@ function ArticleReaderModal({
   }
 
   return (
-    <motion.div
-      className="modal-overlay epub-reader-overlay kindle-reader"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
-    >
-      <motion.div
-        className={`epub-reader-modal kindle-reader-shell ${focusMode ? 'focus-mode' : ''}`}
-        initial={{ scale: 0.98, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.98, opacity: 0, y: 20 }}
-        transition={{ duration: 0.2 }}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="epub-reader-header kindle-reader-header">
-          <div>
-            <div className="epub-reader-eyebrow">Article</div>
-            <div className="epub-reader-title">{title || 'Untitled Article'}</div>
-          </div>
-          <div className="kindle-reader-actions">
-            <button
-              className="btn-secondary text-xs px-3 py-2"
-              onClick={() => setSidebarOpen((prev) => !prev)}
-            >
-              {sidebarOpen ? 'Hide Notes' : 'Show Notes'}
-            </button>
-            <button
-              className="btn-secondary text-xs px-3 py-2"
-              onClick={() => setFocusMode((prev) => !prev)}
-            >
-              {focusMode ? 'Exit Focus' : 'Focus Mode'}
-            </button>
-            <button className="btn-secondary text-xs px-3 py-2" onClick={onClose}>
-              Close
-            </button>
-          </div>
+    <ReaderDialogShell
+      title={title || 'Untitled Article'}
+      eyebrow="Article"
+      onClose={onClose}
+      focusMode={focusMode}
+      sidebarOpen={sidebarOpen}
+      onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
+      onToggleFocusMode={() => setFocusMode((prev) => !prev)}
+      overlayClassName="epub-reader-overlay kindle-reader"
+      panelClassName={`epub-reader-modal kindle-reader-shell ${focusMode ? 'focus-mode' : ''}`}
+      headerClassName="epub-reader-header kindle-reader-header"
+      eyebrowClassName="epub-reader-eyebrow"
+      titleClassName="epub-reader-title"
+      sessionPanel={sessionPanel}
+      banner={readerContent.quarantined ? (
+        <div className="reader-security-banner" role="status">
+          This article was quarantined during import. Showing plaintext only to keep the reader safe.
         </div>
-
+      ) : null}
+    >
         <div className={`kindle-reader-main ${sidebarOpen ? '' : 'sidebar-hidden'} ${focusMode ? 'focus-mode' : ''}`}>
           <div className="epub-reader-body kindle-reader-body" ref={containerRef}>
-            <article className="article-reader" dangerouslySetInnerHTML={{ __html: content }} />
+            {readerContent.html && !readerContent.quarantined ? (
+              <article className="article-reader" dangerouslySetInnerHTML={{ __html: readerContent.html }} />
+            ) : (
+              <article className="article-reader article-reader-plaintext">
+                {(readerContent.plainText || 'No readable text was available for this article.')
+                  .split(/\n{2,}/)
+                  .filter(Boolean)
+                  .map((paragraph, index) => (
+                    <p key={`${index}-${paragraph.slice(0, 24)}`}>{paragraph}</p>
+                  ))}
+              </article>
+            )}
           </div>
 
           {sidebarOpen && !focusMode && (
@@ -168,8 +167,7 @@ function ArticleReaderModal({
             </button>
           )}
         </div>
-      </motion.div>
-    </motion.div>
+    </ReaderDialogShell>
   )
 }
 

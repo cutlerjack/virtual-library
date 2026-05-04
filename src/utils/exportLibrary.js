@@ -1,10 +1,12 @@
 export function exportLibrary(books, shelves) {
-  const shelfLookup = shelves.reduce((acc, shelf) => {
+  const safeBooks = Array.isArray(books) ? books : []
+  const safeShelves = Array.isArray(shelves) ? shelves : []
+  const shelfLookup = safeShelves.reduce((acc, shelf) => {
     acc[shelf.id] = shelf.name
     return acc
   }, {})
 
-  const payload = books.map((book) => ({
+  const payload = safeBooks.map((book) => ({
     title: book.title || '',
     author: book.author || '',
     isbn: book.isbn || '',
@@ -26,8 +28,11 @@ export function exportLibrary(books, shelves) {
   const link = document.createElement('a')
   link.href = url
   link.download = `virtual-library-export-${new Date().toISOString().slice(0, 10)}.json`
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  URL.revokeObjectURL(url)
+  try {
+    document.body.appendChild(link)
+    link.click()
+  } finally {
+    link.remove()
+    URL.revokeObjectURL(url)
+  }
 }

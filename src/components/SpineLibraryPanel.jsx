@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect } from 'react'
+import React, { useMemo, useRef, useState, useEffect } from 'react'
 
 const DEFAULT_CROP = { zoom: 1, offsetX: 0, offsetY: 0 }
 

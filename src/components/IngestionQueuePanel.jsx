@@ -1,9 +1,12 @@
-function IngestionQueuePanel({ jobs = [], busy = false, onRetry, onCancel, onRunAllOcr }) {
+import React from 'react'
+
+function IngestionQueuePanel({ jobs = [], busy = false, isDesktop = false, onRetry, onCancel, onRunAllOcr }) {
   const summary = jobs.reduce((acc, job) => {
     const key = job.status || 'queued'
     acc[key] = (acc[key] || 0) + 1
     return acc
   }, {})
+  const ocrDisabled = busy || !isDesktop || typeof onRunAllOcr !== 'function'
 
   return (
     <section className="ingest-queue">
@@ -22,10 +25,17 @@ function IngestionQueuePanel({ jobs = [], busy = false, onRetry, onCancel, onRun
           type="button"
           className="btn-secondary text-xs px-3 py-2"
           onClick={onRunAllOcr}
+          disabled={ocrDisabled}
+          title={isDesktop ? 'Queue OCR for every eligible PDF' : 'OCR runs in the desktop app'}
         >
-          OCR Everything
+          {busy ? 'Processing...' : 'OCR Everything'}
         </button>
       </div>
+      {!isDesktop && (
+        <div className="ingest-queue-hint">
+          OCR and file processing run in the desktop app.
+        </div>
+      )}
       <div className="ingest-queue-summary">
         <div className="ingest-queue-pill">Queued: {summary.queued || 0}</div>
         <div className="ingest-queue-pill">Processing: {summary.processing || 0}</div>

@@ -1,78 +1,66 @@
-import { useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { isTauri } from '../utils/tauri'
 import { captureArticle } from '../utils/articleCapture'
 import {
   updateSpineInLibraryMap,
   removeSpineFromLibraryMap,
-  addSpineToLibraryMap,
   normalizeIsbn,
 } from '../utils/storage'
-import { createDocumentItemFromDoc, mergeBookIntoItem } from '../data/libraryAdapters'
 
 export function useBookHandlers({
   actions,
-  updateLibraryState,
+  books,
+  updateBookItem,
+  updateSpineLibraryState,
+  insertDocumentItem,
   updateUserState,
   setShowAddModal,
-  setSelectedBook,
-  userData,
   libraryPath,
 }) {
   const navigate = useNavigate()
 
   const handleUpdateSpineLibraryEntry = (isbn, spineImage, crop) => {
-    updateLibraryState((prev) => {
-      const nextMap = updateSpineInLibraryMap(prev.spineLibrary || {}, { isbn, spineImage, crop })
-      const normalized = normalizeIsbn(isbn)
-      const items = prev.items.map((item) => {
-        if (item.kind !== 'book') return item
-        const meta = item.bookMeta || {}
-        if (!meta.isbn || normalizeIsbn(meta.isbn) !== normalized) return item
-        return {
-          ...item,
-          bookMeta: {
-            ...meta,
-            spineImage,
-            spineSource: 'photo',
-            spineCrop: crop || meta.spineCrop || null,
-          },
-        }
-      })
-      return { ...prev, spineLibrary: nextMap, items }
-    })
+    const normalized = normalizeIsbn(isbn)
+    if (!normalized) return
+    updateSpineLibraryState((prev) => updateSpineInLibraryMap(prev || {}, { isbn, spineImage, crop }))
+    books
+      .filter((book) => book.isbn && normalizeIsbn(book.isbn) === normalized)
+      .forEach((book) => updateBookItem(book.id, {
+        spineImage,
+        spineSource: 'photo',
+        spineCrop: crop || book.spineCrop || null,
+      }))
   }
 
   const handleRemoveSpineLibraryEntry = (isbn) => {
-    updateLibraryState((prev) => ({
-      ...prev,
-      spineLibrary: removeSpineFromLibraryMap(prev.spineLibrary || {}, isbn),
-    }))
+    updateSpineLibraryState((prev) => removeSpineFromLibraryMap(prev || {}, isbn))
   }
 
-  const handleAddBook = (bookData) => {
+  const handleAddBook = (bookData, options = {}) => {
     actions.addBook(bookData)
-    setShowAddModal(false)
+    if (options.closeModal !== false) {
+      setShowAddModal(false)
+    }
   }
 
   const handleAddArticle = async (url) => {
-    if (!isTauri() || !libraryPath) return
+    if (!isTauri() || !libraryPath) {
+      throw new Error('Article capture is available in the desktop app only.')
+    }
     const article = await captureArticle({ url, libraryPath })
-    if (!article) return
-    updateLibraryState((prev) => ({
-      ...prev,
-      items: [...prev.items, createDocumentItemFromDoc(article)],
-    }))
+    if (!article) {
+      throw new Error('Unable to capture that article.')
+    }
+    insertDocumentItem(article)
+    return article
   }
 
   const handleUpdateBook = (updatedBook) => {
     actions.updateBook(updatedBook)
-    setSelectedBook(updatedBook)
   }
 
   const handleDeleteBook = (bookId) => {
     actions.deleteBook(bookId)
-    setSelectedBook(null)
   }
 
   const handleSelectBook = (book) => {
@@ -82,15 +70,15 @@ export function useBookHandlers({
       wearLevel: Math.min((book.wearLevel || 0) + 0.03, 1),
     }
     actions.updateBook(updatedBook)
-    setSelectedBook(updatedBook)
+    navigate(`/book/${updatedBook.id}`)
   }
-
-  const handleViewBookPage = useCallback((bookId) => {
-    navigate(`/book/${bookId}`)
-  }, [navigate])
 
   const handleLogPages = (bookId, pages) => {
     actions.logPages(bookId, pages)
+  }
+
+  const handleUndoLastPageLog = (bookId) => {
+    actions.undoLastPageLog(bookId)
   }
 
   const handleAddQuoteQuick = (bookId, text) => {
@@ -101,16 +89,36 @@ export function useBookHandlers({
     actions.addReflection(bookId, text)
   }
 
-  const handleApplyFontToAll = (fontKey) => {
-    updateLibraryState((prev) => ({
-      ...prev,
-      items: prev.items.map((item) => (
-        item.kind === 'book'
-          ? mergeBookIntoItem(item, { spineFont: fontKey })
-          : item
-      )),
-    }))
-    setSelectedBook(prev => (prev ? { ...prev, spineFont: fontKey } : prev))
+  const handlePinStudyEntry = (bookId, annotation) => {
+    actions.pinStudyEntry(bookId, annotation)
+  }
+
+  const handleRemoveStudyEntry = (bookId, studyEntryId) => {
+    actions.removeStudyEntry(bookId, studyEntryId)
+  }
+
+  const handleUpdateStudyEntry = (bookId, studyEntryId, updates) => {
+    actions.updateStudyEntry(bookId, studyEntryId, updates)
+  }
+
+  const handleMoveStudyEntry = (bookId, studyEntryId, direction) => {
+    actions.moveStudyEntry(bookId, studyEntryId, direction)
+  }
+
+  const handleReviewStudyEntry = (bookId, studyEntryId) => {
+    actions.reviewStudyEntry(bookId, studyEntryId)
+  }
+
+  const handleToggleStudyEntryComplete = (bookId, studyEntryId) => {
+    actions.toggleStudyEntryComplete(bookId, studyEntryId)
+  }
+
+  const handleStartStudySession = (bookId) => {
+    actions.startStudySession(bookId)
+  }
+
+  const handleResetStudySession = (bookId) => {
+    actions.resetStudySession(bookId)
   }
 
   const handleUpdateGoal = (goal) => {
@@ -121,25 +129,6 @@ export function useBookHandlers({
     updateUserState(updates)
   }
 
-  const handleAddToExhibit = (bookId, exhibitId) => {
-    updateUserState({
-      exhibits: (userData.exhibits || []).map((exhibit) => {
-        if (exhibit.id !== exhibitId) return exhibit
-        const current = exhibit.bookIds || []
-        if (current.includes(bookId)) return exhibit
-        return { ...exhibit, bookIds: [...current, bookId] }
-      }),
-    })
-  }
-
-  const handleSaveSpineToLibrary = ({ isbn, spineImage, crop, title, author }) => {
-    if (!isbn || !spineImage) return
-    updateLibraryState((prev) => ({
-      ...prev,
-      spineLibrary: addSpineToLibraryMap(prev.spineLibrary || {}, { isbn, spineImage, crop, title, author }),
-    }))
-  }
-
   return {
     handleUpdateSpineLibraryEntry,
     handleRemoveSpineLibraryEntry,
@@ -148,14 +137,19 @@ export function useBookHandlers({
     handleUpdateBook,
     handleDeleteBook,
     handleSelectBook,
-    handleViewBookPage,
     handleLogPages,
+    handleUndoLastPageLog,
     handleAddQuoteQuick,
     handleAddReflection,
-    handleApplyFontToAll,
+    handlePinStudyEntry,
+    handleRemoveStudyEntry,
+    handleUpdateStudyEntry,
+    handleMoveStudyEntry,
+    handleReviewStudyEntry,
+    handleToggleStudyEntryComplete,
+    handleStartStudySession,
+    handleResetStudySession,
     handleUpdateGoal,
     handleUpdateUserData,
-    handleAddToExhibit,
-    handleSaveSpineToLibrary,
   }
 }

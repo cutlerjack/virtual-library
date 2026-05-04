@@ -1,9 +1,21 @@
 import { quoteText, quoteCreatedAt } from '../utils/documentUtils'
+import { deriveStudySessionCompletedAt, normalizeStudySession } from '../utils/studyStack'
 
 export function selectAllTags(books) {
   const tagSet = new Set()
   books.forEach((book) => {
     book.tags?.forEach((tag) => tagSet.add(tag))
+  })
+  return Array.from(tagSet).sort()
+}
+
+export function selectAllLibraryTags(books, documents) {
+  const tagSet = new Set()
+  books.forEach((book) => {
+    book.tags?.forEach((tag) => tagSet.add(tag))
+  })
+  documents.forEach((doc) => {
+    doc.tags?.forEach((tag) => tagSet.add(tag))
   })
   return Array.from(tagSet).sort()
 }
@@ -62,6 +74,7 @@ export function selectSortedBooks(books, sortMode) {
 }
 
 export function selectAllAnnotations(books, documents) {
+  const bookMap = new Map(books.map((book) => [book.id, book]))
   const annotations = []
   books.forEach((book) => {
     if (book.notes) {
@@ -107,6 +120,7 @@ export function selectAllAnnotations(books, documents) {
 
   documents.forEach((doc) => {
     const format = doc.type || 'document'
+    const linkedBook = doc.linkedBookId ? bookMap.get(doc.linkedBookId) : null
     ;(doc.notes || []).forEach((note) => {
       annotations.push({
         id: note.id,
@@ -123,6 +137,8 @@ export function selectAllAnnotations(books, documents) {
         },
         locationLabel: note.page ? `Page ${note.page}` : null,
         createdAt: note.createdAt || null,
+        linkedBookId: linkedBook?.id || doc.linkedBookId || null,
+        linkedBookTitle: linkedBook?.title || null,
       })
     })
     ;(doc.highlights || []).forEach((highlight) => {
@@ -141,9 +157,98 @@ export function selectAllAnnotations(books, documents) {
         },
         locationLabel: highlight.page ? `Page ${highlight.page}` : null,
         createdAt: highlight.createdAt || null,
+        linkedBookId: linkedBook?.id || doc.linkedBookId || null,
+        linkedBookTitle: linkedBook?.title || null,
       })
     })
   })
 
   return annotations.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+}
+
+export function selectBookReadingTrail(book, documents, limit = 8) {
+  if (!book) return []
+
+  const linkedDocuments = documents.filter((doc) => doc.linkedBookId === book.id)
+  return selectAllAnnotations([book], linkedDocuments).slice(0, limit)
+}
+
+export function selectBookStudyStack(book, limit = 6) {
+  if (!book?.studyStack?.length) return []
+
+  return book.studyStack.slice(0, limit)
+}
+
+export function selectStudySessionState(book) {
+  const stack = selectBookStudyStack(book, Number.MAX_SAFE_INTEGER)
+  const meta = normalizeStudySession(book?.studySession)
+  const completedCount = stack.filter((entry) => entry.completedAt).length
+  const remainingCount = stack.length - completedCount
+  const nextEntry = stack.find((entry) => !entry.completedAt) || stack[0] || null
+  const completedAt = meta?.completedAt || deriveStudySessionCompletedAt(stack)
+  const startedAt = meta?.startedAt || null
+  const reviewedThisSessionCount = startedAt
+    ? stack.filter((entry) => entry.lastReviewedAt && new Date(entry.lastReviewedAt) >= new Date(startedAt)).length
+    : 0
+  const completedThisSessionCount = startedAt
+    ? stack.filter((entry) => entry.completedAt && new Date(entry.completedAt) >= new Date(startedAt)).length
+    : completedCount
+
+  let status = 'empty'
+  if (stack.length > 0) {
+    status = completedAt && remainingCount === 0
+      ? 'complete'
+      : startedAt
+        ? 'active'
+        : 'ready'
+  }
+
+  return {
+    totalCount: stack.length,
+    completedCount,
+    remainingCount,
+    nextEntry,
+    isComplete: status === 'complete',
+    status,
+    startedAt,
+    lastActivityAt: meta?.lastActivityAt || null,
+    completedAt,
+    reviewedThisSessionCount,
+    completedThisSessionCount,
+  }
+}
+
+export function selectStudyVolumes(books, limit = 4) {
+  return books
+    .map((book) => {
+      const studyStack = selectBookStudyStack(book, Number.MAX_SAFE_INTEGER)
+      const session = selectStudySessionState(book)
+      if (studyStack.length === 0) return null
+      return {
+        book,
+        count: studyStack.length,
+        status: session.status,
+        completedCount: session.completedCount,
+        remainingCount: session.remainingCount,
+        nextEntry: session.nextEntry,
+        startedAt: session.startedAt,
+        completedAt: session.completedAt,
+        reviewedThisSessionCount: session.reviewedThisSessionCount,
+        latestSavedAt: book.lastTouched || studyStack[0].savedAt || studyStack[0].createdAt || book.addedAt || null,
+        latestEntry: session.nextEntry || studyStack[0],
+      }
+    })
+    .filter(Boolean)
+    .sort((a, b) => {
+      const statusWeight = {
+        active: 0,
+        ready: 1,
+        complete: 2,
+        empty: 3,
+      }
+      const weightDelta = (statusWeight[a.status] ?? 9) - (statusWeight[b.status] ?? 9)
+      if (weightDelta !== 0) return weightDelta
+      return new Date(b.latestSavedAt || 0) - new Date(a.latestSavedAt || 0)
+    })
+    .slice(0, limit)
 }

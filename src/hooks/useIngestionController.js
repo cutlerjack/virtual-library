@@ -11,9 +11,18 @@ import {
 } from '../data/libraryDb'
 import { processIngestJob } from '../utils/ingestPipeline'
 
+function shouldAutoEnqueueDocument(doc) {
+  if (!doc?.id || !doc?.filePath) return false
+  if (doc.fileStatus === 'missing') return false
+  if (typeof doc.searchText !== 'string') return true
+  if (doc.searchText.trim().length > 0) return false
+  return doc.type === 'pdf' && !doc.scanned
+}
+
 export function useIngestionController({
   libraryPath,
   libraryReady,
+  books,
   documents,
   ingestRetentionDays = 14,
   updateDocumentMeta,
@@ -24,10 +33,20 @@ export function useIngestionController({
   const pollTimerRef = useRef(null)
   const rerunTimerRef = useRef(null)
   const updateDocumentMetaRef = useRef(updateDocumentMeta)
+  const booksRef = useRef(books)
+  const mountedRef = useRef(true)
+
+  useEffect(() => () => {
+    mountedRef.current = false
+  }, [])
 
   useEffect(() => {
     updateDocumentMetaRef.current = updateDocumentMeta
   }, [updateDocumentMeta])
+
+  useEffect(() => {
+    booksRef.current = books
+  }, [books])
 
   const loadJobs = useCallback(async () => {
     if (!libraryPath || !libraryReady) return
@@ -35,7 +54,9 @@ export function useIngestionController({
       statusSet: ['queued', 'processing', 'failed', 'orphaned'],
       limit: 500,
     })
-    setIngestJobs(page.rows || [])
+    if (mountedRef.current) {
+      setIngestJobs(page.rows || [])
+    }
   }, [libraryPath, libraryReady])
 
   useEffect(() => {
@@ -54,8 +75,12 @@ export function useIngestionController({
 
     tick().catch((err) => console.warn('[ingest] Tick failed:', err?.message || err))
     prune().catch((err) => console.warn('[ingest] Prune failed:', err?.message || err))
-    pollTimerRef.current = setInterval(tick, 4000)
-    const pruneTimer = setInterval(prune, 5 * 60 * 1000)
+    pollTimerRef.current = setInterval(() => {
+      tick().catch((err) => console.warn('[ingest] Tick failed:', err?.message || err))
+    }, 4000)
+    const pruneTimer = setInterval(() => {
+      prune().catch((err) => console.warn('[ingest] Prune failed:', err?.message || err))
+    }, 5 * 60 * 1000)
 
     return () => {
       cancelled = true
@@ -68,9 +93,7 @@ export function useIngestionController({
     if (!libraryPath || !libraryReady) return
     const existing = new Set(ingestJobs.map((job) => job.item_id).filter(Boolean))
     documents.forEach((doc) => {
-      if (!doc?.id || !doc?.filePath) return
-      if (doc.fileStatus === 'missing') return
-      if (typeof doc.searchText === 'string') return
+      if (!shouldAutoEnqueueDocument(doc)) return
       if (existing.has(doc.id)) return
       enqueueIngestJobUnique(libraryPath, {
         itemId: doc.id,
@@ -87,7 +110,9 @@ export function useIngestionController({
     const runQueue = async () => {
       if (ingestWorkerRef.current) return
       ingestWorkerRef.current = true
-      setIngestBusy(true)
+      if (mountedRef.current) {
+        setIngestBusy(true)
+      }
       try {
         while (!cancelled) {
           const claimed = await claimNextIngestJob(libraryPath)
@@ -108,6 +133,7 @@ export function useIngestionController({
             await processIngestJob({
               job,
               doc,
+              books: booksRef.current || [],
               updateJob: (id, updates) => updateIngestJob(libraryPath, id, updates),
               updateDoc: (id, updates) => updateDocumentMetaRef.current?.(id, updates),
               saveChunks: (id, chunks, source) => saveTextChunks(libraryPath, { itemId: id, chunks, source }),
@@ -131,7 +157,9 @@ export function useIngestionController({
       } catch (error) {
         console.error('Ingestion worker failed', error)
       } finally {
-        setIngestBusy(false)
+        if (!cancelled && mountedRef.current) {
+          setIngestBusy(false)
+        }
         ingestWorkerRef.current = false
       }
       if (!cancelled) {
@@ -177,51 +205,63 @@ export function useIngestionController({
 
   const retryIngest = useCallback(async (job) => {
     if (!libraryPath || !job?.id) return
-    await updateIngestJob(libraryPath, job.id, {
-      status: 'queued',
-      progress: 0,
-      error: null,
-      lastErrorCode: null,
-    })
-    await loadJobs()
+    try {
+      await updateIngestJob(libraryPath, job.id, {
+        status: 'queued',
+        progress: 0,
+        error: null,
+        lastErrorCode: null,
+      })
+      await loadJobs()
+    } catch (err) {
+      console.warn('[ingest] Retry failed:', err?.message || err)
+    }
   }, [libraryPath, loadJobs])
 
   const cancelIngest = useCallback(async (job) => {
     if (!libraryPath || !job?.id) return
-    await updateIngestJob(libraryPath, job.id, { status: 'cancelled', progress: 0 })
-    await loadJobs()
+    try {
+      await updateIngestJob(libraryPath, job.id, { status: 'cancelled', progress: 0 })
+      await loadJobs()
+    } catch (err) {
+      console.warn('[ingest] Cancel failed:', err?.message || err)
+    }
   }, [libraryPath, loadJobs])
 
   const runAllOcr = useCallback(async () => {
     if (!libraryPath) return
-    const activeJobs = new Map(ingestJobs.map((job) => [job.item_id, job]))
-    const targets = documents.filter((doc) => (
-      doc.type === 'pdf' && doc?.id && doc?.filePath && doc.fileStatus !== 'missing'
-    ))
-    for (const doc of targets) {
-      const existing = activeJobs.get(doc.id)
-      if (existing) {
-        if (existing.status === 'queued' || existing.status === 'processing') {
-          await updateIngestJob(libraryPath, existing.id, { forceOcr: true })
+    try {
+      const activeJobs = new Map(ingestJobs.map((job) => [job.item_id, job]))
+      const targets = documents.filter((doc) => (
+        doc.type === 'pdf' && doc?.id && doc?.filePath && doc.fileStatus !== 'missing'
+      ))
+      for (const doc of targets) {
+        const existing = activeJobs.get(doc.id)
+        if (existing) {
+          if (existing.status === 'queued' || existing.status === 'processing') {
+            await updateIngestJob(libraryPath, existing.id, { forceOcr: true })
+            continue
+          }
+          await updateIngestJob(libraryPath, existing.id, {
+            status: 'queued',
+            progress: 0,
+            error: null,
+            forceOcr: true,
+            lastErrorCode: null,
+          })
           continue
         }
-        await updateIngestJob(libraryPath, existing.id, {
-          status: 'queued',
-          progress: 0,
-          error: null,
+        await enqueueIngestJobUnique(libraryPath, {
+          itemId: doc.id,
+          sourcePath: doc.filePath,
+          targetPath: doc.filePath,
           forceOcr: true,
-          lastErrorCode: null,
         })
-        continue
       }
-      await enqueueIngestJobUnique(libraryPath, {
-        itemId: doc.id,
-        sourcePath: doc.filePath,
-        targetPath: doc.filePath,
-        forceOcr: true,
-      })
+      await loadJobs()
+    } catch (err) {
+      console.warn('[ingest] OCR queue failed:', err?.message || err)
     }
-    await loadJobs()
   }, [documents, ingestJobs, libraryPath, loadJobs])
 
   return {

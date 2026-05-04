@@ -1,19 +1,21 @@
-import { useState, useMemo, useEffect, useRef, lazy, Suspense, useCallback } from 'react'
+import React, { useState, useMemo, useEffect, useRef, lazy, Suspense, useCallback } from 'react'
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence } from 'framer-motion'
-import AddBookModal from './components/AddBookModal'
-import BookModal from './components/BookModal'
-import StatsDashboard from './components/StatsDashboard'
-import PreferencesPanel from './components/PreferencesPanel'
-const BookPage = lazy(() => import('./pages/BookPage'))
-import GlobalSearch from './components/GlobalSearch'
 import ErrorBoundary from './components/ErrorBoundary'
-import ReaderModals from './components/ReaderModals'
+import AppHeader from './components/AppHeader'
 import LibraryView from './features/library/LibraryView'
-import ReadingRoomView from './features/reading-room/ReadingRoomView'
+import { chooseLibraryFolder } from './utils/libraryVault'
+const AddBookModal = lazy(() => import('./components/AddBookModal'))
+const GlobalSearch = lazy(() => import('./components/GlobalSearch'))
+const ReaderModals = lazy(() => import('./components/ReaderModals'))
+const PreferencesPanel = lazy(() => import('./components/PreferencesPanel'))
+const BookPage = lazy(() => import('./pages/BookPage'))
+const ReadingRoomView = lazy(() => import('./features/reading-room/ReadingRoomView'))
+const InsightsView = lazy(() => import('./features/insights/InsightsView'))
+const MaintenanceView = lazy(() => import('./features/maintenance/MaintenanceView'))
 import { useLibraryStore } from './store/useLibraryStore'
 import { createLibraryActions } from './store/libraryActions'
-import { selectAllTags } from './store/librarySelectors'
+import { selectAllLibraryTags } from './store/librarySelectors'
 import { isTauri } from './utils/tauri'
 import { getIconSet } from './components/icons'
 import { resolveShelfFont } from './utils/fonts'
@@ -27,7 +29,8 @@ import { useBookHandlers } from './hooks/useBookHandlers'
 function App() {
   const {
     libraryReady,
-    libraryDirty,
+    libraryError,
+    librarySyncError,
     libraryPath,
     setLibraryPath,
     books,
@@ -36,35 +39,52 @@ function App() {
     userData,
     spineLibraryMap,
     spineLibraryEntries,
-    updateLibraryState,
     updateBookItem,
     updateDocumentItem,
     updateUserState,
+    insertBookItem,
+    insertDocumentItem,
+    removeLibraryItem,
     updateShelvesState,
+    updateSpineLibraryState,
     refreshLibraryState,
     flushLibraryState,
+    retryLibraryLoad,
   } = useLibraryStore()
 
   const [viewMode, setViewMode] = useState('spine')
   const navigate = useNavigate()
   const location = useLocation()
-  const activeView = location.pathname.startsWith('/documents') ? 'documents' : 'library'
+  const normalizedActiveView = location.pathname.startsWith('/documents')
+    ? 'documents'
+    : location.pathname.startsWith('/insights')
+      ? 'insights'
+      : location.pathname.startsWith('/maintenance')
+        ? 'maintenance'
+      : 'library'
   const setActiveView = useCallback((view) => {
-    navigate(view === 'documents' ? '/documents' : '/')
+    navigate(
+      view === 'documents'
+        ? '/documents'
+        : view === 'insights'
+          ? '/insights'
+          : view === 'maintenance'
+            ? '/maintenance'
+          : '/'
+    )
   }, [navigate])
   const {
-    selectedBook, setSelectedBook,
     showAddModal, setShowAddModal,
-    showStats, setShowStats,
     showCustomizer, setShowCustomizer,
-    showDailyRitual, setShowDailyRitual,
     showPreferences, setShowPreferences,
-    showInsights, setShowInsights,
     activePdf, setActivePdf,
     activeEpub, setActiveEpub,
     activeArticle, setActiveArticle,
     isReaderOpen,
   } = useModalController()
+  const openBookPage = useCallback((bookId) => {
+    navigate(`/book/${bookId}`)
+  }, [navigate])
   const [vaultError, setVaultError] = useState('')
   const docUpdateTimers = useRef(new Map())
   const theme = userData.theme || 'classic'
@@ -85,10 +105,11 @@ function App() {
     shelves,
     userData,
     spineLibraryMap,
-    updateLibraryState,
     updateBookItem,
     updateDocumentItem,
     updateUserState,
+    insertBookItem,
+    removeLibraryItem,
     updateShelvesState,
     docUpdateTimersRef: docUpdateTimers,
   }), [
@@ -97,12 +118,18 @@ function App() {
     shelves,
     userData,
     spineLibraryMap,
-    updateLibraryState,
     updateBookItem,
     updateDocumentItem,
     updateUserState,
+    insertBookItem,
+    removeLibraryItem,
     updateShelvesState,
   ])
+
+  const flushPendingReaderState = useCallback(async () => {
+    actions.flushPendingDocumentMetaUpdates?.()
+    await flushLibraryState()
+  }, [actions, flushLibraryState])
 
   const {
     ingestBusy,
@@ -113,6 +140,7 @@ function App() {
   } = useIngestionController({
     libraryPath,
     libraryReady: libraryReady && isTauri(),
+    books,
     documents,
     ingestRetentionDays: userData.ingestJobRetentionDays,
     updateDocumentMeta: actions.updateDocumentMeta,
@@ -140,21 +168,29 @@ function App() {
     libraryPath,
     setLibraryPath,
     libraryReady,
-    libraryDirty,
     books,
     documents,
     shelves,
     userData,
-    updateLibraryState,
+    updateBookItem,
+    insertBookItem,
+    insertDocumentItem,
     updateUserState,
+    updateShelvesState,
     refreshLibraryState,
-    flushLibraryState,
+    flushLibraryState: flushPendingReaderState,
     setVaultError,
     actions,
     ingestBusy,
   })
 
-  const allTags = useMemo(() => selectAllTags(books), [books])
+  const allLibraryTags = useMemo(() => selectAllLibraryTags(books, documents), [books, documents])
+
+  const handleChooseLibraryFolder = useCallback(async () => {
+    const nextPath = await chooseLibraryFolder()
+    if (!nextPath) return
+    await retryLibraryLoad(nextPath)
+  }, [retryLibraryLoad])
 
   const {
     handleReadDocument,
@@ -162,16 +198,17 @@ function App() {
     updateDocumentMeta,
     scheduleDocumentMetaUpdate,
     handleOpenAnnotation,
+    openStudyEntry,
     openSearchResult,
   } = useReaderController({
     libraryPath,
     books,
     documents,
     actions,
+    onOpenBook: openBookPage,
     setActivePdf,
     setActiveEpub,
     setActiveArticle,
-    setSelectedBook,
     setVaultError,
     setActiveView,
     setSearchOpen,
@@ -185,27 +222,33 @@ function App() {
     handleUpdateBook,
     handleDeleteBook,
     handleSelectBook,
-    handleViewBookPage,
     handleLogPages,
+    handleUndoLastPageLog,
     handleAddQuoteQuick,
     handleAddReflection,
-    handleApplyFontToAll,
+    handlePinStudyEntry,
+    handleRemoveStudyEntry,
+    handleUpdateStudyEntry,
+    handleMoveStudyEntry,
+    handleReviewStudyEntry,
+    handleToggleStudyEntryComplete,
+    handleStartStudySession,
+    handleResetStudySession,
     handleUpdateGoal,
     handleUpdateUserData,
-    handleAddToExhibit,
-    handleSaveSpineToLibrary,
   } = useBookHandlers({
     actions,
-    updateLibraryState,
+    books,
+    updateBookItem,
+    updateSpineLibraryState,
+    insertDocumentItem,
     updateUserState,
     setShowAddModal,
-    setSelectedBook,
-    userData,
     libraryPath,
   })
 
   useEffect(() => () => {
-    docUpdateTimers.current.forEach((timer) => clearTimeout(timer))
+    docUpdateTimers.current.forEach((entry) => clearTimeout(entry?.timeout || entry))
     docUpdateTimers.current.clear()
   }, [])
 
@@ -221,66 +264,50 @@ function App() {
       style={{ '--placard-font': resolveShelfFont(userData.shelfFont) }}
     >
       <div className="library-atmosphere" aria-hidden="true" />
-      {/* Header */}
-      <header className="site-header">
-        <div className="max-w-6xl mx-auto px-6">
-          <div className="flex items-center justify-between">
-            <h1 className="logo-text">
-              {userData.displayName ? userData.displayName : 'My '}
-              {!userData.displayName && <span>Library</span>}
-            </h1>
-            <div className="flex items-center gap-3">
-              <div className="view-toggle">
-                <button
-                  type="button"
-                  className={`view-toggle-btn ${activeView === 'library' ? 'active' : ''}`}
-                  onClick={() => navigate('/')}
-                >
-                  Library
-                </button>
-                <button
-                  type="button"
-                  className={`view-toggle-btn ${activeView === 'documents' ? 'active' : ''}`}
-                  onClick={() => navigate('/documents')}
-                >
-                  Documents
-                </button>
-              </div>
-              {isTauri() && (
-                <GlobalSearch
-                  searchQuery={searchQuery}
-                  setSearchQuery={setSearchQuery}
-                  searchResults={searchResults}
-                  searchOpen={searchOpen}
-                  setSearchOpen={setSearchOpen}
-                  searchBusy={searchBusy}
-                  searchStatus={searchStatus}
-                  onOpenResult={openSearchResult}
-                />
-              )}
-              {activeView === 'library' && (
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="btn-primary flex items-center gap-2"
-                >
-                  <span className="w-4 h-4">{Icons.plus}</span>
-                  <span>Add Book</span>
-                </button>
-              )}
-              <button
-                onClick={() => setShowPreferences((prev) => !prev)}
-                className="btn-secondary flex items-center gap-2"
-              >
-                <span className="w-4 h-4">{Icons.tune}</span>
-                <span>Preferences</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <AppHeader
+        displayName={userData.displayName}
+        normalizedActiveView={normalizedActiveView}
+        showMaintenance={isTauri()}
+        icons={Icons}
+        searchSlot={isTauri() ? (
+          <Suspense fallback={<div className="loading-placeholder" />}>
+            <GlobalSearch
+              searchQuery={searchQuery}
+              setSearchQuery={setSearchQuery}
+              searchResults={searchResults}
+              searchOpen={searchOpen}
+              setSearchOpen={setSearchOpen}
+              searchBusy={searchBusy}
+              searchStatus={searchStatus}
+              onOpenResult={openSearchResult}
+            />
+          </Suspense>
+        ) : null}
+        onOpenAdd={() => setShowAddModal(true)}
+        onOpenPreferences={() => setShowPreferences((prev) => !prev)}
+        onNavigateLibrary={() => navigate('/')}
+        onNavigateDocuments={() => navigate('/documents')}
+        onNavigateInsights={() => navigate('/insights')}
+        onNavigateMaintenance={() => navigate('/maintenance')}
+      />
 
       <div className="library-content relative z-10 max-w-6xl mx-auto px-6 py-8">
         <ErrorBoundary>
+        {libraryReady && libraryError && (
+          <LibraryFailureState
+            error={libraryError}
+            onRetry={() => retryLibraryLoad()}
+            onChooseFolder={isTauri() ? handleChooseLibraryFolder : null}
+          />
+        )}
+        {libraryReady && !libraryError && librarySyncError && (
+          <LibrarySyncWarning
+            error={librarySyncError}
+            onReload={refreshLibraryState}
+          />
+        )}
+        {!libraryReady && !libraryError && <div className="loading-placeholder" />}
+        {libraryReady && !libraryError && (
         <Suspense fallback={<div className="loading-placeholder" />}>
           <Routes>
             <Route
@@ -295,13 +322,12 @@ function App() {
                   viewMode={viewMode}
                   icons={Icons}
                   showCustomizer={showCustomizer}
-                  showDailyRitual={showDailyRitual}
                   actions={actions}
                   updateUserState={updateUserState}
-                  updateLibraryState={updateLibraryState}
                   onSelectBook={handleSelectBook}
                   onReadDocument={handleReadDocument}
                   onOpenAnnotation={handleOpenAnnotation}
+                  onOpenBook={openBookPage}
                   onRequestAddBook={() => setShowAddModal(true)}
                   onNavigateToDocuments={() => navigate('/documents')}
                   handleUpdateSpineLibraryEntry={handleUpdateSpineLibraryEntry}
@@ -313,10 +339,16 @@ function App() {
               path="/documents"
               element={
                 <ReadingRoomView
+                  books={books}
                   documents={documents}
+                  shelves={shelves}
+                  allLibraryTags={allLibraryTags}
                   libraryPath={libraryPath}
                   onImport={handleImportDocuments}
                   onReadDocument={handleReadDocument}
+                  onUpdateDocument={updateDocumentMeta}
+                  onNavigateToLibrary={() => navigate('/')}
+                  onOpenBook={openBookPage}
                   vaultError={vaultError}
                   lastRescanAt={userData.lastRescanAt}
                   ingestJobs={visibleIngestJobs}
@@ -332,119 +364,190 @@ function App() {
               element={
                 <BookPage
                   books={books}
+                  documents={documents}
                   shelves={shelves}
-                  allTags={allTags}
                   onUpdate={handleUpdateBook}
+                  onUpdateDocument={updateDocumentMeta}
                   onDelete={handleDeleteBook}
                   onLogPages={handleLogPages}
+                  onUndoLastPageLog={handleUndoLastPageLog}
                   onAddQuote={handleAddQuoteQuick}
                   onAddReflection={handleAddReflection}
+                  onPinStudyEntry={handlePinStudyEntry}
+                  onRemoveStudyEntry={handleRemoveStudyEntry}
+                  onUpdateStudyEntry={handleUpdateStudyEntry}
+                  onMoveStudyEntry={handleMoveStudyEntry}
+                  onReviewStudyEntry={handleReviewStudyEntry}
+                  onToggleStudyEntryComplete={handleToggleStudyEntryComplete}
+                  onStartStudySession={handleStartStudySession}
+                  onResetStudySession={handleResetStudySession}
+                  onOpenStudyEntry={openStudyEntry}
+                  onSelectBook={handleSelectBook}
+                  onReadDocument={handleReadDocument}
+                  onOpenAnnotation={handleOpenAnnotation}
+                  onNavigateToDocuments={() => navigate('/documents')}
+                  viewMode={viewMode}
+                />
+              }
+            />
+            <Route
+              path="/insights"
+              element={(
+                <InsightsView
+                  books={books}
+                  userData={userData}
+                  actions={actions}
+                  onOpenBook={openBookPage}
+                  onUpdateGoal={handleUpdateGoal}
+                  onUpdateUserData={handleUpdateUserData}
+                  theme={theme}
+                />
+              )}
+            />
+            <Route
+              path="/maintenance"
+              element={
+                <MaintenanceView
+                  isDesktop={isTauri()}
+                  libraryPath={libraryPath}
+                  userData={userData}
+                  maintenanceStatus={maintenanceStatus}
+                  backupBusy={backupBusy}
+                  restoreBusy={restoreBusy}
+                  rescanBusy={rescanBusy}
+                  lastRescanAt={userData.lastRescanAt}
+                  snapshots={snapshots}
+                  snapshotBusy={snapshotBusy}
+                  integrityStatus={integrityStatus}
+                  doctorBusy={doctorBusy}
+                  onUpdateUserData={handleUpdateUserData}
+                  onRescanLibrary={handleRescanLibrary}
+                  onExportBackup={handleExportBackup}
+                  onRestoreBackup={handleRestoreBackup}
+                  onCreateSnapshot={handleCreateSnapshot}
+                  onRestoreSnapshot={handleRestoreSnapshot}
+                  onRunDoctor={handleRunDoctor}
+                  onRebuildIndex={handleRebuildIndex}
                 />
               }
             />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Suspense>
+        )}
         </ErrorBoundary>
       </div>
 
       {/* Modals */}
       <AnimatePresence>
         {showAddModal && (
-          <AddBookModal
-            onClose={() => setShowAddModal(false)}
-            onAddBook={handleAddBook}
-            onAddArticle={handleAddArticle}
-            onMigrateExport={handleMigrateExportFile}
-          />
+          <Suspense fallback={<div className="loading-placeholder" />}>
+            <AddBookModal
+              onClose={() => setShowAddModal(false)}
+              onAddBook={handleAddBook}
+              onAddArticle={handleAddArticle}
+              onMigrateExport={handleMigrateExportFile}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 
       <AnimatePresence>
         {showPreferences && (
-          <PreferencesPanel
-            open={showPreferences}
-            onClose={() => setShowPreferences(false)}
-            viewMode={viewMode}
-            setViewMode={setViewMode}
-            showStats={showStats}
-            setShowStats={setShowStats}
-            showDailyRitual={showDailyRitual}
-            setShowDailyRitual={setShowDailyRitual}
-            showCustomizer={showCustomizer}
-            setShowCustomizer={setShowCustomizer}
-            isDesktop={isTauri()}
-            onRescanLibrary={handleRescanLibrary}
-            onExportBackup={handleExportBackup}
-            onRestoreBackup={handleRestoreBackup}
-            maintenanceStatus={maintenanceStatus}
-            backupBusy={backupBusy}
-            restoreBusy={restoreBusy}
-            rescanBusy={rescanBusy}
-            lastRescanAt={userData.lastRescanAt}
-            userData={userData}
-            onUpdateUserData={handleUpdateUserData}
-            snapshots={snapshots}
-            onCreateSnapshot={handleCreateSnapshot}
-            onRestoreSnapshot={handleRestoreSnapshot}
-            snapshotBusy={snapshotBusy}
-            integrityStatus={integrityStatus}
-            onRunDoctor={handleRunDoctor}
-            doctorBusy={doctorBusy}
-            onRebuildIndex={handleRebuildIndex}
-          />
+          <Suspense fallback={<div className="loading-placeholder" />}>
+            <PreferencesPanel
+              open={showPreferences}
+              onClose={() => setShowPreferences(false)}
+              viewMode={viewMode}
+              setViewMode={setViewMode}
+              showCustomizer={showCustomizer}
+              setShowCustomizer={setShowCustomizer}
+              isDesktop={isTauri()}
+              userData={userData}
+              onUpdateUserData={handleUpdateUserData}
+              onOpenMaintenance={() => {
+                setShowPreferences(false)
+                navigate('/maintenance')
+              }}
+            />
+          </Suspense>
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {selectedBook && (
-          <BookModal
-            book={selectedBook}
-            shelves={shelves}
-            allTags={allTags}
-            onClose={() => setSelectedBook(null)}
-            onUpdate={handleUpdateBook}
-            onDelete={handleDeleteBook}
-            onApplyFontToAll={handleApplyFontToAll}
-            exhibits={userData.exhibits || []}
-            onAddToExhibit={handleAddToExhibit}
-            spineLibrary={spineLibraryMap}
-            onSaveSpineToLibrary={handleSaveSpineToLibrary}
-          />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {showStats && (
-          <StatsDashboard
-            books={books}
-            yearlyGoal={userData.yearlyGoal}
-            onUpdateGoal={handleUpdateGoal}
-            quests={userData.quests || []}
-            statsAdjustments={userData.statsAdjustments || {}}
-            onUpdateUserData={handleUpdateUserData}
-            theme={theme}
-            onClose={() => setShowStats(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      <ReaderModals
-        activePdf={activePdf}
-        setActivePdf={setActivePdf}
-        activeEpub={activeEpub}
-        setActiveEpub={setActiveEpub}
-        activeArticle={activeArticle}
-        setActiveArticle={setActiveArticle}
-        libraryPath={libraryPath}
-        readerSettings={readerSettings}
-        addDocumentNote={addDocumentNote}
-        updateDocumentMeta={updateDocumentMeta}
-        scheduleDocumentMetaUpdate={scheduleDocumentMetaUpdate}
-      />
+      <Suspense fallback={null}>
+        <ReaderModals
+          activePdf={activePdf}
+          setActivePdf={setActivePdf}
+          activeEpub={activeEpub}
+          setActiveEpub={setActiveEpub}
+          activeArticle={activeArticle}
+          setActiveArticle={setActiveArticle}
+          libraryPath={libraryPath}
+          readerSettings={readerSettings}
+          addDocumentNote={addDocumentNote}
+          updateDocumentMeta={updateDocumentMeta}
+          scheduleDocumentMetaUpdate={scheduleDocumentMetaUpdate}
+          flushPendingDocumentMetaUpdates={actions.flushPendingDocumentMetaUpdates}
+          books={books}
+          onOpenStudyEntry={openStudyEntry}
+          onOpenBook={openBookPage}
+          onToggleStudyEntryComplete={handleToggleStudyEntryComplete}
+        />
+      </Suspense>
 
     </div>
   )
 }
 
 export default App
+
+function LibraryFailureState({ error, onRetry, onChooseFolder }) {
+  return (
+    <div className="library-failure-state" role="alert">
+      <div className="library-failure-eyebrow">Library Unavailable</div>
+      <h2 className="library-failure-title">The local library could not be opened.</h2>
+      <p className="library-failure-copy">
+        {error?.message || 'The database could not be initialized.'}
+      </p>
+      <div className="library-failure-actions">
+        <button type="button" className="btn-secondary" onClick={onRetry}>
+          Retry
+        </button>
+        {onChooseFolder && (
+          <button type="button" className="btn-primary" onClick={onChooseFolder}>
+            Choose Library Folder
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export function LibrarySyncWarning({ error, onReload }) {
+  const handleReload = () => {
+    Promise.resolve(onReload?.()).catch((reloadError) => {
+      console.warn(
+        '[library-sync] Unable to reload library:',
+        reloadError?.message || reloadError
+      )
+    })
+  }
+
+  return (
+    <div className="library-sync-warning" role="alert">
+      <div>
+        <div className="library-sync-warning-title">Recent changes may not be fully saved.</div>
+        <div className="library-sync-warning-copy">
+          {error?.message || 'A local database write failed. Reload the library before exporting or restoring.'}
+        </div>
+      </div>
+      <button
+        type="button"
+        className="btn-secondary"
+        onClick={handleReload}
+      >
+        Reload Library
+      </button>
+    </div>
+  )
+}

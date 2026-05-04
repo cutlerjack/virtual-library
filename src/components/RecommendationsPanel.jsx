@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { getRecommendations, getReadingInsights } from '../utils/recommendations'
 
 const DISMISSED_KEY = 'virtual-library-archivist-dismissed'
@@ -9,7 +9,10 @@ function RecommendationsPanel({ books }) {
   const [dismissed, setDismissed] = useState(() => {
     try {
       const data = localStorage.getItem(DISMISSED_KEY)
-      return data ? JSON.parse(data) : []
+      const parsed = data ? JSON.parse(data) : []
+      return Array.isArray(parsed)
+        ? parsed.filter((item) => typeof item === 'string')
+        : []
     } catch {
       return []
     }
@@ -27,7 +30,14 @@ function RecommendationsPanel({ books }) {
   const dismissItem = (id) => {
     const next = [...new Set([...dismissed, id])]
     setDismissed(next)
-    localStorage.setItem(DISMISSED_KEY, JSON.stringify(next))
+    try {
+      localStorage.setItem(DISMISSED_KEY, JSON.stringify(next))
+    } catch (error) {
+      console.warn(
+        '[recommendations] Unable to persist dismissed note:',
+        error?.message || error
+      )
+    }
   }
 
   return (

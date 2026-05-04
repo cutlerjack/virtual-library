@@ -8,6 +8,15 @@ export const DB_VERSION = 7
 const dbCache = new Map()
 const dbLocks = new Map()
 
+export class LibraryDbError extends Error {
+  constructor(code, message, options = {}) {
+    super(message)
+    this.name = 'LibraryDbError'
+    this.code = code
+    this.cause = options.cause
+  }
+}
+
 export async function withDbLock(libraryPath, fn) {
   if (!libraryPath) return fn()
   const previous = dbLocks.get(libraryPath) || Promise.resolve()
@@ -15,21 +24,35 @@ export async function withDbLock(libraryPath, fn) {
   const next = new Promise((resolve) => {
     release = resolve
   })
-  dbLocks.set(libraryPath, previous.then(() => next, () => next))
+  const current = previous.then(() => next, () => next)
+  dbLocks.set(libraryPath, current)
   await previous
   try {
     return await fn()
   } finally {
     release?.()
+    if (dbLocks.get(libraryPath) === current) {
+      dbLocks.delete(libraryPath)
+    }
   }
 }
 
 export async function withDb(libraryPath, fn) {
   return withDbLock(libraryPath, async () => {
     const db = await openDb(libraryPath)
-    if (!db) return null
     await migrateDb(db)
     return fn(db)
+  })
+}
+
+export async function closeLibraryDb(libraryPath) {
+  if (!libraryPath) return
+  await withDbLock(libraryPath, async () => {
+    const db = dbCache.get(libraryPath)
+    dbCache.delete(libraryPath)
+    if (typeof db?.close === 'function') {
+      await db.close()
+    }
   })
 }
 
@@ -44,8 +67,10 @@ export async function safeExec(db, sql, params) {
       return
     }
     await db.execute(sql)
-  } catch {
-    // no-op
+  } catch (error) {
+    throw new LibraryDbError('db_exec_failed', 'Unable to initialize the library database.', {
+      cause: error,
+    })
   }
 }
 
@@ -70,11 +95,17 @@ export async function withTransaction(db, fn) {
 }
 
 export async function openDb(libraryPath) {
-  if (!isTauri() || !libraryPath) return null
+  if (!isTauri()) {
+    throw new LibraryDbError('db_unavailable', 'The desktop database is unavailable outside the Tauri runtime.')
+  }
+  if (!libraryPath) {
+    throw new LibraryDbError('db_missing_path', 'No library folder is configured.')
+  }
   if (dbCache.has(libraryPath)) return dbCache.get(libraryPath)
   const dbPath = await join(libraryPath, 'library.db')
+  let db = null
   try {
-    const db = await Database.load(`sqlite:${dbPath}`)
+    db = await Database.load(`sqlite:${dbPath}`)
     await safeExec(db, 'PRAGMA journal_mode=WAL')
     await safeExec(db, 'PRAGMA synchronous=NORMAL')
     await safeExec(db, 'PRAGMA temp_store=MEMORY')
@@ -82,7 +113,16 @@ export async function openDb(libraryPath) {
     await safeExec(db, 'PRAGMA busy_timeout=5000')
     dbCache.set(libraryPath, db)
     return db
-  } catch {
-    return null
+  } catch (error) {
+    if (typeof db?.close === 'function') {
+      try {
+        await db.close()
+      } catch {
+        // Ignore close failures while reporting the original database open error.
+      }
+    }
+    throw new LibraryDbError('db_open_failed', `Unable to open the library database at ${dbPath}.`, {
+      cause: error,
+    })
   }
 }

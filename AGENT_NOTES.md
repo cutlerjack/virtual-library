@@ -1,5 +1,7 @@
 # Virtual Library - Agent Notes
 
+> Archived historical notes. This file describes an earlier product direction and should not be treated as the current source of truth. See [README.md](/Users/jack/projects/virtual-library/README.md) and [PRODUCT_DECISIONS.md](/Users/jack/projects/virtual-library/PRODUCT_DECISIONS.md) for the active product contract.
+
 ## Context
 - Project: `/Users/jack/projects/virtual-library`
 - Goal: premium, photorealistic bookshelf UI with customizable spines, sci‑fi theme toggle, stats dashboard, and ritual/archivist flows.
@@ -47,4 +49,3 @@
 - Optional: “Clear all Archivist Notes” button.
 - Optional: CSV export in addition to JSON.
 - Optional: spine library management improvements (bulk delete, search, tags).
-

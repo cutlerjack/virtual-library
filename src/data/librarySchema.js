@@ -1,4 +1,5 @@
 import { defaultShelves, defaultUserData, generateId, findSpineInLibraryMap } from '../utils/storage'
+import { normalizeStudySession, normalizeStudyStackEntry } from '../utils/studyStack'
 
 export function normalizeTimestamp(value) {
   if (!value) return new Date().toISOString()
@@ -16,6 +17,8 @@ export function normalizeBookMeta(meta = {}) {
     wearLevel: typeof meta.wearLevel === 'number' ? meta.wearLevel : 0,
     lastTouched: meta.lastTouched ?? null,
     memories: Array.isArray(meta.memories) ? meta.memories : [],
+    studyStack: Array.isArray(meta.studyStack) ? meta.studyStack.map((entry) => normalizeStudyStackEntry(entry)) : [],
+    studySession: normalizeStudySession(meta.studySession),
     pagesRead: typeof meta.pagesRead === 'number' ? meta.pagesRead : 0,
     readingLogs: Array.isArray(meta.readingLogs) ? meta.readingLogs : [],
     reflections: Array.isArray(meta.reflections) ? meta.reflections : [],
@@ -59,7 +62,7 @@ export function normalizeBookItem(item = {}) {
     kind: 'book',
     title: item.title || 'Untitled',
     author: item.author || 'Unknown Author',
-    status: normalizeBookStatus(item.status),
+    status: normalizeBookStatus(item.status ?? item.bookMeta?.status),
     tags: Array.isArray(item.tags) ? item.tags : [],
     shelves: Array.isArray(item.shelves) ? item.shelves : [],
     coverUrl: item.coverUrl ?? null,
@@ -93,6 +96,8 @@ export function normalizeDocumentItem(item = {}) {
       fileName: meta.fileName ?? null,
       originalName: meta.originalName ?? meta.fileName ?? null,
       type: meta.type ?? 'file',
+      linkedBookId: meta.linkedBookId ?? null,
+      dismissedBookIds: Array.isArray(meta.dismissedBookIds) ? [...new Set(meta.dismissedBookIds.filter(Boolean))] : [],
       sourceUrl: meta.sourceUrl ?? null,
       publishedDate: meta.publishedDate ?? item.publishedDate ?? null,
       originalUrl: meta.originalUrl ?? null,
@@ -102,6 +107,9 @@ export function normalizeDocumentItem(item = {}) {
       scanned: typeof meta.scanned === 'boolean' ? meta.scanned : false,
       ocrConfidence: typeof meta.ocrConfidence === 'number' ? meta.ocrConfidence : null,
       searchText: meta.searchText ?? null,
+      plainText: meta.plainText ?? null,
+      sanitizedHtml: meta.sanitizedHtml ?? null,
+      quarantined: typeof meta.quarantined === 'boolean' ? meta.quarantined : false,
       fileHash: meta.fileHash ?? null,
       fileSize: meta.fileSize ?? null,
       fileMtime: meta.fileMtime ?? null,
@@ -152,6 +160,8 @@ export function createBookItemFromBook(book = {}) {
       wearLevel: book.wearLevel ?? 0,
       lastTouched: book.lastTouched ?? null,
       memories: book.memories ?? [],
+      studyStack: book.studyStack ?? [],
+      studySession: book.studySession ?? null,
       pagesRead: book.pagesRead ?? 0,
       readingLogs: book.readingLogs ?? [],
       reflections: book.reflections ?? [],
@@ -188,6 +198,8 @@ export function createDocumentItemFromDoc(doc = {}) {
       fileName: doc.fileName,
       originalName: doc.originalName || doc.fileName,
       type: doc.type || 'file',
+      linkedBookId: doc.linkedBookId ?? null,
+      dismissedBookIds: Array.isArray(doc.dismissedBookIds) ? [...new Set(doc.dismissedBookIds.filter(Boolean))] : [],
       sourceUrl: doc.sourceUrl || null,
       publishedDate: doc.publishedDate || null,
       originalUrl: doc.originalUrl || null,
@@ -197,6 +209,9 @@ export function createDocumentItemFromDoc(doc = {}) {
       scanned: typeof doc.scanned === 'boolean' ? doc.scanned : false,
       ocrConfidence: typeof doc.ocrConfidence === 'number' ? doc.ocrConfidence : null,
       searchText: doc.searchText || null,
+      plainText: doc.plainText || null,
+      sanitizedHtml: doc.sanitizedHtml || null,
+      quarantined: typeof doc.quarantined === 'boolean' ? doc.quarantined : false,
       fileHash: doc.fileHash || null,
       fileSize: doc.fileSize || null,
       fileMtime: doc.fileMtime || null,
@@ -252,6 +267,8 @@ export function itemToBook(item) {
     wearLevel: meta.wearLevel || 0,
     lastTouched: meta.lastTouched || null,
     memories: meta.memories || [],
+    studyStack: meta.studyStack || [],
+    studySession: meta.studySession || null,
     pagesRead: meta.pagesRead || 0,
     readingLogs: meta.readingLogs || [],
     reflections: meta.reflections || [],
@@ -282,6 +299,8 @@ export function itemToDocument(item) {
     fileName: meta.fileName,
     originalName: meta.originalName,
     type: meta.type || 'file',
+    linkedBookId: meta.linkedBookId || null,
+    dismissedBookIds: meta.dismissedBookIds || [],
     sourceUrl: meta.sourceUrl || null,
     publishedDate: meta.publishedDate || null,
     originalUrl: meta.originalUrl || null,
@@ -291,6 +310,9 @@ export function itemToDocument(item) {
     scanned: typeof meta.scanned === 'boolean' ? meta.scanned : false,
     ocrConfidence: typeof meta.ocrConfidence === 'number' ? meta.ocrConfidence : null,
     searchText: meta.searchText || null,
+    plainText: meta.plainText || null,
+    sanitizedHtml: meta.sanitizedHtml || null,
+    quarantined: typeof meta.quarantined === 'boolean' ? meta.quarantined : false,
     fileHash: meta.fileHash || null,
     fileSize: meta.fileSize || null,
     fileMtime: meta.fileMtime || null,
@@ -325,6 +347,8 @@ export function mergeBookIntoItem(item, bookUpdate = {}) {
     wearLevel: bookUpdate.wearLevel ?? meta.wearLevel,
     lastTouched: bookUpdate.lastTouched ?? meta.lastTouched,
     memories: bookUpdate.memories ?? meta.memories,
+    studyStack: bookUpdate.studyStack ?? meta.studyStack,
+    studySession: bookUpdate.studySession ?? meta.studySession,
     pagesRead: bookUpdate.pagesRead ?? meta.pagesRead,
     readingLogs: bookUpdate.readingLogs ?? meta.readingLogs,
     reflections: bookUpdate.reflections ?? meta.reflections,
@@ -364,6 +388,8 @@ export function mergeDocumentIntoItem(item, docUpdate = {}) {
   const meta = item.docMeta || {}
   const reading = item.reading || {}
   const annotations = item.annotations || {}
+  const hasLinkedBookId = Object.prototype.hasOwnProperty.call(docUpdate, 'linkedBookId')
+  const hasDismissedBookIds = Object.prototype.hasOwnProperty.call(docUpdate, 'dismissedBookIds')
 
   return normalizeDocumentItem({
     ...item,
@@ -379,6 +405,10 @@ export function mergeDocumentIntoItem(item, docUpdate = {}) {
       fileName: docUpdate.fileName ?? meta.fileName,
       originalName: docUpdate.originalName ?? meta.originalName,
       type: docUpdate.type ?? meta.type,
+      linkedBookId: hasLinkedBookId ? (docUpdate.linkedBookId ?? null) : (meta.linkedBookId ?? null),
+      dismissedBookIds: hasDismissedBookIds
+        ? (Array.isArray(docUpdate.dismissedBookIds) ? [...new Set(docUpdate.dismissedBookIds.filter(Boolean))] : [])
+        : (meta.dismissedBookIds ?? []),
       sourceUrl: docUpdate.sourceUrl ?? meta.sourceUrl,
       publishedDate: docUpdate.publishedDate ?? meta.publishedDate,
       originalUrl: docUpdate.originalUrl ?? meta.originalUrl,
@@ -388,6 +418,9 @@ export function mergeDocumentIntoItem(item, docUpdate = {}) {
       scanned: docUpdate.scanned ?? meta.scanned,
       ocrConfidence: docUpdate.ocrConfidence ?? meta.ocrConfidence,
       searchText: docUpdate.searchText ?? meta.searchText,
+      plainText: docUpdate.plainText ?? meta.plainText,
+      sanitizedHtml: docUpdate.sanitizedHtml ?? meta.sanitizedHtml,
+      quarantined: docUpdate.quarantined ?? meta.quarantined,
       fileHash: docUpdate.fileHash ?? meta.fileHash,
       fileSize: docUpdate.fileSize ?? meta.fileSize,
       fileMtime: docUpdate.fileMtime ?? meta.fileMtime,

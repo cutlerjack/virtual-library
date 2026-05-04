@@ -3,6 +3,11 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import './index.css'
+import './styles/book-page.css'
+import './styles/library.css'
+import './styles/insights.css'
+import './styles/reading-room.css'
+import './styles/shell.css'
 import { isTauri } from './utils/tauri'
 
 if (isTauri()) {

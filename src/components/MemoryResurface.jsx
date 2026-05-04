@@ -1,4 +1,9 @@
-import { useMemo } from 'react'
+import React, { useMemo } from 'react'
+
+function dateValue(value) {
+  const time = new Date(value || 0).getTime()
+  return Number.isNaN(time) ? 0 : time
+}
 
 function MemoryResurface({ books, onOpenBook }) {
   const memory = useMemo(() => {
@@ -26,7 +31,7 @@ function MemoryResurface({ books, onOpenBook }) {
       })
     })
     if (memories.length === 0) return null
-    memories.sort((a, b) => new Date(b.date) - new Date(a.date))
+    memories.sort((a, b) => dateValue(b.date) - dateValue(a.date))
     return memories[0]
   }, [books])
 
@@ -43,7 +48,7 @@ function MemoryResurface({ books, onOpenBook }) {
         </div>
         <button
           className="btn-secondary"
-          onClick={() => onOpenBook(memory.book)}
+          onClick={() => onOpenBook?.(memory.book.id)}
         >
           Open Book
         </button>

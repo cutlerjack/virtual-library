@@ -1,12 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import {
   selectAllTags,
+  selectAllLibraryTags,
   selectBooksFinishedThisYear,
   selectQuoteCount,
   selectContinueReadingDocs,
   selectFilteredBooks,
   selectSortedBooks,
   selectAllAnnotations,
+  selectBookReadingTrail,
+  selectBookStudyStack,
+  selectStudySessionState,
+  selectStudyVolumes,
 } from '../librarySelectors'
 
 const makeBook = (overrides = {}) => ({
@@ -51,6 +56,18 @@ describe('selectAllTags', () => {
   it('handles books with no tags property', () => {
     const books = [{ id: 'b1', title: 'No tags' }]
     expect(selectAllTags(books)).toEqual([])
+  })
+})
+
+describe('selectAllLibraryTags', () => {
+  it('collects tags across books and documents', () => {
+    const books = [makeBook({ tags: ['design', 'systems'] })]
+    const docs = [makeDoc({ tags: ['systems', 'pdf'] })]
+    expect(selectAllLibraryTags(books, docs)).toEqual(['design', 'pdf', 'systems'])
+  })
+
+  it('handles empty inputs', () => {
+    expect(selectAllLibraryTags([], [])).toEqual([])
   })
 })
 
@@ -248,6 +265,17 @@ describe('selectAllAnnotations', () => {
     expect(annotations[0].type).toBe('highlight')
   })
 
+  it('includes linked book context for document annotations', () => {
+    const books = [makeBook({ id: 'book-2', title: 'Linked Volume' })]
+    const docs = [makeDoc({
+      linkedBookId: 'book-2',
+      notes: [{ id: 'n1', text: 'Note', page: 5 }],
+    })]
+    const annotations = selectAllAnnotations(books, docs)
+    expect(annotations[0].linkedBookId).toBe('book-2')
+    expect(annotations[0].linkedBookTitle).toBe('Linked Volume')
+  })
+
   it('sorts by createdAt descending', () => {
     const books = [
       makeBook({
@@ -269,5 +297,113 @@ describe('selectAllAnnotations', () => {
     const types = annotations.map((a) => a.type)
     expect(types).toContain('quote')
     expect(types).toContain('highlight')
+  })
+})
+
+describe('selectBookReadingTrail', () => {
+  it('merges a book with annotations from linked documents', () => {
+    const book = makeBook({
+      id: 'book-9',
+      title: 'Deep Work',
+      quotes: [{ text: 'Quote', createdAt: '2024-01-02' }],
+      reflections: [{ text: 'Reflection', date: '2024-01-03' }],
+    })
+    const documents = [
+      makeDoc({
+        id: 'doc-9',
+        title: 'Companion Essay',
+        linkedBookId: 'book-9',
+        notes: [{ id: 'n-1', text: 'Doc note', createdAt: '2024-01-04', page: 12 }],
+      }),
+      makeDoc({
+        id: 'doc-10',
+        title: 'Unrelated',
+        linkedBookId: 'book-10',
+        notes: [{ id: 'n-2', text: 'Ignore me', createdAt: '2024-01-05' }],
+      }),
+    ]
+
+    const trail = selectBookReadingTrail(book, documents, 10)
+
+    expect(trail).toHaveLength(3)
+    expect(trail[0].text).toBe('Doc note')
+    expect(trail[0].itemTitle).toBe('Companion Essay')
+    expect(trail[0].linkedBookTitle).toBe('Deep Work')
+    expect(trail.map((entry) => entry.text)).toEqual(['Doc note', 'Reflection', 'Quote'])
+  })
+})
+
+describe('study stack selectors', () => {
+  it('preserves the stored study stack order', () => {
+    const book = makeBook({
+      studyStack: [
+        { id: 's1', text: 'Older', savedAt: '2026-03-01T00:00:00.000Z' },
+        { id: 's2', text: 'Newer', savedAt: '2026-03-05T00:00:00.000Z' },
+      ],
+    })
+
+    const stack = selectBookStudyStack(book, 10)
+    expect(stack.map((entry) => entry.text)).toEqual(['Older', 'Newer'])
+  })
+
+  it('returns active study volumes ahead of ready ones', () => {
+    const books = [
+      makeBook({
+        id: 'book-1',
+        title: 'First',
+        studySession: { startedAt: '2026-03-06T00:00:00.000Z', lastActivityAt: '2026-03-06T00:30:00.000Z', completedAt: null },
+        studyStack: [{ id: 'a', text: 'One', savedAt: '2026-03-03T00:00:00.000Z' }],
+      }),
+      makeBook({
+        id: 'book-2',
+        title: 'Second',
+        studyStack: [{ id: 'b', text: 'Two', savedAt: '2026-03-05T00:00:00.000Z' }],
+      }),
+      makeBook({ id: 'book-3', title: 'Third', studyStack: [] }),
+    ]
+
+    const volumes = selectStudyVolumes(books, 10)
+    expect(volumes).toHaveLength(2)
+    expect(volumes[0].book.title).toBe('First')
+    expect(volumes[0].status).toBe('active')
+    expect(volumes[1].book.title).toBe('Second')
+  })
+
+  it('computes active study session progress and next entry', () => {
+    const book = makeBook({
+      studySession: {
+        startedAt: '2026-03-02T00:00:00.000Z',
+        lastActivityAt: '2026-03-02T00:30:00.000Z',
+        completedAt: null,
+      },
+      studyStack: [
+        { id: 's1', text: 'Finished', completedAt: '2026-03-01T00:00:00.000Z' },
+        { id: 's2', text: 'Next up', completedAt: null, lastReviewedAt: '2026-03-02T01:00:00.000Z' },
+        { id: 's3', text: 'Later', completedAt: null },
+      ],
+    })
+
+    const session = selectStudySessionState(book)
+    expect(session.totalCount).toBe(3)
+    expect(session.completedCount).toBe(1)
+    expect(session.remainingCount).toBe(2)
+    expect(session.nextEntry.text).toBe('Next up')
+    expect(session.isComplete).toBe(false)
+    expect(session.status).toBe('active')
+    expect(session.reviewedThisSessionCount).toBe(1)
+  })
+
+  it('treats a fully completed stack as a completed session', () => {
+    const book = makeBook({
+      studyStack: [
+        { id: 's1', text: 'Done 1', completedAt: '2026-03-03T00:00:00.000Z' },
+        { id: 's2', text: 'Done 2', completedAt: '2026-03-04T00:00:00.000Z' },
+      ],
+    })
+
+    const session = selectStudySessionState(book)
+    expect(session.status).toBe('complete')
+    expect(session.isComplete).toBe(true)
+    expect(session.completedAt).toBe('2026-03-04T00:00:00.000Z')
   })
 })

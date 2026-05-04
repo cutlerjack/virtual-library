@@ -71,6 +71,56 @@ describe('library schema', () => {
     expect(item.bookMeta.spineColor).toBe('#123456')
   })
 
+  it('createBookItemFromBook keeps study stack metadata', () => {
+    const item = createBookItemFromBook({
+      id: 'book-study',
+      title: 'Study Volume',
+      studySession: {
+        startedAt: '2026-03-10T08:00:00.000Z',
+        lastActivityAt: '2026-03-11T09:00:00.000Z',
+        completedAt: '2026-03-12T10:00:00.000Z',
+      },
+      studyStack: [{
+        id: 'stack-1',
+        annotationId: 'ann-1',
+        sourceItemId: 'doc-1',
+        itemTitle: 'Companion PDF',
+        type: 'highlight',
+        format: 'pdf',
+        text: 'Pinned passage',
+        note: 'Compare this against chapter three.',
+        location: { kind: 'pdf', page: 7 },
+        locationLabel: 'Page 7',
+        savedAt: '2026-03-10T12:00:00.000Z',
+        lastReviewedAt: '2026-03-11T12:00:00.000Z',
+        completedAt: '2026-03-12T12:00:00.000Z',
+      }],
+    })
+
+    expect(item.bookMeta.studyStack).toHaveLength(1)
+    expect(item.bookMeta.studyStack[0].text).toBe('Pinned passage')
+    expect(item.bookMeta.studyStack[0].note).toBe('Compare this against chapter three.')
+    expect(item.bookMeta.studyStack[0].lastReviewedAt).toBe('2026-03-11T12:00:00.000Z')
+    expect(item.bookMeta.studyStack[0].completedAt).toBe('2026-03-12T12:00:00.000Z')
+    expect(item.bookMeta.studySession).toEqual({
+      startedAt: '2026-03-10T08:00:00.000Z',
+      lastActivityAt: '2026-03-11T09:00:00.000Z',
+      completedAt: '2026-03-12T10:00:00.000Z',
+    })
+
+    const book = itemToBook(item)
+    expect(book.studyStack).toHaveLength(1)
+    expect(book.studyStack[0].itemTitle).toBe('Companion PDF')
+    expect(book.studyStack[0].note).toBe('Compare this against chapter three.')
+    expect(book.studyStack[0].lastReviewedAt).toBe('2026-03-11T12:00:00.000Z')
+    expect(book.studyStack[0].completedAt).toBe('2026-03-12T12:00:00.000Z')
+    expect(book.studySession).toEqual({
+      startedAt: '2026-03-10T08:00:00.000Z',
+      lastActivityAt: '2026-03-11T09:00:00.000Z',
+      completedAt: '2026-03-12T10:00:00.000Z',
+    })
+  })
+
   it('mergeBookIntoItem preserves existing meta when partial updates apply', () => {
     const base = createBookItemFromBook({
       id: 'book-3',
@@ -88,6 +138,28 @@ describe('library schema', () => {
     expect(merged.bookMeta.publishedDate).toBe('1999')
   })
 
+  it('mergeBookIntoItem updates study stack when provided', () => {
+    const base = createBookItemFromBook({
+      id: 'book-3b',
+      title: 'Original',
+      studySession: { startedAt: '2026-03-01T08:00:00.000Z', lastActivityAt: '2026-03-01T08:30:00.000Z', completedAt: null },
+      studyStack: [{ id: 'stack-old', text: 'Old', itemTitle: 'Book', savedAt: '2026-03-01T00:00:00.000Z' }],
+    })
+
+    const merged = mergeBookIntoItem(base, {
+      studySession: { startedAt: '2026-03-02T08:00:00.000Z', lastActivityAt: '2026-03-02T09:15:00.000Z', completedAt: '2026-03-02T09:15:00.000Z' },
+      studyStack: [{ id: 'stack-new', text: 'New', itemTitle: 'Doc', savedAt: '2026-03-02T00:00:00.000Z' }],
+    })
+
+    expect(merged.bookMeta.studyStack).toHaveLength(1)
+    expect(merged.bookMeta.studyStack[0].text).toBe('New')
+    expect(merged.bookMeta.studySession).toEqual({
+      startedAt: '2026-03-02T08:00:00.000Z',
+      lastActivityAt: '2026-03-02T09:15:00.000Z',
+      completedAt: '2026-03-02T09:15:00.000Z',
+    })
+  })
+
   it('createDocumentItemFromDoc keeps article metadata', () => {
     const item = createDocumentItemFromDoc({
       id: 'doc-1',
@@ -95,17 +167,23 @@ describe('library schema', () => {
       type: 'article',
       title: 'Essay',
       author: 'Site',
+      linkedBookId: 'book-77',
+      dismissedBookIds: ['book-10', 'book-11', 'book-10'],
       sourceUrl: 'https://example.com',
       publishedDate: '2024-01-01',
     })
 
     expect(item.kind).toBe('article')
     expect(item.docMeta.type).toBe('article')
+    expect(item.docMeta.linkedBookId).toBe('book-77')
+    expect(item.docMeta.dismissedBookIds).toEqual(['book-10', 'book-11'])
     expect(item.docMeta.sourceUrl).toBe('https://example.com')
     expect(item.docMeta.publishedDate).toBe('2024-01-01')
 
     const doc = itemToDocument(item)
     expect(doc.type).toBe('article')
+    expect(doc.linkedBookId).toBe('book-77')
+    expect(doc.dismissedBookIds).toEqual(['book-10', 'book-11'])
     expect(doc.publishedDate).toBe('2024-01-01')
   })
 
@@ -115,13 +193,42 @@ describe('library schema', () => {
       title: 'Whitepaper',
       type: 'pdf',
       fileHash: 'hash-1',
+      linkedBookId: 'book-1',
       publishedDate: '2020-06-01',
     })
 
     const merged = mergeDocumentIntoItem(base, { title: 'Updated Whitepaper' })
     expect(merged.title).toBe('Updated Whitepaper')
     expect(merged.docMeta.fileHash).toBe('hash-1')
+    expect(merged.docMeta.linkedBookId).toBe('book-1')
     expect(merged.docMeta.publishedDate).toBe('2020-06-01')
+  })
+
+  it('mergeDocumentIntoItem allows clearing a linked book', () => {
+    const base = createDocumentItemFromDoc({
+      id: 'doc-2b',
+      title: 'Whitepaper',
+      type: 'pdf',
+      linkedBookId: 'book-1',
+    })
+
+    const merged = mergeDocumentIntoItem(base, { linkedBookId: null })
+    expect(merged.docMeta.linkedBookId).toBeNull()
+  })
+
+  it('mergeDocumentIntoItem allows updating dismissed book ids', () => {
+    const base = createDocumentItemFromDoc({
+      id: 'doc-2c',
+      title: 'Whitepaper',
+      type: 'pdf',
+      dismissedBookIds: ['book-1'],
+    })
+
+    const merged = mergeDocumentIntoItem(base, { dismissedBookIds: ['book-2', 'book-2'] })
+    expect(merged.docMeta.dismissedBookIds).toEqual(['book-2'])
+
+    const cleared = mergeDocumentIntoItem(base, { dismissedBookIds: [] })
+    expect(cleared.docMeta.dismissedBookIds).toEqual([])
   })
 
   it('itemToDocument preserves zero progress and maps page counts correctly', () => {
@@ -142,6 +249,14 @@ describe('library schema', () => {
 
   it('normalizeBookItem includes status field', () => {
     const item = normalizeBookItem({ title: 'Test', status: 'reading' })
+    expect(item.status).toBe('reading')
+  })
+
+  it('normalizes book status from persisted metadata', () => {
+    const item = normalizeBookItem({
+      title: 'Test',
+      bookMeta: { status: 'reading' },
+    })
     expect(item.status).toBe('reading')
   })
 

@@ -6,9 +6,11 @@ import { toCloneSafeArrayBuffer } from './binary'
 pdfjsLib.GlobalWorkerOptions.workerSrc = workerSrc
 
 export async function extractPdfText(data) {
+  let loadingTask = null
+  let pdfDoc = null
   try {
-    const loadingTask = pdfjsLib.getDocument({ data: toCloneSafeArrayBuffer(data) })
-    const pdfDoc = await loadingTask.promise
+    loadingTask = pdfjsLib.getDocument({ data: toCloneSafeArrayBuffer(data) })
+    pdfDoc = await loadingTask.promise
     const texts = []
     for (let i = 1; i <= pdfDoc.numPages; i += 1) {
       const page = await pdfDoc.getPage(i)
@@ -16,18 +18,31 @@ export async function extractPdfText(data) {
       const pageText = content.items.map((item) => item.str).join(' ')
       texts.push(pageText)
     }
-    pdfDoc.cleanup()
-    pdfDoc.destroy()
     return texts.join('\n')
   } catch {
     return ''
+  } finally {
+    if (pdfDoc) {
+      try {
+        pdfDoc.cleanup?.()
+      } finally {
+        pdfDoc.destroy?.()
+      }
+    } else if (typeof loadingTask?.destroy === 'function') {
+      try {
+        await loadingTask.destroy()
+      } catch {
+        // Best-effort cleanup after a failed PDF load.
+      }
+    }
   }
 }
 
 export async function extractEpubText(data) {
+  let book = null
   try {
     const buffer = toCloneSafeArrayBuffer(data)
-    const book = ePub(buffer)
+    book = ePub(buffer)
     await book.ready
     const texts = []
     const spineItems = book.spine?.spineItems || []
@@ -47,10 +62,11 @@ export async function extractEpubText(data) {
         }
       }
     }
-    book.destroy()
     return texts.join('\n')
   } catch {
     return ''
+  } finally {
+    book?.destroy?.()
   }
 }
 

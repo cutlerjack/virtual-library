@@ -1,3 +1,5 @@
+import { normalizeCoverUrl } from './coverImages'
+
 // Simple color extraction from image URL
 // Uses canvas to sample the dominant color
 
@@ -6,8 +8,10 @@ const colorCache = new Map()
 export async function extractDominantColor(imageUrl) {
   if (!imageUrl) return getRandomSpineColor()
 
-  if (colorCache.has(imageUrl)) {
-    return colorCache.get(imageUrl)
+  const normalizedImageUrl = normalizeCoverUrl(imageUrl, { preferLarge: true })
+
+  if (colorCache.has(normalizedImageUrl)) {
+    return colorCache.get(normalizedImageUrl)
   }
 
   try {
@@ -59,10 +63,10 @@ export async function extractDominantColor(imageUrl) {
         resolve(getRandomSpineColor())
       }
 
-      img.src = imageUrl
+      img.src = normalizedImageUrl
     })
 
-    colorCache.set(imageUrl, color)
+    colorCache.set(normalizedImageUrl, color)
     return color
   } catch {
     return getRandomSpineColor()

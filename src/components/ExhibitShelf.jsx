@@ -1,3 +1,4 @@
+import React from 'react'
 import BookSpine from './BookSpine'
 
 function ExhibitShelf({ exhibits, books, onCreateExhibit, onSelectBook, shelfFont }) {

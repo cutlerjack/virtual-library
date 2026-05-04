@@ -1,7 +1,10 @@
 import { readBinaryFile, readTextFile } from '@tauri-apps/api/fs'
+import { buildSearchText } from '../data/dbTransform'
 import { extractPdfText, extractEpubText, extractHtmlText } from './textExtract'
 import { computeSha256 } from './fileHash'
 import { ocrPdf } from './ocr'
+import { selectAutomaticBookMatch } from './libraryRelations'
+import { prepareCapturedHtml } from './htmlSanitizer'
 
 const OCR_THRESHOLD = 200
 const DEFAULT_CHUNK_SIZE = 1800
@@ -33,6 +36,7 @@ export function chunkText(text, size = DEFAULT_CHUNK_SIZE) {
 export async function processIngestJob({
   job,
   doc,
+  books = [],
   updateJob,
   updateDoc,
   saveChunks,
@@ -56,11 +60,18 @@ export async function processIngestJob({
   let fileSize = doc?.fileSize || null
   const fileMtime = doc?.fileMtime || null
   let lastProgressTick = -1
+  let sanitizedHtml = doc?.sanitizedHtml || null
+  let plainText = doc?.plainText || null
+  let quarantined = Boolean(doc?.quarantined)
 
   try {
     if (doc?.type === 'article') {
       const html = await readTextFile(path)
-      searchText = extractHtmlText(html)
+      const prepared = prepareCapturedHtml(html)
+      sanitizedHtml = prepared.sanitizedHtml || null
+      plainText = prepared.plainText || extractHtmlText(html)
+      quarantined = prepared.quarantined
+      searchText = plainText
       if (!fileSize) {
         try {
           fileSize = new TextEncoder().encode(html || '').length
@@ -98,7 +109,23 @@ export async function processIngestJob({
     if (ocrPages.length > 0) {
       await saveOcrPages(doc.id, ocrPages)
     }
-    await updateDoc(doc.id, {
+    const candidateDoc = {
+      ...doc,
+      searchText,
+      pageCount,
+      mime: guessMime(path, doc.mime),
+      fileHash: hash,
+      fileSize,
+      fileMtime,
+    }
+    const existingLinkedBook = doc?.linkedBookId
+      ? books.find((book) => book.id === doc.linkedBookId) || null
+      : null
+    const automaticMatch = !existingLinkedBook
+      ? selectAutomaticBookMatch(candidateDoc, books)
+      : null
+    const linkedBook = existingLinkedBook || automaticMatch?.book || null
+    const nextDocUpdates = {
       searchText,
       scanned,
       ocrConfidence,
@@ -107,8 +134,36 @@ export async function processIngestJob({
       fileHash: hash,
       fileSize,
       fileMtime,
-    })
-    await updateSearchDoc(doc.id, doc.type, doc.title, searchText)
+      ...(doc?.type === 'article'
+        ? {
+            plainText,
+            sanitizedHtml,
+            quarantined,
+            fileStatus: quarantined ? 'quarantined' : (doc?.fileStatus || 'ok'),
+          }
+        : {}),
+    }
+    if (automaticMatch?.book?.id) {
+      nextDocUpdates.linkedBookId = automaticMatch.book.id
+    }
+
+    await updateDoc(doc.id, nextDocUpdates)
+    await updateSearchDoc(
+      doc.id,
+      doc.type === 'article' ? 'article' : 'document',
+      doc.title,
+      buildSearchText(
+        {
+          kind: doc.type === 'article' ? 'article' : 'document',
+          title: doc.title,
+          author: doc.author || null,
+          tags: [],
+          docMeta: { searchText },
+          annotations: { notes: [], highlights: [] },
+        },
+        { linkedBook }
+      )
+    )
 
     await updateJob(job.id, { status: 'done', progress: 1 })
   } catch (error) {

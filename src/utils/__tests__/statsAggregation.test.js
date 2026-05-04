@@ -18,8 +18,11 @@ describe('computeLibraryStats', () => {
   it('returns empty stats for no books', () => {
     const stats = computeLibraryStats([], [], 2024)
     expect(stats.totalBooks).toBe(0)
-    expect(stats.finishedThisYear).toBe(0)
-    expect(stats.totalPages).toBe(0)
+    expect(stats.finishedBooksThisYear).toBe(0)
+    expect(stats.totalPagesCataloged).toBe(0)
+    expect(stats.pagesLoggedAllTime).toBe(0)
+    expect(stats.pagesLoggedThisYear).toBe(0)
+    expect(stats.pagesFinishedThisYear).toBe(0)
     expect(stats.genreData).toEqual([])
     expect(stats.level).toBe(1)
   })
@@ -37,16 +40,49 @@ describe('computeLibraryStats', () => {
       makeBook({ id: 'b3', dateFinished: '2023-12-31' }),
     ]
     const stats = computeLibraryStats(books, [], 2024)
-    expect(stats.finishedThisYear).toBe(2)
+    expect(stats.finishedBooksThisYear).toBe(2)
   })
 
-  it('sums pages across all books', () => {
+  it('sums cataloged pages across all books', () => {
     const books = [
       makeBook({ pageCount: 300 }),
       makeBook({ id: 'b2', pageCount: 200 }),
     ]
     const stats = computeLibraryStats(books, [], 2024)
-    expect(stats.totalPages).toBe(500)
+    expect(stats.totalPagesCataloged).toBe(500)
+  })
+
+  it('keeps logged pages separate from cataloged and finished pages before a book is finished', () => {
+    const books = [
+      makeBook({
+        pageCount: 200,
+        pagesRead: 10,
+        readingLogs: [{ date: '2024-04-10', pages: 10 }],
+      }),
+    ]
+    const stats = computeLibraryStats(books, [], 2024)
+    expect(stats.totalPagesCataloged).toBe(200)
+    expect(stats.pagesLoggedAllTime).toBe(10)
+    expect(stats.pagesLoggedThisYear).toBe(10)
+    expect(stats.pagesFinishedThisYear).toBe(0)
+    expect(stats.finishedBooksThisYear).toBe(0)
+  })
+
+  it('counts finished-book pages without inflating logged pages', () => {
+    const books = [
+      makeBook({
+        pageCount: 200,
+        pagesRead: 10,
+        readingLogs: [{ date: '2024-04-10', pages: 10 }],
+        dateFinished: '2024-04-20',
+      }),
+    ]
+    const stats = computeLibraryStats(books, [], 2024)
+    expect(stats.totalPagesCataloged).toBe(200)
+    expect(stats.pagesLoggedAllTime).toBe(10)
+    expect(stats.pagesLoggedThisYear).toBe(10)
+    expect(stats.pagesFinishedThisYear).toBe(200)
+    expect(stats.finishedBooksThisYear).toBe(1)
   })
 
   it('computes average rating as five-star scale', () => {
@@ -91,8 +127,8 @@ describe('computeLibraryStats', () => {
     expect(jan?.books).toBe(2)
   })
 
-  it('computes XP and level from total pages', () => {
-    const books = [makeBook({ pageCount: 2500 })]
+  it('computes XP and level from logged pages', () => {
+    const books = [makeBook({ pageCount: 2500, pagesRead: 2500 })]
     const stats = computeLibraryStats(books, [], 2024)
     expect(stats.xp).toBe(2500)
     expect(stats.level).toBe(3)

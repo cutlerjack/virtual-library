@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { afterEach, describe, it, expect, vi, beforeEach } from 'vitest'
 import { createLibraryActions } from '../libraryActions'
 
 function setup(overrides = {}) {
@@ -16,6 +16,8 @@ function setup(overrides = {}) {
   const updateBookItem = vi.fn()
   const updateDocumentItem = vi.fn()
   const updateUserState = vi.fn()
+  const insertBookItem = vi.fn()
+  const removeLibraryItem = vi.fn()
   const updateShelvesState = vi.fn((fn) => {
     if (typeof fn === 'function') return fn(shelves)
   })
@@ -27,21 +29,24 @@ function setup(overrides = {}) {
     shelves,
     userData,
     spineLibraryMap,
-    updateLibraryState,
     updateBookItem,
     updateDocumentItem,
     updateUserState,
+    insertBookItem,
+    removeLibraryItem,
     updateShelvesState,
     docUpdateTimersRef,
   })
 
   return {
     actions,
-    updateLibraryState,
     updateBookItem,
     updateDocumentItem,
     updateUserState,
+    insertBookItem,
+    removeLibraryItem,
     updateShelvesState,
+    docUpdateTimersRef,
   }
 }
 
@@ -54,14 +59,17 @@ function docToItem(doc) {
 }
 
 describe('addBook', () => {
-  it('calls updateLibraryState with a new item', () => {
-    const { actions, updateLibraryState } = setup()
+  it('inserts a new book item through the targeted insert path', () => {
+    const { actions, insertBookItem } = setup()
     const result = actions.addBook({ title: 'New Book', author: 'Author' })
     expect(result).toHaveProperty('id')
     expect(result.title).toBe('New Book')
     expect(result.rating).toBe(0)
     expect(result.quotes).toEqual([])
-    expect(updateLibraryState).toHaveBeenCalled()
+    expect(insertBookItem).toHaveBeenCalledWith(expect.objectContaining({
+      title: 'New Book',
+      author: 'Author',
+    }))
   })
 
   it('generates a unique id and addedAt timestamp', () => {
@@ -116,13 +124,18 @@ describe('updateBook', () => {
 })
 
 describe('deleteBook', () => {
-  it('calls updateLibraryState filtering out the book', () => {
-    const { actions, updateLibraryState } = setup()
+  it('removes the book through the targeted remove path', () => {
+    const { actions, removeLibraryItem } = setup()
     actions.deleteBook('book-1')
-    expect(updateLibraryState).toHaveBeenCalled()
-    const updater = updateLibraryState.mock.calls[0][0]
-    const result = updater({ items: [{ id: 'book-1' }, { id: 'book-2' }] })
-    expect(result.items).toEqual([{ id: 'book-2' }])
+    expect(removeLibraryItem).toHaveBeenCalledWith('book-1')
+  })
+
+  it('unlinks documents attached to the deleted book', () => {
+    const documents = [{ id: 'doc-1', linkedBookId: 'book-1' }]
+    const { actions, updateDocumentItem, removeLibraryItem } = setup({ documents })
+    actions.deleteBook('book-1')
+    expect(updateDocumentItem).toHaveBeenCalledWith('doc-1', { linkedBookId: null })
+    expect(removeLibraryItem).toHaveBeenCalledWith('book-1')
   })
 })
 
@@ -137,6 +150,22 @@ describe('logPages', () => {
     const update = updateBookItem.mock.calls[0][1]
     expect(update.readingLogs).toHaveLength(1)
     expect(update.readingLogs[0].pages).toBe(10)
+  })
+
+  it('clamps logged pages to the remaining page count', () => {
+    const books = [{ id: 'b1', pageCount: 100, pagesRead: 95, readingLogs: [] }]
+    const { actions, updateBookItem } = setup({ books })
+    actions.logPages('b1', 10)
+    const update = updateBookItem.mock.calls[0][1]
+    expect(update.pagesRead).toBe(100)
+    expect(update.readingLogs[0].pages).toBe(5)
+  })
+
+  it('does nothing when a book is already fully logged', () => {
+    const books = [{ id: 'b1', pageCount: 100, pagesRead: 100, readingLogs: [{ pages: 100 }] }]
+    const { actions, updateBookItem } = setup({ books })
+    actions.logPages('b1', 10)
+    expect(updateBookItem).not.toHaveBeenCalled()
   })
 
   it('does nothing for zero or negative pages', () => {
@@ -158,6 +187,30 @@ describe('logPages', () => {
     const { actions, updateUserState } = setup({ books })
     actions.logPages('b1', 5)
     expect(updateUserState).toHaveBeenCalled()
+  })
+})
+
+describe('undoLastPageLog', () => {
+  it('removes the latest reading log and subtracts its pages', () => {
+    const books = [{
+      id: 'b1',
+      pagesRead: 35,
+      readingLogs: [
+        { date: '2026-01-01T00:00:00.000Z', pages: 10 },
+        { date: '2026-01-02T00:00:00.000Z', pages: 25 },
+      ],
+    }]
+    const { actions, updateBookItem } = setup({ books })
+    actions.undoLastPageLog('b1')
+    const update = updateBookItem.mock.calls[0][1]
+    expect(update.pagesRead).toBe(10)
+    expect(update.readingLogs).toEqual([{ date: '2026-01-01T00:00:00.000Z', pages: 10 }])
+  })
+
+  it('does nothing without reading logs', () => {
+    const { actions, updateBookItem } = setup({ books: [{ id: 'b1', pagesRead: 0, readingLogs: [] }] })
+    actions.undoLastPageLog('b1')
+    expect(updateBookItem).not.toHaveBeenCalled()
   })
 })
 
@@ -206,6 +259,211 @@ describe('addReflection', () => {
   })
 })
 
+describe('study stack actions', () => {
+  it('pins an annotation onto the book study stack', () => {
+    const books = [{ id: 'b1', title: 'Study Book', studyStack: [] }]
+    const { actions, updateBookItem } = setup({ books })
+
+    actions.pinStudyEntry('b1', {
+      id: 'ann-1',
+      itemId: 'doc-1',
+      itemTitle: 'Companion PDF',
+      type: 'highlight',
+      format: 'pdf',
+      text: 'Pinned highlight',
+      locationLabel: 'Page 4',
+    })
+
+    expect(updateBookItem).toHaveBeenCalledWith('b1', expect.objectContaining({
+      studyStack: [expect.objectContaining({
+        annotationId: 'ann-1',
+        sourceItemId: 'doc-1',
+        itemTitle: 'Companion PDF',
+        text: 'Pinned highlight',
+      })],
+    }))
+  })
+
+  it('deduplicates a pinned annotation by source key', () => {
+    const books = [{
+      id: 'b1',
+      title: 'Study Book',
+      studyStack: [{
+        id: 'saved-1',
+        annotationId: 'ann-1',
+        sourceItemId: 'doc-1',
+        itemTitle: 'Companion PDF',
+        type: 'highlight',
+        format: 'pdf',
+        text: 'Old text',
+        note: 'Keep my note',
+        completedAt: '2026-03-03T00:00:00.000Z',
+        savedAt: '2026-03-01T00:00:00.000Z',
+      }],
+    }]
+    const { actions, updateBookItem } = setup({ books })
+
+    actions.pinStudyEntry('b1', {
+      id: 'ann-1',
+      itemId: 'doc-1',
+      itemTitle: 'Companion PDF',
+      type: 'highlight',
+      format: 'pdf',
+      text: 'New text',
+    })
+
+    const update = updateBookItem.mock.calls[0][1]
+    expect(update.studyStack).toHaveLength(1)
+    expect(update.studyStack[0].text).toBe('New text')
+    expect(update.studyStack[0].note).toBe('Keep my note')
+    expect(update.studyStack[0].completedAt).toBeNull()
+  })
+
+  it('removes a study stack entry', () => {
+    const books = [{
+      id: 'b1',
+      title: 'Study Book',
+      studyStack: [
+        { id: 'saved-1', text: 'Keep' },
+        { id: 'saved-2', text: 'Remove me' },
+      ],
+    }]
+    const { actions, updateBookItem } = setup({ books })
+
+    actions.removeStudyEntry('b1', 'saved-2')
+
+    expect(updateBookItem).toHaveBeenCalledWith('b1', expect.objectContaining({
+      studyStack: [{ id: 'saved-1', text: 'Keep' }],
+    }))
+  })
+
+  it('updates a study stack note', () => {
+    const books = [{
+      id: 'b1',
+      title: 'Study Book',
+      studyStack: [{ id: 'saved-1', text: 'Keep', note: '' }],
+    }]
+    const { actions, updateBookItem } = setup({ books })
+
+    actions.updateStudyEntry('b1', 'saved-1', { note: 'Working thesis' })
+
+    expect(updateBookItem).toHaveBeenCalledWith('b1', expect.objectContaining({
+      studyStack: [{ id: 'saved-1', text: 'Keep', note: 'Working thesis' }],
+    }))
+  })
+
+  it('moves a study stack entry up or down', () => {
+    const books = [{
+      id: 'b1',
+      title: 'Study Book',
+      studyStack: [
+        { id: 'saved-1', text: 'First' },
+        { id: 'saved-2', text: 'Second' },
+        { id: 'saved-3', text: 'Third' },
+      ],
+    }]
+    const { actions, updateBookItem } = setup({ books })
+
+    actions.moveStudyEntry('b1', 'saved-3', -1)
+
+    expect(updateBookItem).toHaveBeenCalledWith('b1', expect.objectContaining({
+      studyStack: [
+        { id: 'saved-1', text: 'First' },
+        { id: 'saved-3', text: 'Third' },
+        { id: 'saved-2', text: 'Second' },
+      ],
+    }))
+  })
+
+  it('marks a study entry as reviewed', () => {
+    const books = [{
+      id: 'b1',
+      title: 'Study Book',
+      studyStack: [{ id: 'saved-1', text: 'Keep', lastReviewedAt: null }],
+    }]
+    const { actions, updateBookItem } = setup({ books })
+
+    actions.reviewStudyEntry('b1', 'saved-1')
+
+    expect(updateBookItem).toHaveBeenCalledWith('b1', expect.objectContaining({
+      studyStack: [expect.objectContaining({
+        id: 'saved-1',
+        lastReviewedAt: expect.any(String),
+      })],
+      studySession: expect.objectContaining({
+        startedAt: expect.any(String),
+        lastActivityAt: expect.any(String),
+        completedAt: null,
+      }),
+    }))
+  })
+
+  it('toggles study entry completion state', () => {
+    const books = [{
+      id: 'b1',
+      title: 'Study Book',
+      studyStack: [{ id: 'saved-1', text: 'Keep', completedAt: null }],
+    }]
+    const { actions, updateBookItem } = setup({ books })
+
+    actions.toggleStudyEntryComplete('b1', 'saved-1')
+
+    const firstUpdate = updateBookItem.mock.calls[0][1]
+    expect(firstUpdate.studyStack[0].completedAt).toEqual(expect.any(String))
+    expect(firstUpdate.studySession).toEqual(expect.objectContaining({
+      startedAt: expect.any(String),
+      lastActivityAt: expect.any(String),
+      completedAt: expect.any(String),
+    }))
+  })
+
+  it('starts a study session without changing stack progress', () => {
+    const books = [{
+      id: 'b1',
+      title: 'Study Book',
+      studyStack: [{ id: 'saved-1', text: 'Keep', completedAt: null }],
+    }]
+    const { actions, updateBookItem } = setup({ books })
+
+    actions.startStudySession('b1')
+
+    expect(updateBookItem).toHaveBeenCalledWith('b1', expect.objectContaining({
+      studySession: expect.objectContaining({
+        startedAt: expect.any(String),
+        lastActivityAt: expect.any(String),
+        completedAt: null,
+      }),
+    }))
+  })
+
+  it('resets study progress and starts a fresh session', () => {
+    const books = [{
+      id: 'b1',
+      title: 'Study Book',
+      studySession: {
+        startedAt: '2026-03-10T10:00:00.000Z',
+        lastActivityAt: '2026-03-10T10:15:00.000Z',
+        completedAt: '2026-03-10T10:15:00.000Z',
+      },
+      studyStack: [
+        { id: 'saved-1', text: 'Keep', completedAt: '2026-03-10T10:10:00.000Z' },
+        { id: 'saved-2', text: 'Again', completedAt: null },
+      ],
+    }]
+    const { actions, updateBookItem } = setup({ books })
+
+    actions.resetStudySession('b1')
+
+    const update = updateBookItem.mock.calls[0][1]
+    expect(update.studyStack.every((entry) => entry.completedAt === null)).toBe(true)
+    expect(update.studySession).toEqual(expect.objectContaining({
+      startedAt: expect.any(String),
+      lastActivityAt: expect.any(String),
+      completedAt: null,
+    }))
+  })
+})
+
 describe('addShelf / deleteShelf', () => {
   it('addShelf calls updateShelvesState with a new shelf', () => {
     const { actions, updateShelvesState } = setup()
@@ -220,10 +478,13 @@ describe('addShelf / deleteShelf', () => {
 
   it('deleteShelf removes the shelf and updates items', () => {
     const shelves = [{ id: 's1', name: 'shelf' }]
-    const { actions, updateShelvesState, updateLibraryState } = setup({ shelves })
+    const books = [{ id: 'book-1', shelves: ['s1', 's2'] }]
+    const documents = [{ id: 'doc-1', shelves: ['s1'] }]
+    const { actions, updateShelvesState, updateBookItem, updateDocumentItem } = setup({ shelves, books, documents })
     actions.deleteShelf('s1')
     expect(updateShelvesState).toHaveBeenCalled()
-    expect(updateLibraryState).toHaveBeenCalled()
+    expect(updateBookItem).toHaveBeenCalledWith('book-1', { shelves: ['s2'] })
+    expect(updateDocumentItem).toHaveBeenCalledWith('doc-1', { shelves: [] })
   })
 
   it('deleteShelf ignores "all"', () => {
@@ -248,6 +509,10 @@ describe('updateDocumentMeta', () => {
 })
 
 describe('scheduleDocumentMetaUpdate', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
   it('schedules a delayed update', () => {
     vi.useFakeTimers()
     const { actions, updateDocumentItem } = setup()
@@ -255,7 +520,6 @@ describe('scheduleDocumentMetaUpdate', () => {
     expect(updateDocumentItem).not.toHaveBeenCalled()
     vi.advanceTimersByTime(100)
     expect(updateDocumentItem).toHaveBeenCalledWith('doc-1', { page: 5 })
-    vi.useRealTimers()
   })
 
   it('debounces rapid calls', () => {
@@ -266,7 +530,38 @@ describe('scheduleDocumentMetaUpdate', () => {
     vi.advanceTimersByTime(100)
     expect(updateDocumentItem).toHaveBeenCalledTimes(1)
     expect(updateDocumentItem).toHaveBeenCalledWith('doc-1', { page: 2 })
-    vi.useRealTimers()
+  })
+
+  it('merges different pending fields for the same document', () => {
+    vi.useFakeTimers()
+    const { actions, updateDocumentItem } = setup()
+    actions.scheduleDocumentMetaUpdate('doc-1', { lastLocationJson: { page: 3 } }, 100)
+    actions.scheduleDocumentMetaUpdate('doc-1', { progressPercent: 42 }, 100)
+    vi.advanceTimersByTime(100)
+    expect(updateDocumentItem).toHaveBeenCalledTimes(1)
+    expect(updateDocumentItem).toHaveBeenCalledWith('doc-1', {
+      lastLocationJson: { page: 3 },
+      progressPercent: 42,
+    })
+  })
+
+  it('flushes pending document metadata immediately before durable operations', () => {
+    vi.useFakeTimers()
+    const { actions, updateDocumentItem, docUpdateTimersRef } = setup()
+    actions.scheduleDocumentMetaUpdate('doc-1', { lastLocationJson: { page: 3 } }, 100)
+    actions.scheduleDocumentMetaUpdate('doc-1', { progressPercent: 42 }, 100)
+
+    expect(actions.flushPendingDocumentMetaUpdates()).toBe(1)
+
+    expect(updateDocumentItem).toHaveBeenCalledTimes(1)
+    expect(updateDocumentItem).toHaveBeenCalledWith('doc-1', {
+      lastLocationJson: { page: 3 },
+      progressPercent: 42,
+    })
+    expect(docUpdateTimersRef.current.size).toBe(0)
+
+    vi.advanceTimersByTime(100)
+    expect(updateDocumentItem).toHaveBeenCalledTimes(1)
   })
 })
 

@@ -14,17 +14,26 @@
     "allowlist": {
       "all": false,
       "fs": {
-        "all": true,
-        "scope": ["$HOME/**", "/Users/**", "/VirtualLibrary/**", "$DOWNLOAD/**"]
+        "all": false,
+        "copyFile": true,
+        "createDir": true,
+        "exists": true,
+        "readFile": true,
+        "readDir": true,
+        "renameFile": true,
+        "writeFile": true,
+        "scope": [
+          "$HOME/VirtualLibrary/**",
+          "$HOME/Downloads/**",
+          "$HOME/Desktop/**",
+          "$HOME/Documents/**"
+        ]
       },
       "dialog": {
         "all": true
       },
       "path": {
         "all": true
-      },
-      "shell": {
-        "open": true
       }
     },
     "windows": [
@@ -39,7 +48,7 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; base-uri 'self'; object-src 'none'; frame-src 'none'; form-action 'self'; connect-src 'self' ipc: http://ipc.localhost https://ipc.localhost asset: data: blob: http://localhost:5173 ws://localhost:5173 http: https:; img-src 'self' asset: data: blob: https:; style-src 'self' 'unsafe-inline'; font-src 'self' data: https:; script-src 'self' 'wasm-unsafe-eval'; worker-src 'self' blob:; media-src 'self' asset: blob:;"
     },
     "bundle": {
       "active": true,

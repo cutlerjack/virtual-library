@@ -1,9 +1,15 @@
 import { DB_VERSION, safeExec, withTransaction } from './dbConnection'
+import { buildSearchText, parseMetaJson } from './dbTransform'
 
 export async function migrateDb(db) {
   const versionRow = await db.select('PRAGMA user_version')
   let currentVersion = Array.isArray(versionRow) ? versionRow[0]?.user_version : 0
+  const hasExistingAppTables = currentVersion === 0
+    ? await databaseHasExistingAppTables(db)
+    : false
   if (currentVersion >= DB_VERSION) {
+    await ensureSearchDocsTable(db)
+    await backfillMissingSearchDocs(db)
     await ensureDbIndexes(db)
     await ensureSettingsDefaults(db)
     return
@@ -12,8 +18,10 @@ export async function migrateDb(db) {
   await withTransaction(db, async () => {
     if (currentVersion === 0) {
       await createAllTables(db)
-      currentVersion = DB_VERSION
-    } else {
+      currentVersion = hasExistingAppTables ? 1 : DB_VERSION
+    }
+
+    if (currentVersion < DB_VERSION) {
       if (currentVersion < 2) {
         await db.execute(`
           CREATE TABLE IF NOT EXISTS settings (
@@ -173,6 +181,8 @@ export async function migrateDb(db) {
       }
     }
 
+    await ensureSearchDocsTable(db)
+    await backfillMissingSearchDocs(db)
     await ensureDbIndexes(db)
     await ensureSettingsDefaults(db)
     await db.execute(`PRAGMA user_version = ${currentVersion}`)
@@ -182,6 +192,24 @@ export async function migrateDb(db) {
     await db.execute('DELETE FROM annotation_links WHERE from_annotation_id NOT IN (SELECT id FROM annotations)')
     await db.execute('UPDATE change_log_control SET enabled = 1 WHERE id = 1')
   })
+}
+
+async function databaseHasExistingAppTables(db) {
+  const rows = await db.select(`
+    SELECT name
+    FROM sqlite_master
+    WHERE type = 'table'
+      AND name IN (
+        'items',
+        'files',
+        'annotations',
+        'settings',
+        'ingest_jobs',
+        'reader_state',
+        'reading_state'
+      )
+  `)
+  return Array.isArray(rows) && rows.length > 0
 }
 
 async function createAllTables(db) {
@@ -405,6 +433,10 @@ async function createAllTables(db) {
   `)
   await db.execute(`INSERT OR IGNORE INTO change_log_control (id, enabled) VALUES (1, 1)`)
   await createChangeLogTriggers(db)
+  await ensureSearchDocsTable(db)
+}
+
+async function ensureSearchDocsTable(db) {
   await db.execute(`
     CREATE VIRTUAL TABLE IF NOT EXISTS search_docs USING fts5(
       item_id,
@@ -416,19 +448,64 @@ async function createAllTables(db) {
   `)
 }
 
+async function backfillMissingSearchDocs(db) {
+  const items = await db.select('SELECT id, kind, title, author, meta_json, updated_at FROM items')
+  if (!items?.length) return
+
+  const indexedRows = await db.select('SELECT item_id FROM search_docs')
+  const indexedIds = new Set((indexedRows || []).map((row) => row.item_id).filter(Boolean))
+  const booksById = new Map(
+    items
+      .filter((row) => row.kind === 'book')
+      .map((row) => [
+        row.id,
+        {
+          id: row.id,
+          title: row.title || '',
+          author: row.author || null,
+        },
+      ])
+  )
+
+  for (const row of items) {
+    if (!row.id || indexedIds.has(row.id)) continue
+    const meta = parseMetaJson(row.meta_json)
+    const body = buildSearchText(
+      {
+        id: row.id,
+        kind: row.kind,
+        title: row.title || '',
+        author: row.author || null,
+        tags: [],
+        docMeta: meta,
+        bookMeta: meta,
+        annotations: { notes: [], highlights: [] },
+      },
+      {
+        linkedBook: meta.linkedBookId ? booksById.get(meta.linkedBookId) : null,
+      }
+    )
+    await db.execute(
+      'INSERT INTO search_docs (item_id, kind, title, body, updated_at) VALUES (?, ?, ?, ?, ?)',
+      [row.id, row.kind, row.title || '', body || '', row.updated_at || null]
+    )
+  }
+}
+
 async function ensureDbIndexes(db) {
   const duplicatePaths = await db.select(`
-    SELECT path
+    SELECT lower(path) AS normalized_path
     FROM files
     WHERE path IS NOT NULL AND path <> ''
-    GROUP BY path
+    GROUP BY lower(path)
     HAVING COUNT(*) > 1
   `)
 
   for (const row of duplicatePaths || []) {
-    const path = row.path
+    const path = row.normalized_path
+    if (!path) continue
     const matches = await db.select(
-      'SELECT id FROM files WHERE path = ? ORDER BY mtime DESC, id DESC',
+      'SELECT id FROM files WHERE lower(path) = ? ORDER BY mtime DESC, id DESC',
       [path]
     )
     if (!matches || matches.length <= 1) continue
@@ -442,6 +519,7 @@ async function ensureDbIndexes(db) {
 
   await db.execute('CREATE INDEX IF NOT EXISTS idx_ingest_jobs_status_updated ON ingest_jobs(status, updated_at DESC)')
   await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_files_path_unique ON files(path) WHERE path IS NOT NULL AND path <> ""')
+  await db.execute('CREATE UNIQUE INDEX IF NOT EXISTS idx_files_path_unique_lower ON files(lower(path)) WHERE path IS NOT NULL AND path <> ""')
   await db.execute('CREATE INDEX IF NOT EXISTS idx_files_hash ON files(hash)')
   await db.execute('CREATE INDEX IF NOT EXISTS idx_annotations_item_created ON annotations(item_id, created_at DESC)')
   await db.execute('CREATE INDEX IF NOT EXISTS idx_reader_state_updated ON reader_state(updated_at DESC)')

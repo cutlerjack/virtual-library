@@ -1,4 +1,5 @@
 import { DB_VERSION, withDb, withWriteDb, withTransaction } from './dbConnection'
+import { buildUserSettingsEntries } from './dbPreferences'
 import { normalizeBookItem, normalizeDocumentItem } from './librarySchema'
 import {
   parseMetaJson,
@@ -11,6 +12,7 @@ import {
   buildAnnotationAnchors,
   buildAnnotationLinks,
 } from './dbTransform'
+import { resolveStateDocumentFilePersistence } from './dbFiles'
 
 export async function loadLibraryStateFromDb(libraryPath) {
   return withDb(libraryPath, async (db) => {
@@ -75,14 +77,8 @@ export async function loadLibraryStateFromDb(libraryPath) {
   if (settingsMap.has('reader_cache_pages')) {
     userSettings.readerCachePages = Number(settingsMap.get('reader_cache_pages')) || userSettings.readerCachePages
   }
-  if (settingsMap.has('semantic_search_enabled')) {
-    userSettings.semanticSearchEnabled = settingsMap.get('semantic_search_enabled') === 'true'
-  }
   if (settingsMap.has('auto_snapshot_interval_hours')) {
     userSettings.autoSnapshotIntervalHours = Number(settingsMap.get('auto_snapshot_interval_hours')) || userSettings.autoSnapshotIntervalHours
-  }
-  if (settingsMap.has('backup_verify_enabled')) {
-    userSettings.backupVerifyEnabled = settingsMap.get('backup_verify_enabled') === 'true'
   }
   if (settingsMap.has('pdf_render_memory_mb')) {
     userSettings.pdfRenderMemoryMb = Number(settingsMap.get('pdf_render_memory_mb')) || userSettings.pdfRenderMemoryMb
@@ -129,9 +125,10 @@ export async function loadLibraryStateFromDb(libraryPath) {
       return hydrateBookAnnotations(item, annotations)
     }
 
+    const hasFileRow = Boolean(file)
     const docMeta = {
       ...meta,
-      filePath: meta.filePath || file?.path || null,
+      filePath: hasFileRow ? file.path || null : meta.filePath || null,
       fileName: meta.fileName || null,
       originalName: meta.originalName || null,
       type: meta.type || (row.kind === 'article' ? 'article' : 'file'),
@@ -145,7 +142,7 @@ export async function loadLibraryStateFromDb(libraryPath) {
       fileHash: meta.fileHash || file?.hash || null,
       fileSize: meta.fileSize || file?.size || null,
       fileMtime: meta.fileMtime || file?.mtime || null,
-      fileStatus: meta.fileStatus || file?.status || null,
+      fileStatus: hasFileRow ? file.status || meta.fileStatus || null : meta.fileStatus || null,
     }
 
     const item = normalizeDocumentItem({
@@ -214,7 +211,12 @@ export async function saveLibraryStateToDb(libraryPath, state) {
 
       const tagIdMap = new Map()
       let tagIndex = 0
-      const usedFilePaths = new Set()
+      const usedFilePathKeys = new Set()
+      const booksById = new Map(
+        (state.items || [])
+          .filter((item) => item.kind === 'book')
+          .map((item) => [item.id, item])
+      )
       const ensureTagId = async (tag) => {
         if (!tagIdMap.has(tag)) {
           const id = `tag-${tagIndex += 1}`
@@ -238,49 +240,31 @@ export async function saveLibraryStateToDb(libraryPath, state) {
         )
       }
 
-      const settingsTimestamp = new Date().toISOString()
       const userSettings = state.user || {}
-      await db.execute(
-        'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
-        ['user', JSON.stringify(userSettings), settingsTimestamp]
-      )
-      await db.execute(
-        'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
-        ['reader_max_memory_mb', String(userSettings.readerMaxMemoryMb ?? 800), settingsTimestamp]
-      )
-      await db.execute(
-        'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
-        ['reader_cache_pages', String(userSettings.readerCachePages ?? 8), settingsTimestamp]
-      )
-      await db.execute(
-        'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
-        ['semantic_search_enabled', userSettings.semanticSearchEnabled ? 'true' : 'false', settingsTimestamp]
-      )
-      await db.execute(
-        'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
-        ['auto_snapshot_interval_hours', String(userSettings.autoSnapshotIntervalHours ?? 24), settingsTimestamp]
-      )
-      await db.execute(
-        'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
-        ['backup_verify_enabled', userSettings.backupVerifyEnabled ? 'true' : 'false', settingsTimestamp]
-      )
-      await db.execute(
-        'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
-        ['pdf_render_memory_mb', String(userSettings.pdfRenderMemoryMb ?? userSettings.readerMaxMemoryMb ?? 512), settingsTimestamp]
-      )
-      await db.execute(
-        'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
-        ['pdf_virtual_overscan_pages', String(userSettings.pdfVirtualOverscanPages ?? 8), settingsTimestamp]
-      )
-      await db.execute(
-        'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
-        ['ingest_job_retention_days', String(userSettings.ingestJobRetentionDays ?? 14), settingsTimestamp]
-      )
+      for (const [key, value, updatedAt] of buildUserSettingsEntries(userSettings)) {
+        await db.execute(
+          'INSERT INTO settings (key, value, updated_at) VALUES (?, ?, ?)',
+          [key, value, updatedAt]
+        )
+      }
 
       for (const item of state.items || []) {
         const kind = item.kind || (item.docMeta?.type === 'article' ? 'article' : 'document')
-        const meta = item.bookMeta || item.docMeta || {}
+        let meta = item.kind === 'book'
+          ? {
+              ...(item.bookMeta || {}),
+              status: item.status || null,
+            }
+          : (item.docMeta || {})
         const publishedDate = item.publishedDate || meta.publishedDate || null
+        let filePath = null
+        let fileStatus = null
+        if (kind === 'document' || kind === 'article') {
+          const filePersistence = resolveStateDocumentFilePersistence(meta, usedFilePathKeys)
+          meta = filePersistence.meta
+          filePath = filePersistence.filePath
+          fileStatus = filePersistence.fileStatus
+        }
 
       await db.execute(
         `INSERT INTO items (id, kind, title, author, isbn, published_date, rating, cover_url, created_at, updated_at, meta_json)
@@ -344,18 +328,7 @@ export async function saveLibraryStateToDb(libraryPath, state) {
         )
 
         const fileId = `${item.id}-file`
-        const docMeta = item.docMeta || {}
-        let filePath = docMeta.filePath || null
-        let fileStatus = docMeta.fileStatus || null
-        if (filePath) {
-          const pathKey = String(filePath).toLowerCase()
-          if (usedFilePaths.has(pathKey)) {
-            filePath = null
-            fileStatus = fileStatus || 'duplicate'
-          } else {
-            usedFilePaths.add(pathKey)
-          }
-        }
+        const docMeta = meta
         await db.execute(
           `INSERT INTO files (id, item_id, path, hash, size, mtime, mime, page_count, scanned, status)
            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
@@ -438,7 +411,11 @@ export async function saveLibraryStateToDb(libraryPath, state) {
           item.id,
           kind,
           item.title || '',
-          buildSearchText(item),
+          buildSearchText(item, {
+            linkedBook: kind === 'document' || kind === 'article'
+              ? booksById.get(item.docMeta?.linkedBookId)
+              : null,
+          }),
           item.updatedAt || null,
         ]
       )

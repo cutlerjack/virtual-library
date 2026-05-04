@@ -1,5 +1,9 @@
-import { useState, useCallback } from 'react'
-import { extractDominantColor } from '../../utils/colorExtract'
+import React, { useEffect, useRef, useState } from 'react'
+import { getGoogleCoverSet, pickBestCoverUrl } from '../../utils/coverImages'
+import { fetchWithTimeout } from '../../utils/fetchWithTimeout'
+import { extractAddBookSpineColor } from './coverColor'
+
+const BULK_BOOK_SEARCH_TIMEOUT_MS = 10000
 
 const Icons = {
   upload: (
@@ -21,11 +25,33 @@ const Icons = {
   ),
 }
 
-export default function BulkImportMode({ onAddBook }) {
+export default function BulkImportMode({ onAddBook, onComplete }) {
   const [bulkInput, setBulkInput] = useState('')
   const [bulkProcessing, setBulkProcessing] = useState(false)
+  const [bulkAdding, setBulkAdding] = useState(false)
   const [bulkResults, setBulkResults] = useState([])
   const [bulkProgress, setBulkProgress] = useState(0)
+  const bulkAddingRef = useRef(false)
+  const activeLookupControllerRef = useRef(null)
+  const mountedRef = useRef(true)
+
+  useEffect(() => () => {
+    mountedRef.current = false
+    activeLookupControllerRef.current?.abort()
+    activeLookupControllerRef.current = null
+  }, [])
+
+  const createLookupController = () => {
+    const controller = new AbortController()
+    activeLookupControllerRef.current = controller
+    return controller
+  }
+
+  const clearLookupController = (controller) => {
+    if (activeLookupControllerRef.current === controller) {
+      activeLookupControllerRef.current = null
+    }
+  }
 
   const processBulkList = async () => {
     const titles = bulkInput
@@ -48,26 +74,42 @@ export default function BulkImportMode({ onAddBook }) {
     setBulkProgress(0)
 
     for (let i = 0; i < titles.length; i++) {
+      if (!mountedRef.current) return
       const title = titles[i]
+      const controller = createLookupController()
 
       try {
-        const response = await fetch(
-          `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}&maxResults=1`
+        const response = await fetchWithTimeout(
+          `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}&maxResults=1`,
+          { signal: controller.signal },
+          {
+            timeoutMs: BULK_BOOK_SEARCH_TIMEOUT_MS,
+            timeoutMessage: 'Bulk book lookup timed out.',
+          }
         )
         const data = await response.json()
+        clearLookupController(controller)
+        if (!mountedRef.current) return
 
-        if (data.items && data.items.length > 0) {
-          const item = data.items[0]
+        const items = Array.isArray(data?.items) ? data.items : []
+        if (items.length > 0) {
+          const item = items[0]
+          const volumeInfo = item?.volumeInfo || {}
+          const industryIdentifiers = Array.isArray(volumeInfo.industryIdentifiers)
+            ? volumeInfo.industryIdentifiers
+            : []
+          const coverSet = getGoogleCoverSet(volumeInfo.imageLinks)
           const book = {
-            googleId: item.id,
-            title: item.volumeInfo.title || title,
-            author: item.volumeInfo.authors?.join(', ') || 'Unknown Author',
-            coverUrl: item.volumeInfo.imageLinks?.thumbnail?.replace('http:', 'https:') || null,
-            isbn: item.volumeInfo.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier || null,
-            pageCount: item.volumeInfo.pageCount || null,
-            tags: item.volumeInfo.categories || [],
-            publishedDate: item.volumeInfo.publishedDate || null,
-            shelfDetail: item.volumeInfo.authors?.join(', ') || 'Unknown Author',
+            googleId: item?.id || null,
+            title: volumeInfo.title || title,
+            author: Array.isArray(volumeInfo.authors) ? volumeInfo.authors.join(', ') : 'Unknown Author',
+            coverUrl: coverSet.coverUrl,
+            largeCoverUrl: coverSet.largeCoverUrl,
+            isbn: industryIdentifiers.find(id => id.type === 'ISBN_13')?.identifier || null,
+            pageCount: volumeInfo.pageCount || null,
+            tags: Array.isArray(volumeInfo.categories) ? volumeInfo.categories : [],
+            publishedDate: volumeInfo.publishedDate || null,
+            shelfDetail: Array.isArray(volumeInfo.authors) ? volumeInfo.authors.join(', ') : 'Unknown Author',
           }
 
           setBulkResults(prev => prev.map((r, idx) =>
@@ -78,12 +120,15 @@ export default function BulkImportMode({ onAddBook }) {
             idx === i ? { ...r, status: 'not_found' } : r
           ))
         }
-      } catch {
+      } catch (error) {
+        clearLookupController(controller)
+        if (!mountedRef.current || error?.name === 'AbortError') return
         setBulkResults(prev => prev.map((r, idx) =>
           idx === i ? { ...r, status: 'not_found' } : r
         ))
       }
 
+      if (!mountedRef.current) return
       setBulkProgress(((i + 1) / titles.length) * 100)
 
       if (i < titles.length - 1) {
@@ -91,7 +136,9 @@ export default function BulkImportMode({ onAddBook }) {
       }
     }
 
-    setBulkProcessing(false)
+    if (mountedRef.current) {
+      setBulkProcessing(false)
+    }
   }
 
   const runBulkEditSearch = async (index) => {
@@ -102,26 +149,45 @@ export default function BulkImportMode({ onAddBook }) {
       idx === index ? { ...r, editLoading: true, editResults: [] } : r
     ))
 
+    const controller = createLookupController()
     try {
-      const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(target.editQuery)}&maxResults=5`
+      const response = await fetchWithTimeout(
+        `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(target.editQuery)}&maxResults=5`,
+        { signal: controller.signal },
+        {
+          timeoutMs: BULK_BOOK_SEARCH_TIMEOUT_MS,
+          timeoutMessage: 'Bulk book lookup timed out.',
+        }
       )
       const data = await response.json()
-      const results = (data.items || []).map(item => ({
-        googleId: item.id,
-        title: item.volumeInfo.title || target.editQuery,
-        author: item.volumeInfo.authors?.join(', ') || 'Unknown Author',
-        coverUrl: item.volumeInfo.imageLinks?.thumbnail?.replace('http:', 'https:') || null,
-        isbn: item.volumeInfo.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier || null,
-        pageCount: item.volumeInfo.pageCount || null,
-        tags: item.volumeInfo.categories || [],
-        publishedDate: item.volumeInfo.publishedDate || null,
-        shelfDetail: item.volumeInfo.authors?.join(', ') || 'Unknown Author',
-      }))
+      clearLookupController(controller)
+      if (!mountedRef.current) return
+      const results = (Array.isArray(data?.items) ? data.items : []).map((item) => {
+        const volumeInfo = item?.volumeInfo || {}
+        const industryIdentifiers = Array.isArray(volumeInfo.industryIdentifiers)
+          ? volumeInfo.industryIdentifiers
+          : []
+        const coverSet = getGoogleCoverSet(volumeInfo.imageLinks)
+
+        return {
+          googleId: item?.id || null,
+          title: volumeInfo.title || target.editQuery,
+          author: Array.isArray(volumeInfo.authors) ? volumeInfo.authors.join(', ') : 'Unknown Author',
+          coverUrl: coverSet.coverUrl,
+          largeCoverUrl: coverSet.largeCoverUrl,
+          isbn: industryIdentifiers.find(id => id.type === 'ISBN_13')?.identifier || null,
+          pageCount: volumeInfo.pageCount || null,
+          tags: Array.isArray(volumeInfo.categories) ? volumeInfo.categories : [],
+          publishedDate: volumeInfo.publishedDate || null,
+          shelfDetail: Array.isArray(volumeInfo.authors) ? volumeInfo.authors.join(', ') : 'Unknown Author',
+        }
+      })
       setBulkResults(prev => prev.map((r, idx) =>
         idx === index ? { ...r, editResults: results, editLoading: false } : r
       ))
-    } catch {
+    } catch (error) {
+      clearLookupController(controller)
+      if (!mountedRef.current || error?.name === 'AbortError') return
       setBulkResults(prev => prev.map((r, idx) =>
         idx === index ? { ...r, editResults: [], editLoading: false } : r
       ))
@@ -137,14 +203,27 @@ export default function BulkImportMode({ onAddBook }) {
   }
 
   const addSelectedBulkBooks = async () => {
+    if (bulkAddingRef.current) return
+    bulkAddingRef.current = true
+    setBulkAdding(true)
     const booksToAdd = bulkResults.filter(r => r.status === 'found' && r.book)
-    for (const result of booksToAdd) {
-      const spineColor = await extractDominantColor(result.book.coverUrl)
-      onAddBook({
-        ...result.book,
-        spineColor,
-        tags: result.book.tags || [],
-      })
+    try {
+      for (const result of booksToAdd) {
+        const coverUrl = pickBestCoverUrl(result.book.largeCoverUrl, result.book.coverUrl)
+        const spineColor = await extractAddBookSpineColor(coverUrl)
+        await Promise.resolve(onAddBook({
+          ...result.book,
+          coverUrl,
+          spineColor,
+          tags: result.book.tags || [],
+        }, { closeModal: false }))
+      }
+      onComplete?.()
+    } finally {
+      bulkAddingRef.current = false
+      if (mountedRef.current) {
+        setBulkAdding(false)
+      }
     }
   }
 
@@ -158,12 +237,16 @@ export default function BulkImportMode({ onAddBook }) {
           <div className="flex items-center gap-3 mb-4">
             <span className="w-6 h-6 text-[#b45309]">{Icons.upload}</span>
             <div>
-              <h3 className="font-medium text-[#201819]">Import Multiple Books</h3>
-              <p className="text-sm text-muted">Paste a list of book titles, one per line</p>
+              <h3 className="font-medium text-[#201819]">Bulk import titles</h3>
+              <p className="text-sm text-muted">Paste one title per line. We’ll search each match and let you review the results.</p>
             </div>
           </div>
 
+          <label htmlFor="bulk-title-list" className="sr-only">
+            Book titles, one per line
+          </label>
           <textarea
+            id="bulk-title-list"
             value={bulkInput}
             onChange={(e) => setBulkInput(e.target.value)}
             placeholder={"The Great Gatsby\n1984\nTo Kill a Mockingbird\nPride and Prejudice\n..."}
@@ -172,14 +255,14 @@ export default function BulkImportMode({ onAddBook }) {
 
           <div className="flex justify-between items-center mt-4">
             <p className="text-xs text-muted">
-              {bulkInput.split('\n').filter(l => l.trim()).length} titles detected
+              {bulkInput.split('\n').filter(l => l.trim()).length} titles ready
             </p>
             <button
               onClick={processBulkList}
               disabled={bulkInput.trim().length === 0}
               className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Search All
+              Find Matches
             </button>
           </div>
         </>
@@ -207,11 +290,11 @@ export default function BulkImportMode({ onAddBook }) {
             <div className="flex gap-4 mb-4 p-3 rounded-lg" style={{ background: 'rgba(32, 24, 25, 0.06)' }}>
               <div className="text-center flex-1">
                 <div className="text-2xl font-semibold text-emerald-400">{foundCount}</div>
-                <div className="text-xs text-muted">Found</div>
+                <div className="text-xs text-muted">Matched</div>
               </div>
               <div className="text-center flex-1">
                 <div className="text-2xl font-semibold text-red-400">{notFoundCount}</div>
-                <div className="text-xs text-muted">Not Found</div>
+                <div className="text-xs text-muted">Missed</div>
               </div>
             </div>
           )}
@@ -251,7 +334,7 @@ export default function BulkImportMode({ onAddBook }) {
                         rIdx === idx ? { ...r, editOpen: !r.editOpen } : r
                       ))}
                     >
-                      {result.editOpen ? 'Close' : 'Change'}
+                      {result.editOpen ? 'Close' : 'Refine'}
                     </button>
                   )}
                 </div>
@@ -274,7 +357,7 @@ export default function BulkImportMode({ onAddBook }) {
                         onClick={() => runBulkEditSearch(idx)}
                         disabled={result.editLoading}
                       >
-                        {result.editLoading ? 'Searching...' : 'Search'}
+                        {result.editLoading ? 'Searching...' : 'Find'}
                       </button>
                     </div>
                     {result.editResults.length === 0 && !result.editLoading && (
@@ -318,11 +401,13 @@ export default function BulkImportMode({ onAddBook }) {
               }}
               className="btn-secondary"
             >
-              Start Over
+              Reset
             </button>
             {!bulkProcessing && foundCount > 0 && (
-              <button onClick={addSelectedBulkBooks} className="btn-primary">
-                Add {foundCount} Book{foundCount !== 1 ? 's' : ''}
+              <button onClick={addSelectedBulkBooks} className="btn-primary" disabled={bulkAdding}>
+                {bulkAdding
+                  ? 'Adding...'
+                  : `Add ${foundCount} Matched Book${foundCount !== 1 ? 's' : ''}`}
               </button>
             )}
           </div>

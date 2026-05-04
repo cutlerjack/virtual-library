@@ -1,10 +1,43 @@
 import { calculateCadenceStreak } from './streakCalculation'
 
+function positiveNumber(value) {
+  return Number.isFinite(value) && value > 0 ? value : 0
+}
+
+function dateIsInYear(value, year) {
+  if (!value) return false
+  const date = new Date(value)
+  return !Number.isNaN(date.getTime()) && date.getFullYear() === year
+}
+
+function loggedPagesAllTime(book) {
+  const logTotal = (book.readingLogs || []).reduce((sum, log) => {
+    return sum + positiveNumber(log.pages)
+  }, 0)
+  return Math.max(positiveNumber(book.pagesRead), logTotal)
+}
+
+function loggedPagesForYear(book, year) {
+  return (book.readingLogs || []).reduce((sum, log) => {
+    return dateIsInYear(log.date, year) ? sum + positiveNumber(log.pages) : sum
+  }, 0)
+}
+
+function loggedPagesForRange(book, startDate, endDate) {
+  return (book.readingLogs || []).reduce((sum, log) => {
+    if (!log.date) return sum
+    const date = new Date(log.date)
+    if (Number.isNaN(date.getTime()) || date < startDate || date >= endDate) return sum
+    return sum + positiveNumber(log.pages)
+  }, 0)
+}
+
 export function computeLibraryStats(books, quests, selectedYear) {
   const now = new Date()
   const currentYear = now.getFullYear()
   const currentMonth = now.getMonth()
   const startOfMonth = new Date(currentYear, currentMonth, 1)
+  const startOfNextMonth = new Date(currentYear, currentMonth + 1, 1)
   const isCurrentYear = selectedYear === currentYear
 
   const finishedBooks = books.filter(book => book.dateFinished)
@@ -19,9 +52,14 @@ export function computeLibraryStats(books, quests, selectedYear) {
     })
     : []
 
-  const totalPages = books.reduce((sum, book) => sum + (book.pageCount || 0), 0)
-  const pagesThisYear = finishedThisYear.reduce((sum, book) => sum + (book.pageCount || 0), 0)
-  const pagesThisMonth = finishedThisMonth.reduce((sum, book) => sum + (book.pageCount || 0), 0)
+  const totalPagesCataloged = books.reduce((sum, book) => sum + positiveNumber(book.pageCount), 0)
+  const pagesLoggedAllTime = books.reduce((sum, book) => sum + loggedPagesAllTime(book), 0)
+  const pagesLoggedThisYear = books.reduce((sum, book) => sum + loggedPagesForYear(book, selectedYear), 0)
+  const pagesFinishedThisYear = finishedThisYear.reduce((sum, book) => sum + positiveNumber(book.pageCount), 0)
+  const pagesLoggedThisMonth = isCurrentYear
+    ? books.reduce((sum, book) => sum + loggedPagesForRange(book, startOfMonth, startOfNextMonth), 0)
+    : 0
+  const finishedBooksThisYear = finishedThisYear.length
 
   const ratedBooks = books.filter(book => book.rating > 0)
   const avgRating = ratedBooks.length > 0
@@ -59,7 +97,7 @@ export function computeLibraryStats(books, quests, selectedYear) {
     ? Math.floor((now - sortedFinishedDates[sortedFinishedDates.length - 1]) / (1000 * 60 * 60 * 24))
     : null
 
-  const xp = totalPages
+  const xp = pagesLoggedAllTime
   const level = Math.max(1, Math.floor(xp / 1200) + 1)
   const nextLevelAt = level * 1200
   const xpToNext = Math.max(0, nextLevelAt - xp)
@@ -71,7 +109,7 @@ export function computeLibraryStats(books, quests, selectedYear) {
     const target = Math.max(quest.target || 1, 1)
     let current = 0
     if (quest.type === 'books') current = finishedThisMonth.length
-    if (quest.type === 'pages') current = pagesThisMonth
+    if (quest.type === 'pages') current = pagesLoggedThisMonth
     if (quest.type === 'quotes') current = quoteCount
     if (quest.type === 'ratings') current = ratingsThisMonth
     return {
@@ -84,15 +122,20 @@ export function computeLibraryStats(books, quests, selectedYear) {
   const achievements = [
     { label: 'First Tome', threshold: 1, value: finishedBooks.length },
     { label: 'A Dozen Read', threshold: 12, value: finishedBooks.length },
-    { label: 'Pages of the Realm', threshold: 1000, value: totalPages },
+    { label: 'Pages of the Realm', threshold: 1000, value: pagesLoggedAllTime },
     { label: 'Five-Star Oracle', threshold: 3, value: ratedBooks.filter(b => b.rating >= 10).length },
   ]
 
   return {
     totalBooks: books.length,
-    finishedThisYear: finishedThisYear.length,
-    totalPages,
-    pagesThisYear,
+    finishedBooksThisYear,
+    totalPagesCataloged,
+    pagesLoggedAllTime,
+    pagesLoggedThisYear,
+    pagesFinishedThisYear,
+    finishedThisYear: finishedBooksThisYear,
+    totalPages: totalPagesCataloged,
+    pagesThisYear: pagesFinishedThisYear,
     avgRating: avgRatingFiveStar.toFixed(1),
     genreData,
     monthlyData: monthlyData.slice(0, isCurrentYear ? currentMonth + 1 : 12),

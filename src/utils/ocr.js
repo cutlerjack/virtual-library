@@ -59,40 +59,56 @@ export async function ocrCanvas(canvas, options = {}) {
 }
 
 export async function ocrPdf(data, onProgress) {
-  const loadingTask = pdfjsLib.getDocument({ data: toCloneSafeArrayBuffer(data) })
-  const pdfDoc = await loadingTask.promise
-  const results = []
-  let totalConfidence = 0
+  let loadingTask = null
+  let pdfDoc = null
+  try {
+    loadingTask = pdfjsLib.getDocument({ data: toCloneSafeArrayBuffer(data) })
+    pdfDoc = await loadingTask.promise
+    const results = []
+    let totalConfidence = 0
 
-  for (let i = 1; i <= pdfDoc.numPages; i += 1) {
-    const page = await pdfDoc.getPage(i)
-    const viewport = page.getViewport({ scale: 1.5 })
-    const canvas = document.createElement('canvas')
-    const context = canvas.getContext('2d')
-    canvas.width = Math.floor(viewport.width)
-    canvas.height = Math.floor(viewport.height)
-    await page.render({ canvasContext: context, viewport }).promise
-    const result = await ocrCanvas(canvas, { timeoutMs: 45000 })
-    results.push({
-      pageIndex: i,
-      text: result.text,
-      confidence: result.confidence,
-    })
-    totalConfidence += result.confidence || 0
-    onProgress?.(i / pdfDoc.numPages)
-  }
+    for (let i = 1; i <= pdfDoc.numPages; i += 1) {
+      const page = await pdfDoc.getPage(i)
+      const viewport = page.getViewport({ scale: 1.5 })
+      const canvas = document.createElement('canvas')
+      const context = canvas.getContext('2d')
+      if (!context) throw new Error('Unable to create canvas context for OCR.')
+      canvas.width = Math.floor(viewport.width)
+      canvas.height = Math.floor(viewport.height)
+      await page.render({ canvasContext: context, viewport }).promise
+      const result = await ocrCanvas(canvas, { timeoutMs: 45000 })
+      results.push({
+        pageIndex: i,
+        text: result.text,
+        confidence: result.confidence,
+      })
+      totalConfidence += result.confidence || 0
+      onProgress?.(i / pdfDoc.numPages)
+    }
 
-  pdfDoc.cleanup()
-  pdfDoc.destroy()
+    const averageConfidence = results.length
+      ? totalConfidence / results.length
+      : null
 
-  const averageConfidence = results.length
-    ? totalConfidence / results.length
-    : null
-
-  return {
-    pages: results,
-    text: results.map((page) => page.text).join('\n'),
-    confidence: averageConfidence,
-    pageCount: pdfDoc.numPages,
+    return {
+      pages: results,
+      text: results.map((page) => page.text).join('\n'),
+      confidence: averageConfidence,
+      pageCount: pdfDoc.numPages,
+    }
+  } finally {
+    if (pdfDoc) {
+      try {
+        pdfDoc.cleanup?.()
+      } finally {
+        pdfDoc.destroy?.()
+      }
+    } else if (typeof loadingTask?.destroy === 'function') {
+      try {
+        await loadingTask.destroy()
+      } catch {
+        // Loading-task cleanup is best effort after a failed document load.
+      }
+    }
   }
 }

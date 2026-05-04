@@ -5,15 +5,20 @@ export function enqueueLibraryWrite(libraryPath, task) {
 
   const previous = writeQueues.get(libraryPath) || Promise.resolve()
   const next = previous.then(task, task)
-
-  writeQueues.set(
-    libraryPath,
-    next.finally(() => {
-      if (writeQueues.get(libraryPath) === next) {
+  const tracked = next
+    .catch(() => {})
+    .finally(() => {
+      if (writeQueues.get(libraryPath) === tracked) {
         writeQueues.delete(libraryPath)
       }
     })
-  )
+
+  writeQueues.set(libraryPath, tracked)
 
   return next
+}
+
+export function awaitPendingLibraryWrites(libraryPath) {
+  if (!libraryPath) return Promise.resolve()
+  return writeQueues.get(libraryPath) || Promise.resolve()
 }

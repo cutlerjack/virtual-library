@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useId, useRef } from 'react'
 
 function GlobalSearch({
   searchQuery,
@@ -11,17 +11,23 @@ function GlobalSearch({
   onOpenResult,
 }) {
   const [activeIndex, setActiveIndex] = useState(-1)
+  const searchRootRef = useRef(null)
+  const listboxId = useId()
+  const summaryId = `${listboxId}-summary`
 
   const groupedSearchResults = useMemo(() => {
     const buckets = new Map([
       ['book', []],
-      ['document', []],
-      ['article', []],
+      ['reading-room', []],
       ['other', []],
     ])
     searchResults.forEach((result) => {
       if (!result) return
-      const kind = result.kind || 'other'
+      const kind = result.kind === 'book'
+        ? 'book'
+        : (result.kind === 'document' || result.kind === 'article')
+          ? 'reading-room'
+          : 'other'
       if (!buckets.has(kind)) {
         buckets.set(kind, [])
       }
@@ -29,8 +35,7 @@ function GlobalSearch({
     })
     const labels = {
       book: 'Books',
-      document: 'Documents',
-      article: 'Articles',
+      'reading-room': 'Reading Room',
       other: 'Other',
     }
     return Array.from(buckets.entries())
@@ -43,9 +48,43 @@ function GlobalSearch({
     [groupedSearchResults]
   )
 
+  const renderSnippet = (snippet) => {
+    if (!snippet?.text) return null
+    const matches = mergeSnippetMatches(snippet.highlights || [])
+    if (matches.length === 0) return snippet.text
+    const nodes = []
+    let cursor = 0
+    matches.forEach((match, index) => {
+      if (cursor < match.start) {
+        nodes.push(
+          <span key={`text-${index}-${cursor}`}>
+            {snippet.text.slice(cursor, match.start)}
+          </span>
+        )
+      }
+      nodes.push(
+        <mark key={`mark-${index}-${match.start}`}>
+          {snippet.text.slice(match.start, match.end)}
+        </mark>
+      )
+      cursor = match.end
+    })
+    if (cursor < snippet.text.length) {
+      nodes.push(<span key={`tail-${cursor}`}>{snippet.text.slice(cursor)}</span>)
+    }
+    return nodes
+  }
+
   useEffect(() => {
     setActiveIndex(-1)
   }, [searchQuery, searchResults.length, searchOpen])
+
+  const handleBlurCapture = (event) => {
+    const nextTarget = event.relatedTarget
+    if (nextTarget && searchRootRef.current?.contains(nextTarget)) return
+    setSearchOpen(false)
+    setActiveIndex(-1)
+  }
 
   const handleKeyDown = (event) => {
     if (!searchOpen && (event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
@@ -68,23 +107,36 @@ function GlobalSearch({
       return
     }
     if (event.key === 'Enter') {
-      if (activeIndex >= 0 && activeIndex < flatSearchResults.length) {
+      const resultIndex = activeIndex >= 0 ? activeIndex : 0
+      if (resultIndex < flatSearchResults.length) {
         event.preventDefault()
-        onOpenResult(flatSearchResults[activeIndex])
+        onOpenResult(flatSearchResults[resultIndex])
       }
     }
   }
 
   return (
-    <div className="global-search">
+    <div
+      ref={searchRootRef}
+      className="global-search"
+      onBlurCapture={handleBlurCapture}
+    >
       <div className="global-search-input-wrap">
         <input
           type="search"
-          placeholder="Search library..."
+          role="combobox"
+          aria-autocomplete="list"
+          aria-haspopup="listbox"
+          aria-expanded={searchOpen}
+          aria-controls={listboxId}
+          aria-describedby={summaryId}
+          aria-activedescendant={activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined}
+          aria-label="Search the whole library"
+          aria-busy={searchBusy}
+          placeholder="Search the whole library..."
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
           onFocus={() => setSearchOpen(true)}
-          onBlur={() => setTimeout(() => setSearchOpen(false), 150)}
           onKeyDown={handleKeyDown}
         />
         {searchQuery.trim() && (
@@ -101,9 +153,9 @@ function GlobalSearch({
         )}
       </div>
       {searchOpen && (groupedSearchResults.length > 0 || searchBusy || searchQuery.trim()) && (
-        <div className="global-search-results">
-          <div className="global-search-summary">
-            {searchBusy ? 'Searching...' : `${flatSearchResults.length} result${flatSearchResults.length === 1 ? '' : 's'}`}
+        <div className="global-search-results" role="listbox" id={listboxId}>
+          <div id={summaryId} className="global-search-summary">
+            {searchBusy ? 'Searching the library...' : `${flatSearchResults.length} result${flatSearchResults.length === 1 ? '' : 's'} across books and documents`}
           </div>
           {searchBusy && (
             <div className="global-search-loading">
@@ -126,9 +178,13 @@ function GlobalSearch({
                   return (
                     <button
                       key={`${result.itemId}-${itemIndex}-${group.kind}`}
+                      id={`${listboxId}-option-${visibleIndex}`}
                       type="button"
+                      role="option"
+                      aria-selected={isActive}
                       className={`global-search-result ${isActive ? 'active' : ''}`}
                       onMouseEnter={() => setActiveIndex(visibleIndex)}
+                      onFocus={() => setActiveIndex(visibleIndex)}
                       onClick={() => onOpenResult(result)}
                     >
                       <div className="global-search-title-row">
@@ -136,18 +192,21 @@ function GlobalSearch({
                         <span className="global-search-kind">
                           {group.kind === 'book'
                             ? 'Book'
-                            : group.kind === 'document'
-                              ? 'Document'
-                              : group.kind === 'article'
-                                ? 'Article'
-                                : 'Item'}
+                            : group.kind === 'reading-room'
+                              ? 'Reading Room'
+                              : 'Item'}
                         </span>
                       </div>
                       {result.snippet && (
-                        <div
-                          className="global-search-snippet"
-                          dangerouslySetInnerHTML={{ __html: result.snippet }}
-                        />
+                        <div className="global-search-snippet">
+                          {renderSnippet(result.snippet)}
+                        </div>
+                      )}
+                      {!result.snippet && result.relationLabel && (
+                        <div className="global-search-context">{result.relationLabel}</div>
+                      )}
+                      {result.snippet && result.relationLabel && (
+                        <div className="global-search-context">{result.relationLabel}</div>
                       )}
                     </button>
                   )
@@ -156,7 +215,7 @@ function GlobalSearch({
             ))
           })()}
           {!searchBusy && flatSearchResults.length === 0 && (
-            <div className="global-search-empty">No matches</div>
+            <div className="global-search-empty">No matches in your library</div>
           )}
         </div>
       )}
@@ -165,3 +224,22 @@ function GlobalSearch({
 }
 
 export default GlobalSearch
+
+function mergeSnippetMatches(matches) {
+  if (!Array.isArray(matches) || matches.length === 0) return []
+  const sorted = [...matches]
+    .filter((match) => Number.isFinite(match?.start) && Number.isFinite(match?.end) && match.end > match.start)
+    .sort((a, b) => a.start - b.start)
+  if (sorted.length === 0) return []
+  const merged = [sorted[0]]
+  for (let index = 1; index < sorted.length; index += 1) {
+    const current = sorted[index]
+    const last = merged[merged.length - 1]
+    if (current.start <= last.end) {
+      last.end = Math.max(last.end, current.end)
+      continue
+    }
+    merged.push({ ...current })
+  }
+  return merged
+}

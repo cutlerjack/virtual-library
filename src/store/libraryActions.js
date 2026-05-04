@@ -1,5 +1,10 @@
 import { generateId, findSpineInLibraryMap } from '../utils/storage'
-import { createBookItemFromBook, mergeBookIntoItem, mergeDocumentIntoItem } from '../data/libraryAdapters'
+import {
+  createStudyStackEntry,
+  deriveStudySessionCompletedAt,
+  getStudyStackEntryKey,
+  normalizeStudySession,
+} from '../utils/studyStack'
 
 export function createLibraryActions({
   books,
@@ -7,13 +12,29 @@ export function createLibraryActions({
   shelves,
   userData,
   spineLibraryMap,
-  updateLibraryState,
   updateBookItem,
   updateDocumentItem,
   updateUserState,
+  insertBookItem,
+  removeLibraryItem,
   updateShelvesState,
   docUpdateTimersRef,
 }) {
+  const buildStudySession = (book, entries, now, { forceStart = false } = {}) => {
+    if (!Array.isArray(entries) || entries.length === 0) return null
+
+    const currentSession = normalizeStudySession(book?.studySession)
+    const derivedCompletedAt = deriveStudySessionCompletedAt(entries)
+    const shouldKeepStartedAt = currentSession?.startedAt && !currentSession.completedAt && !forceStart
+    const startedAt = shouldKeepStartedAt ? currentSession.startedAt : now
+
+    return {
+      startedAt,
+      lastActivityAt: now,
+      completedAt: derivedCompletedAt,
+    }
+  }
+
   const recordActivity = (type, bookId) => {
     const now = new Date()
     const dayKey = getDayKey(now)
@@ -52,14 +73,12 @@ export function createLibraryActions({
       wearLevel: 0,
       lastTouched: null,
       memories: [],
+      studyStack: [],
       pagesRead: 0,
       readingLogs: [],
       reflections: [],
     }
-    updateLibraryState((prev) => ({
-      ...prev,
-      items: [...prev.items, createBookItemFromBook(newBook)],
-    }))
+    insertBookItem(newBook)
     return newBook
   }
 
@@ -69,10 +88,10 @@ export function createLibraryActions({
   }
 
   const deleteBook = (bookId) => {
-    updateLibraryState((prev) => ({
-      ...prev,
-      items: prev.items.filter((item) => item.id !== bookId),
-    }))
+    documents
+      .filter((item) => item.linkedBookId === bookId)
+      .forEach((item) => updateDocumentItem(item.id, { linkedBookId: null }))
+    removeLibraryItem(bookId)
   }
 
   const logPages = (bookId, pages) => {
@@ -80,10 +99,28 @@ export function createLibraryActions({
     const date = new Date().toISOString()
     const book = books.find((entry) => entry.id === bookId)
     if (!book) return
-    const pagesRead = (book.pagesRead || 0) + pages
-    const readingLogs = [...(book.readingLogs || []), { date, pages }]
+    const currentPages = book.pagesRead || 0
+    const remainingPages = book.pageCount
+      ? Math.max((book.pageCount || 0) - currentPages, 0)
+      : pages
+    const pagesToLog = book.pageCount
+      ? Math.min(pages, remainingPages)
+      : pages
+    if (pagesToLog <= 0) return
+    const pagesRead = currentPages + pagesToLog
+    const readingLogs = [...(book.readingLogs || []), { date, pages: pagesToLog }]
     updateBookItem(bookId, { pagesRead, readingLogs, lastTouched: date })
     recordActivity('pages', bookId)
+  }
+
+  const undoLastPageLog = (bookId) => {
+    const book = books.find((entry) => entry.id === bookId)
+    if (!book || !(book.readingLogs || []).length) return
+    const date = new Date().toISOString()
+    const readingLogs = [...(book.readingLogs || [])]
+    const removedLog = readingLogs.pop()
+    const pagesRead = Math.max((book.pagesRead || 0) - (removedLog?.pages || 0), 0)
+    updateBookItem(bookId, { pagesRead, readingLogs, lastTouched: date })
   }
 
   const addQuote = (bookId, text) => {
@@ -106,6 +143,149 @@ export function createLibraryActions({
     recordActivity('reflection', bookId)
   }
 
+  const pinStudyEntry = (bookId, annotation) => {
+    if (!bookId || !annotation?.text?.trim()) return
+    const book = books.find((entry) => entry.id === bookId)
+    if (!book) return
+    const now = new Date().toISOString()
+    const nextEntry = createStudyStackEntry(annotation, book)
+    const nextKey = getStudyStackEntryKey(nextEntry)
+    const existingEntry = (book.studyStack || []).find((entry) => getStudyStackEntryKey(entry) === nextKey)
+    const mergedEntry = existingEntry
+      ? {
+          ...existingEntry,
+          ...nextEntry,
+          id: existingEntry.id,
+          note: existingEntry.note || nextEntry.note || '',
+          completedAt: null,
+          savedAt: now,
+        }
+      : nextEntry
+    const nextStack = [
+      mergedEntry,
+      ...(book.studyStack || []).filter((entry) => getStudyStackEntryKey(entry) !== nextKey),
+    ].slice(0, 12)
+    const currentSession = normalizeStudySession(book.studySession)
+    updateBookItem(bookId, {
+      studyStack: nextStack,
+      studySession: currentSession
+        ? { ...currentSession, completedAt: null }
+        : null,
+      lastTouched: now,
+    })
+  }
+
+  const removeStudyEntry = (bookId, studyEntryId) => {
+    if (!bookId || !studyEntryId) return
+    const book = books.find((entry) => entry.id === bookId)
+    if (!book) return
+    const now = new Date().toISOString()
+    const nextStack = (book.studyStack || []).filter((entry) => entry.id !== studyEntryId)
+    updateBookItem(bookId, {
+      studyStack: nextStack,
+      studySession: buildStudySession(book, nextStack, now),
+      lastTouched: now,
+    })
+  }
+
+  const updateStudyEntry = (bookId, studyEntryId, updates) => {
+    if (!bookId || !studyEntryId) return
+    const book = books.find((entry) => entry.id === bookId)
+    if (!book) return
+    updateBookItem(bookId, {
+      studyStack: (book.studyStack || []).map((entry) => (
+        entry.id === studyEntryId
+          ? {
+              ...entry,
+              ...updates,
+            }
+          : entry
+      )),
+      lastTouched: new Date().toISOString(),
+    })
+  }
+
+  const moveStudyEntry = (bookId, studyEntryId, direction) => {
+    if (!bookId || !studyEntryId || !direction) return
+    const book = books.find((entry) => entry.id === bookId)
+    if (!book) return
+    const stack = [...(book.studyStack || [])]
+    const currentIndex = stack.findIndex((entry) => entry.id === studyEntryId)
+    if (currentIndex === -1) return
+    const targetIndex = currentIndex + direction
+    if (targetIndex < 0 || targetIndex >= stack.length) return
+    const [entry] = stack.splice(currentIndex, 1)
+    stack.splice(targetIndex, 0, entry)
+    updateBookItem(bookId, {
+      studyStack: stack,
+      lastTouched: new Date().toISOString(),
+    })
+  }
+
+  const reviewStudyEntry = (bookId, studyEntryId) => {
+    if (!bookId || !studyEntryId) return
+    const book = books.find((entry) => entry.id === bookId)
+    if (!book) return
+    const now = new Date().toISOString()
+    const nextStack = (book.studyStack || []).map((entry) => (
+      entry.id === studyEntryId
+        ? { ...entry, lastReviewedAt: now }
+        : entry
+    ))
+    updateBookItem(bookId, {
+      studyStack: nextStack,
+      studySession: buildStudySession(book, nextStack, now),
+      lastTouched: now,
+    })
+  }
+
+  const toggleStudyEntryComplete = (bookId, studyEntryId) => {
+    if (!bookId || !studyEntryId) return
+    const book = books.find((entry) => entry.id === bookId)
+    if (!book) return
+    const now = new Date().toISOString()
+    const nextStack = (book.studyStack || []).map((entry) => (
+      entry.id === studyEntryId
+        ? {
+            ...entry,
+            completedAt: entry.completedAt ? null : now,
+          }
+        : entry
+    ))
+    updateBookItem(bookId, {
+      studyStack: nextStack,
+      studySession: buildStudySession(book, nextStack, now),
+      lastTouched: now,
+    })
+  }
+
+  const startStudySession = (bookId) => {
+    if (!bookId) return
+    const book = books.find((entry) => entry.id === bookId)
+    if (!book || !(book.studyStack || []).length) return
+    const now = new Date().toISOString()
+    updateBookItem(bookId, {
+      studySession: buildStudySession(book, book.studyStack || [], now, { forceStart: true }),
+      lastTouched: now,
+    })
+  }
+
+  const resetStudySession = (bookId) => {
+    if (!bookId) return
+    const book = books.find((entry) => entry.id === bookId)
+    if (!book || !(book.studyStack || []).length) return
+    const now = new Date().toISOString()
+    const resetStack = (book.studyStack || []).map((entry) => ({
+      ...entry,
+      completedAt: null,
+    }))
+    updateBookItem(bookId, {
+      studyStack: resetStack,
+      studySession: buildStudySession(book, resetStack, now, { forceStart: true }),
+      lastTouched: now,
+    })
+  }
+
   const addShelf = (name) => {
     const newShelf = {
       id: generateId(),
@@ -119,15 +299,16 @@ export function createLibraryActions({
   const deleteShelf = (shelfId) => {
     if (shelfId === 'all') return
     updateShelvesState((prev) => prev.filter((shelf) => shelf.id !== shelfId))
-    updateLibraryState((prev) => ({
-      ...prev,
-      items: prev.items.map((item) => {
-        const nextShelves = (item.shelves || []).filter((id) => id !== shelfId)
-        if (item.kind === 'book') return mergeBookIntoItem(item, { shelves: nextShelves })
-        if (item.kind === 'document') return mergeDocumentIntoItem(item, { shelves: nextShelves })
-        return item
-      }),
-    }))
+    books
+      .filter((book) => (book.shelves || []).includes(shelfId))
+      .forEach((book) => updateBookItem(book.id, {
+        shelves: (book.shelves || []).filter((id) => id !== shelfId),
+      }))
+    documents
+      .filter((doc) => (doc.shelves || []).includes(shelfId))
+      .forEach((doc) => updateDocumentItem(doc.id, {
+        shelves: (doc.shelves || []).filter((id) => id !== shelfId),
+      }))
   }
 
   const updateDocumentMeta = (docId, updates) => {
@@ -142,14 +323,33 @@ export function createLibraryActions({
       return
     }
     const timers = docUpdateTimersRef.current
-    if (timers.has(docId)) {
-      clearTimeout(timers.get(docId))
+    const existing = timers.get(docId)
+    const pendingUpdates = {
+      ...(existing?.updates || {}),
+      ...updates,
+    }
+    if (existing) {
+      clearTimeout(existing.timeout || existing)
     }
     const timeout = setTimeout(() => {
       timers.delete(docId)
-      updateDocumentItem(docId, updates)
+      updateDocumentItem(docId, pendingUpdates)
     }, delay)
-    timers.set(docId, timeout)
+    timers.set(docId, { timeout, updates: pendingUpdates })
+  }
+
+  const flushPendingDocumentMetaUpdates = () => {
+    const timers = docUpdateTimersRef?.current
+    if (!timers?.size) return 0
+    const pending = Array.from(timers.entries())
+    timers.clear()
+    pending.forEach(([docId, entry]) => {
+      clearTimeout(entry?.timeout || entry)
+      if (entry?.updates) {
+        updateDocumentItem(docId, entry.updates)
+      }
+    })
+    return pending.length
   }
 
   const addDocumentNote = async (docId, note) => {
@@ -174,12 +374,22 @@ export function createLibraryActions({
     updateBook,
     deleteBook,
     logPages,
+    undoLastPageLog,
     addQuote,
     addReflection,
+    pinStudyEntry,
+    removeStudyEntry,
+    updateStudyEntry,
+    moveStudyEntry,
+    reviewStudyEntry,
+    toggleStudyEntryComplete,
+    startStudySession,
+    resetStudySession,
     addShelf,
     deleteShelf,
     updateDocumentMeta,
     scheduleDocumentMetaUpdate,
+    flushPendingDocumentMetaUpdates,
     addDocumentNote,
   }
 }

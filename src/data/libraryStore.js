@@ -30,20 +30,31 @@ export function mapDocumentToItem(doc) {
   return createDocumentItemFromDoc(doc)
 }
 
+function safeArray(value) {
+  return Array.isArray(value) ? value : []
+}
+
+function safeObject(value) {
+  return value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+}
+
 export function migrateLibraryStateToV2(state) {
   return migrateLibraryStateInternal(state)
 }
 
 export function migrateLegacyState({ books = [], shelves = [], userData = {}, spineLibrary = {}, documents = [] }) {
+  const legacyBooks = safeArray(books)
+  const legacyDocuments = safeArray(documents)
+  const legacyShelves = safeArray(shelves)
   const baseState = {
     version: 1,
     items: [
-      ...books.map(mapBookToItem),
-      ...documents.map(mapDocumentToItem),
+      ...legacyBooks.map(mapBookToItem),
+      ...legacyDocuments.map(mapDocumentToItem),
     ],
-    shelves: shelves.length > 0 ? shelves : defaultShelves,
-    user: { ...defaultUserData, ...userData },
-    spineLibrary: spineLibrary || {},
+    shelves: legacyShelves.length > 0 ? legacyShelves : defaultShelves,
+    user: { ...defaultUserData, ...safeObject(userData) },
+    spineLibrary: safeObject(spineLibrary),
   }
 
   return migrateLibraryStateInternal(baseState)
@@ -59,11 +70,35 @@ export function extractDocuments(state) {
 
 function normalizeParsedState(parsed) {
   if (!parsed || typeof parsed !== 'object') return null
-  if (parsed.version === LIBRARY_SCHEMA_VERSION) return parsed
-  if (parsed.version && parsed.version < LIBRARY_SCHEMA_VERSION) {
-    return migrateLibraryStateInternal(parsed)
+  if (!parsed.version || parsed.version > LIBRARY_SCHEMA_VERSION) return null
+  if (parsed.version <= LIBRARY_SCHEMA_VERSION) {
+    return migrateLibraryStateInternal({
+      version: 1,
+      items: safeArray(parsed.items),
+      shelves: safeArray(parsed.shelves),
+      user: safeObject(parsed.user),
+      spineLibrary: safeObject(parsed.spineLibrary),
+    })
   }
   return null
+}
+
+function persistBrowserLibraryState(state, { pretty = false } = {}) {
+  const payload = pretty
+    ? JSON.stringify(state, null, 2)
+    : JSON.stringify(state)
+  localStorage.setItem(LIBRARY_STORAGE_KEY, payload)
+}
+
+function tryPersistBrowserLibraryState(state) {
+  try {
+    persistBrowserLibraryState(state)
+  } catch (error) {
+    console.warn(
+      '[library-store] Unable to persist browser library state:',
+      error?.message || error
+    )
+  }
 }
 
 export async function loadLibraryState({ libraryPath, legacy }) {
@@ -75,7 +110,7 @@ export async function loadLibraryState({ libraryPath, legacy }) {
         const normalized = normalizeParsedState(parsed)
         if (normalized) {
           if (normalized.version !== parsed.version) {
-            localStorage.setItem(LIBRARY_STORAGE_KEY, JSON.stringify(normalized))
+            tryPersistBrowserLibraryState(normalized)
           }
           return normalized
         }
@@ -84,7 +119,7 @@ export async function loadLibraryState({ libraryPath, legacy }) {
       }
     }
     const migrated = migrateLegacyState(legacy)
-    localStorage.setItem(LIBRARY_STORAGE_KEY, JSON.stringify(migrated))
+    tryPersistBrowserLibraryState(migrated)
     return migrated
   }
 
@@ -108,8 +143,7 @@ export async function loadLibraryState({ libraryPath, legacy }) {
 
 export async function saveLibraryState(state, { libraryPath } = {}) {
   if (!isTauri()) {
-    const payload = JSON.stringify(state, null, 2)
-    localStorage.setItem(LIBRARY_STORAGE_KEY, payload)
+    persistBrowserLibraryState(state, { pretty: true })
     return
   }
   if (!libraryPath) return

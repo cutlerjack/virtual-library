@@ -1,7 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import ePub from 'epubjs'
 import { buildEpubLocation, findRelatedNotes } from '../reader/readerCore'
+import ReaderDialogShell from './ReaderDialogShell'
 
 function EpubReaderModal({
   title,
@@ -18,6 +18,7 @@ function EpubReaderModal({
   notes = [],
   onAddNote,
   onNavigateTo,
+  sessionPanel = null,
 }) {
   const containerRef = useRef(null)
   const renditionRef = useRef(null)
@@ -56,7 +57,7 @@ function EpubReaderModal({
       height: '100%',
     })
     renditionRef.current = rendition
-    const unsubscribe = rendition.on('relocated', (location) => {
+    const handleRelocated = (location) => {
       const cfi = location?.start?.cfi || ''
       setCurrentCfi(cfi)
       onLocationChange?.(cfi)
@@ -64,22 +65,36 @@ function EpubReaderModal({
         const percent = Math.round(book.locations.percentageFromCfi(cfi) * 100)
         onProgressChange?.(Number.isFinite(percent) ? percent : 0)
       }
-    })
+    }
+    rendition.on('relocated', handleRelocated)
+    let cancelled = false
     const prepare = async () => {
       try {
         await book.ready
         await book.locations.generate(1000)
         const coverUrl = await book.coverUrl()
-        if (coverUrl) onCoverReady?.(coverUrl)
+        if (!cancelled && coverUrl) onCoverReady?.(coverUrl)
       } catch {
         // ignore metadata errors
       }
-      await rendition.display(initialLocation || undefined)
-      setReady(true)
+      try {
+        await rendition.display(initialLocation || undefined)
+        if (!cancelled) setReady(true)
+      } catch {
+        if (!cancelled) setReady(false)
+      }
     }
     prepare()
     return () => {
-      unsubscribe?.()
+      cancelled = true
+      if (renditionRef.current === rendition) {
+        renditionRef.current = null
+      }
+      if (typeof rendition.off === 'function') {
+        rendition.off('relocated', handleRelocated)
+      } else if (typeof rendition.removeListener === 'function') {
+        rendition.removeListener('relocated', handleRelocated)
+      }
       rendition.destroy()
     }
   }, [book, initialLocation, onLocationChange, onProgressChange, onCoverReady])
@@ -113,45 +128,21 @@ function EpubReaderModal({
   }
 
   return (
-    <motion.div
-      className="modal-overlay epub-reader-overlay kindle-reader"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      onClick={onClose}
+    <ReaderDialogShell
+      title={title || 'Untitled EPUB'}
+      eyebrow="Reader"
+      onClose={onClose}
+      focusMode={focusMode}
+      sidebarOpen={sidebarOpen}
+      onToggleSidebar={() => setSidebarOpen((prev) => !prev)}
+      onToggleFocusMode={() => setFocusMode((prev) => !prev)}
+      overlayClassName="epub-reader-overlay kindle-reader"
+      panelClassName={`epub-reader-modal kindle-reader-shell ${focusMode ? 'focus-mode' : ''}`}
+      headerClassName="epub-reader-header kindle-reader-header"
+      eyebrowClassName="epub-reader-eyebrow"
+      titleClassName="epub-reader-title"
+      sessionPanel={sessionPanel}
     >
-      <motion.div
-        className={`epub-reader-modal kindle-reader-shell ${focusMode ? 'focus-mode' : ''}`}
-        initial={{ scale: 0.98, opacity: 0, y: 20 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.98, opacity: 0, y: 20 }}
-        transition={{ duration: 0.2 }}
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="epub-reader-header kindle-reader-header">
-          <div>
-            <div className="epub-reader-eyebrow">Reader</div>
-            <div className="epub-reader-title">{title || 'Untitled EPUB'}</div>
-          </div>
-          <div className="kindle-reader-actions">
-            <button
-              className="btn-secondary text-xs px-3 py-2"
-              onClick={() => setSidebarOpen((prev) => !prev)}
-            >
-              {sidebarOpen ? 'Hide Notes' : 'Show Notes'}
-            </button>
-            <button
-              className="btn-secondary text-xs px-3 py-2"
-              onClick={() => setFocusMode((prev) => !prev)}
-            >
-              {focusMode ? 'Exit Focus' : 'Focus Mode'}
-            </button>
-            <button className="btn-secondary text-xs px-3 py-2" onClick={onClose}>
-              Close
-            </button>
-          </div>
-        </div>
-
         <div className="epub-reader-toolbar kindle-reader-toolbar">
           <button
             className="btn-secondary text-xs px-3 py-2"
@@ -276,8 +267,7 @@ function EpubReaderModal({
             </button>
           )}
         </div>
-      </motion.div>
-    </motion.div>
+    </ReaderDialogShell>
   )
 }
 

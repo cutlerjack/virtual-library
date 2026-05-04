@@ -1,14 +1,27 @@
-import { createDir, exists, readTextFile, writeTextFile, copyFile, readDir, readBinaryFile } from '@tauri-apps/api/fs'
+import {
+  createDir,
+  exists,
+  readTextFile,
+  writeTextFile,
+  copyFile,
+  readDir,
+  readBinaryFile,
+  renameFile,
+} from '@tauri-apps/api/fs'
 import { homeDir, downloadDir, join, basename } from '@tauri-apps/api/path'
-import { open } from '@tauri-apps/api/dialog'
+import { invoke } from '@tauri-apps/api/tauri'
 import { isTauri } from './tauri'
+import { openDialog } from './tauriDialog'
 import { defaultShelves, generateId } from './storage'
 import { computeSha256 } from './fileHash'
 import { extractPdfText, extractEpubText, extractHtmlText } from './textExtract'
+import { prepareCapturedHtml } from './htmlSanitizer'
 
 const LIBRARY_KEY = 'virtual-library-path'
 const INDEX_FILENAME = 'index.json'
 const SUBFOLDERS = ['library', 'thumbs', 'annotations', 'articles', 'snapshots']
+const STAGING_FOLDER = '.staging'
+const IMPORT_STAGING_FOLDER = 'imports'
 
 export async function getDefaultLibraryPath() {
   const home = await homeDir()
@@ -16,11 +29,20 @@ export async function getDefaultLibraryPath() {
 }
 
 export function getStoredLibraryPath() {
-  return localStorage.getItem(LIBRARY_KEY)
+  try {
+    return localStorage.getItem(LIBRARY_KEY)
+  } catch (error) {
+    console.warn('[library-vault] Unable to read stored library path:', error?.message || error)
+    return null
+  }
 }
 
 export function setStoredLibraryPath(path) {
-  localStorage.setItem(LIBRARY_KEY, path)
+  try {
+    localStorage.setItem(LIBRARY_KEY, path)
+  } catch (error) {
+    console.warn('[library-vault] Unable to persist library path:', error?.message || error)
+  }
 }
 
 export async function ensureLibraryFolders(libraryPath) {
@@ -36,6 +58,35 @@ export async function ensureLibraryFolders(libraryPath) {
   }
   const indexPath = await join(libraryPath, INDEX_FILENAME)
   return indexPath
+}
+
+async function ensureImportStagingFolder(libraryPath) {
+  const stagingDir = await join(libraryPath, STAGING_FOLDER, IMPORT_STAGING_FOLDER)
+  if (!(await exists(stagingDir))) {
+    await createDir(stagingDir, { recursive: true })
+  }
+  return stagingDir
+}
+
+export async function cleanupImportStagingFile(libraryPath, candidatePath) {
+  if (!isTauri() || !libraryPath || !candidatePath) return false
+  try {
+    const stagingDir = await join(libraryPath, STAGING_FOLDER, IMPORT_STAGING_FOLDER)
+    const normalizedDir = String(stagingDir).replace(/\\/g, '/').replace(/\/+$/, '')
+    const normalizedCandidate = String(candidatePath).replace(/\\/g, '/')
+    const relativeCandidate = normalizedCandidate.startsWith(`${normalizedDir}/`)
+      ? normalizedCandidate.slice(normalizedDir.length + 1)
+      : null
+    if (!relativeCandidate || relativeCandidate.includes('/')) {
+      console.warn('[library-vault] Refusing to remove non-staging import file:', candidatePath)
+      return false
+    }
+    await invoke('remove_import_staging_file', { libraryPath, candidatePath })
+    return true
+  } catch (error) {
+    console.warn('[library-vault] Unable to remove import staging file:', error?.message || error)
+    return false
+  }
 }
 
 export async function loadLibraryIndex(libraryPath) {
@@ -118,15 +169,20 @@ async function normalizeDialogSelection(selection) {
 
 export async function chooseLibraryFolder() {
   if (!isTauri()) return null
-  const selection = await open({ directory: true, multiple: false })
-  const normalized = await normalizeDialogSelection(selection)
-  if (!normalized) return null
-  return Array.isArray(normalized) ? normalized[0] : normalized
+  try {
+    const selection = await openDialog({ directory: true, multiple: false })
+    const normalized = await normalizeDialogSelection(selection)
+    if (!normalized) return null
+    return Array.isArray(normalized) ? normalized[0] : normalized
+  } catch (error) {
+    console.warn('[library-vault] Unable to choose library folder:', error?.message || error)
+    return null
+  }
 }
 
 export async function importLibraryFiles(libraryPath) {
   if (!isTauri()) return []
-  const selection = await open({
+  const selection = await openDialog({
     multiple: true,
     filters: [
       { name: 'Documents', extensions: ['pdf', 'epub', 'html', 'htm'] },
@@ -136,22 +192,47 @@ export async function importLibraryFiles(libraryPath) {
   if (!normalized) return []
   const files = Array.isArray(normalized) ? normalized : [normalized]
   const targetDir = await join(libraryPath, 'library')
+  const stagingDir = await ensureImportStagingFolder(libraryPath)
   const imported = []
+  const failures = []
 
   for (const sourcePath of files) {
     const name = await basename(sourcePath)
     const targetName = await generateTargetName(targetDir, name)
     const targetPath = await join(targetDir, targetName)
+    const stagingName = await generateTargetName(stagingDir, `import-${generateId()}-${targetName}`)
+    const stagingPath = await join(stagingDir, stagingName)
+    let stagingCreated = false
+    let stagingCommitted = false
     try {
-      await copyFile(sourcePath, targetPath)
-      const binary = await readBinaryFile(targetPath)
-      const hash = await computeSha256(binary)
+      await copyFile(sourcePath, stagingPath)
+      stagingCreated = true
+      const binary = await readBinaryFile(stagingPath)
+      let hash = await computeSha256(binary)
+      let fileSize = binary?.byteLength ?? binary?.length ?? null
       let searchText = ''
       const type = getDocType(targetName)
       const mime = getMimeType(targetName)
+      let plainText = null
+      let sanitizedHtml = null
+      let quarantined = false
       if (type === 'pdf') searchText = await extractPdfText(binary)
       if (type === 'epub') searchText = await extractEpubText(binary)
-      if (type === 'article') searchText = extractHtmlText(new TextDecoder().decode(binary))
+      if (type === 'article') {
+        const rawHtml = new TextDecoder().decode(binary)
+        const prepared = prepareCapturedHtml(rawHtml)
+        plainText = prepared.plainText || extractHtmlText(rawHtml)
+        sanitizedHtml = prepared.sanitizedHtml || null
+        quarantined = prepared.quarantined
+        searchText = plainText
+        const persistedContent = sanitizedHtml || plainText
+        await writeTextFile(stagingPath, persistedContent)
+        const encoded = new TextEncoder().encode(persistedContent)
+        hash = await computeSha256(encoded)
+        fileSize = encoded?.length ?? fileSize
+      }
+      await renameFile(stagingPath, targetPath)
+      stagingCommitted = true
       imported.push({
         id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(16).slice(2)}`,
         title: normalizeTitle(targetName),
@@ -162,17 +243,30 @@ export async function importLibraryFiles(libraryPath) {
         mime,
         ingestSource: 'import',
         fileHash: hash,
-        fileSize: binary?.byteLength ?? binary?.length ?? null,
+        fileSize,
         fileMtime: null,
-        fileStatus: 'ok',
+        fileStatus: quarantined ? 'quarantined' : 'ok',
         searchText,
+        plainText,
+        sanitizedHtml,
+        quarantined,
         addedAt: new Date().toISOString(),
       })
     } catch (error) {
-      throw new Error(`Unable to copy ${name}. ${error?.message || ''}`.trim())
+      if (stagingCreated && !stagingCommitted) {
+        await cleanupImportStagingFile(libraryPath, stagingPath)
+      }
+      const message = `Unable to copy ${name}. ${error?.message || ''}`.trim()
+      failures.push(message)
+      console.warn('[library-vault] Import failed:', message)
     }
   }
 
+  if (imported.length === 0 && failures.length > 0) {
+    throw new Error(failures.join(' '))
+  }
+
+  imported.failures = failures
   return imported
 }
 
@@ -252,6 +346,10 @@ function mergeUniqueStrings(list) {
   return Array.from(new Set((list || []).map(item => String(item).trim()).filter(Boolean)))
 }
 
+function safeList(value) {
+  return Array.isArray(value) ? value : []
+}
+
 function mergeUniqueQuotes(list) {
   const seen = new Set()
   return (list || []).filter((q) => {
@@ -263,12 +361,15 @@ function mergeUniqueQuotes(list) {
 }
 
 function mergeShelves(existing, incoming) {
-  const combined = [...(existing || []), ...(incoming || [])].filter(Boolean)
+  const combined = [...safeList(existing), ...safeList(incoming)].filter(Boolean)
   return Array.from(new Set(combined))
 }
 
 export function migrateExportToLibraryState(payload, currentShelves = [], currentBooks = []) {
-  const baseShelves = currentShelves.length > 0 ? currentShelves : defaultShelves
+  const payloadEntries = safeList(payload)
+  const existingBooks = safeList(currentBooks)
+  const normalizedShelves = safeList(currentShelves)
+  const baseShelves = normalizedShelves.length > 0 ? normalizedShelves : defaultShelves
   const shelfNameMap = new Map(baseShelves.map((shelf) => [shelf.name, shelf.id]))
   const nextShelves = [...baseShelves]
 
@@ -287,15 +388,18 @@ export function migrateExportToLibraryState(payload, currentShelves = [], curren
   }
 
   const existingByKey = new Map()
-  currentBooks.forEach((book) => {
+  existingBooks.forEach((book) => {
     existingByKey.set(buildBookKey(book), book)
   })
 
-  const mergedBooks = [...currentBooks]
+  const mergedBooks = [...existingBooks]
 
-  payload.forEach((entry) => {
+  payloadEntries.forEach((entry) => {
     const key = buildBookKey(entry)
-    const shelfIds = (entry.shelves || []).map(getShelfId).filter(Boolean)
+    const entryShelves = safeList(entry.shelves)
+    const entryQuotes = safeList(entry.quotes)
+    const entryTags = safeList(entry.tags)
+    const shelfIds = entryShelves.map(getShelfId).filter(Boolean)
     const existing = existingByKey.get(key)
     if (existing) {
       const updated = {
@@ -305,8 +409,8 @@ export function migrateExportToLibraryState(payload, currentShelves = [], curren
         isbn: existing.isbn || entry.isbn || null,
         rating: existing.rating || entry.rating || 0,
         notes: existing.notes || entry.notes || '',
-        quotes: mergeUniqueQuotes([...(existing.quotes || []), ...(entry.quotes || [])]),
-        tags: mergeUniqueStrings([...(existing.tags || []), ...(entry.tags || [])]),
+        quotes: mergeUniqueQuotes([...safeList(existing.quotes), ...entryQuotes]),
+        tags: mergeUniqueStrings([...safeList(existing.tags), ...entryTags]),
         shelves: mergeShelves(existing.shelves, shelfIds),
         pageCount: existing.pageCount || entry.pageCount || null,
         dateStarted: existing.dateStarted || entry.dateStarted || null,
@@ -329,8 +433,8 @@ export function migrateExportToLibraryState(payload, currentShelves = [], curren
       isbn: entry.isbn || null,
       rating: entry.rating || 0,
       notes: entry.notes || '',
-      quotes: entry.quotes || [],
-      tags: entry.tags || [],
+      quotes: entryQuotes,
+      tags: entryTags,
       shelves: shelfIds,
       pageCount: entry.pageCount || null,
       dateStarted: entry.dateStarted || null,
